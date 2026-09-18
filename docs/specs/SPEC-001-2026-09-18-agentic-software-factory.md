@@ -47,7 +47,8 @@ proposal; only then does an effector act*, is the WSFF gate placed at the design
 of at the diff.
 
 The process diagram below must stay legible to a non-engineer: it names the two points where a
-human is in the loop, the product owner at the design gate and an engineer at code review.
+human is in the loop, the product owner at the design gate and, at review, whichever reviewers
+the change class requires (an engineer, a lawyer, both, or none by policy).
 
 ## User Stories
 
@@ -63,6 +64,14 @@ human is in the loop, the product owner at the design gate and an engineer at co
   unassigned.
 - **Team lead** opens the board → sees every task by status and assignee kind, with the process
   instance, cost so far and the pending decision linked.
+- **Business owner** (e.g. a manufacturer running sales, catalog and staff in Open Mercato, with
+  the company website's repo connected as a project) adds a product in the catalog → a task
+  "publish a product page" appears on the board, already assigned to the agent → a preview link
+  to approve, then the page live. They never read a diff; a change that needs an engineer or a
+  lawyer waits for them, visibly, on the task.
+- **Legal reviewer** gets a Caseload item only when a change touches legal text (terms, privacy
+  policy, pricing, product claims) → reviews the preview and a diff of the rendered text, approves
+  or rejects with a reason, never sees GitHub.
 
 ## Proposed Solution
 
@@ -100,7 +109,7 @@ owns one entity, one board page, a few commands and the inbound hooks. It is whe
 and where humans watch the fleet; it is not a project-management tool.
 
 - A task has a title, body, links, a `projectKey` (which target repo and credential bundle), a
-  `source` (`manual | sentry | github | mcp | followup`), an optional parent, a status, and one
+  `source` (`manual | sentry | github | mcp | event | followup`), an optional parent, a status, and one
   assignee. The assignee is always an `auth.User` id: a human, or an agent principal (a
   non-interactive user of kind agent, provisioned once per org with
   `agentPrincipalService.provision({ agentDefinitionId: 'factory' })` and shown in the picker as
@@ -110,7 +119,9 @@ and where humans watch the fleet; it is not a project-management tool.
   where `agentId` is the agent definition id read from the principal, not the user id. The emit
   carries `tenantId` and `organizationId` in the emit **options** as well as the payload, and is
   persistent. Hook-created tasks are created already assigned to the factory agent and emit the
-  same event: one event, one start path, whatever the source.
+  same event: one event, one start path, whatever the source. Open Mercato's own domain events
+  (e.g. `catalog.product.created`) enter the same way: a `tasks` subscriber, configured per
+  project with the event and a task template, creates the task with `source: event`.
 - The process writes back only through the module's **workflow-safe commands**:
   `tasks.task.set_status`, `tasks.task.link` (instance, Caseload item, PR, artifact) and
   `tasks.task.create_followup`, run by `UPDATE_ENTITY` steps. They are declared with
@@ -181,6 +192,11 @@ INVOKE_AGENT  factory.reviewer         proposal: approve | request_changes { fin
 AUTOMATED     CALL_WEBHOOK  POST {RUNNER_URL}/review-comment      (posts findings on the PR)
 AUTOMATED     create_followup  (remaining slices, findings marked follow-up; unassigned)
 AUTOMATED     set_status → in_review   (done when the GitHub hook sees the PR merged)
+AUTOMATED     factory.review_route  → reviewers = f(change class, touched paths, risk)   (see below)
+PARALLEL_FORK ├─ [developer] WAIT_FOR_SIGNAL factory.pr.approved   (GitHub review, from the hook)
+              ├─ [legal]     USER_TASK assignedToRoles: legal      (preview + rendered-text diff)
+              └─ [none]      waiver: class allowed by project policy, required checks green
+PARALLEL_JOIN
 END           SET_VARIABLE outcome = { type: 'tasks:task', id: taskId }
 milestones:   researched · sized · design_approved · pr_open · reviewed   (top-level `milestone` key per step)
 ```
@@ -244,10 +260,49 @@ for new databases; existing ones run `yarn mercato seed:defaults --module tasks`
 | Code review | GitHub hook creates a review task (PR opened, author ≠ bot) | research → sizer: `review_only` → reviewer → findings posted | no |
 | Non-code task | a human assigns e.g. "summarise last week's failed syncs" | research → sizer: `non_code` → artifact or command proposal → Caseload → effector | no |
 | Project status update | schedule, weekly | separate process `factory.status`: research agent → artifact → USER_TASK → `CALL_WEBHOOK` to the team chat | no |
+| Business data → website | `catalog.product.created` in Open Mercato; a `tasks` subscriber creates a task (`source: event`) assigned to the agent | research (product record, site repo) → sizer: single_shot → run → PR with preview → review route (usually waiver: new product page) → merged | yes |
 
 The status process is deliberately separate: it proves the schedule trigger and the artifact path
 with zero runner dependency, so it is the fallback demo and the first thing a non-technical
 teammate can own.
+
+The business-data scenario is the one no repo-only factory can run: the event originates in the
+company's own system of record, and "done" checks against it (a Playwright test on the preview
+asserts the page renders the product's name, price and SKU from the catalog record).
+
+### Who reviews: routing by change class, previews per run
+
+Every run ends with a PR and a **preview**: the run's own stack (already started per run, see
+*Run lifecycle*) is kept up behind a per-run URL until the review route closes, with a TTL (default
+72 h), then torn down. The URL goes into the signal payload, the PR body and the task card. The
+preview is for the human; the automated check stays the verdict.
+
+`factory.review_route` decides who must approve. It takes the **maximum** of two inputs, so an
+agent can raise its own risk but never lower it:
+
+- deterministic signals: touched paths matched against the project's review map, diff size,
+  flagged files (CI config, test config, lockfile), and the change class of the approved slice;
+- the risk the sizer and slicer declared.
+
+The project's review map is configuration on the project, owned by a human:
+
+| Change class | Matched by (example) | Reviewers |
+|---|---|---|
+| `content` | `content/**`, product pages, images | none (waiver) if checks green, else developer |
+| `code` | everything else | developer |
+| `legal` | `legal/**`, terms, privacy, pricing copy, product claims | legal |
+| `code` + `legal` | both | developer and legal, in parallel |
+
+Routing is data, not code: new roles (accounting for price changes, HR for a job ad) are rows,
+reviewed where they work. Developers review in GitHub; everyone else reviews in the Caseload as a
+`USER_TASK` with `assignedToRoles`, fanned out with `PARALLEL_FORK` / `PARALLEL_JOIN`. Any reject
+ends the route with the reviewer's reason on the task. This is why decisions live in Open Mercato:
+a lawyer will not review on GitHub, and Open Mercato already has the roles, the audit and the
+inbox.
+
+The **waiver** (no human review) is a policy, not the agent's judgment: allowed only for change
+classes the project lists, only after required checks pass, and executed by a merge identity
+distinct from the coding bot (decision 6).
 
 ### The agents
 
@@ -302,7 +357,8 @@ runner  → control  POST /api/workflows/instances/{workflowInstanceId}/signal
                    (x-api-key: key whose role holds workflows.instances.signal; sent only after
                     the 202, since the instance parks after the webhook returns; retry on 409)
                    { signalName: 'factory.run.finished',
-                     payload: { run: { status: 'pr_open'|'failed', reason?, prUrl?, costUsd?, summary } } }
+                     payload: { run: { status: 'pr_open'|'failed', reason?, prUrl?, previewUrl?,
+                                     costUsd?, summary } } }
 ```
 
 The runner owns the timeout: 0.8.0 does not enforce `WAIT_FOR_SIGNAL` timeouts, so on breach it
@@ -469,7 +525,9 @@ CALL_WEBHOOK ──POST /runs──▶ authenticate, project allowlist, 202
                              on exit: diff scan (ci/test/lockfile) ◀─── commits on factory/<runId>
                              git push as bot, gh pr create, evidence in PR body
 WAIT_FOR_SIGNAL ◀──POST /api/workflows/instances/{id}/signal { run: { status, prUrl, costUsd } }
-                             finally: compose down -v, network rm, rm -rf /work/<runId>, token discarded
+                             finally: token discarded; stack kept as the preview until the review
+                             route closes or its TTL expires, then compose down -v, network rm,
+                             rm -rf /work/<runId>
 ```
 
 Clones come from a per-repo git mirror on the VM refreshed by a timer (runs never write it);
@@ -581,6 +639,14 @@ autonomous throughput. Same machinery, different economic claim.
 
 A domain is a good second target when three things hold: the system of record is one we run,
 tasks originate as events in it, and "done" checks against data rather than opinion.
+
+The persona that makes this concrete is the **business owner**: a manufacturer who runs sales,
+catalog and staff in Open Mercato and connects the company website's repo as a project. From one
+board they delegate both kinds of work, and the valuable tasks cross the line: a new product in
+the catalog becomes a product page; a drop in a product's sales becomes a proposed landing-page
+change. Repo-only factories cannot see the trigger. The owner does not review diffs, so review is
+routed by change class to the people who can (see *Who reviews*), and low-risk classes merge on
+policy.
 
 The trap to avoid: an "everything is a task" board with goals and KPIs on top is a horizontal
 project-management tool, the most crowded category of 2026 (Linear and Jira agents, Plane, It's a
@@ -715,7 +781,7 @@ corrections and eval cases are the orchestrator's own. The runner persists nothi
 | `id` | uuid | |
 | `title`, `body` | text | body is untrusted input to prompts |
 | `project_key` | text | selects target repo, base branch and credential bundle |
-| `source` | enum | `manual \| sentry \| github \| mcp \| followup` |
+| `source` | enum | `manual \| sentry \| github \| mcp \| event \| followup` |
 | `source_ref` | text, nullable | e.g. `sentry:{issueId}`, `pr:{repo}#{number}`; unique per tenant with `source` for dedup |
 | `parent_id` | uuid, nullable | follow-ups point at the task that produced them |
 | `status` | enum | `open \| queued \| in_design \| in_progress \| in_review \| done \| rejected \| failed` |
@@ -761,7 +827,8 @@ Ours, in the `tasks` module:
   task from the branch name, and its linked workflow instance, and send the signal
   `factory.checks.settled { sha,
   conclusion, failing: [{ name, url, summary }] }`; only required checks read from branch
-  protection count. `pull_request.closed` with `merged` on a factory branch sets the task `done`.
+  protection count. `pull_request_review.submitted` with `approved` on a factory branch signals
+  `factory.pr.approved`. `pull_request.closed` with `merged` on a factory branch sets the task `done`.
 - MCP tool `factory_send_task { projectKey, title, body, links[] }`: the seam between an
   interactive coding session and the factory. A research or brainstorm session ends by handing
   its result to the factory in one call instead of a human copying it into a ticket (Warp's
@@ -776,7 +843,7 @@ Consumed unchanged: the `agent_orchestrator.processes.startExecution` command (a
 `POST /api/workflows/instances/{id}/signal`, `POST /api/workflows/tasks/{id}/complete`,
 `POST /api/agent_orchestrator/proposals/{id}/dispose`.
 
-`factory.run.finished` and `factory.checks.settled` are signal names, not events.
+`factory.run.finished`, `factory.checks.settled` and `factory.pr.approved` are signal names, not events.
 
 ## Implementation Approach
 
@@ -823,7 +890,9 @@ Ordered for the hackathon; each step is worth having if the next one never lands
 4. **Saturday evening.** Sentry hook with a replayed payload, the board page, follow-up tasks from
    the reviewer, eval assertions, the correction walkthrough, one timed dry run of the five-minute
    demo. Stretch, cheap because the module ships it: run the sizer's eval suite with two models
-   and show the `cost` and pass-rate delta in the workbench.
+   and show the `cost` and pass-rate delta in the workbench. Second stretch: the business-data
+   scenario (`catalog.product.created` → product page PR with preview on the target repo), which
+   reuses the whole chain and needs only the subscriber and a seeded product.
 5. **Sunday.** Fix only what the dry run broke. **Freeze at 11:00.**
 
 Fallback demo at every stage: the `factory.status` process (schedule → artifact → USER_TASK →
@@ -877,7 +946,9 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
 6. **No automerge, and one slice per run.** When merge policy for boring change classes comes, it
    is Renovate-shaped or nothing: a declared change class, required checks read from branch
    protection rather than observed CI, the bot never arms or re-arms automerge, and a human hold on
-   a PR is terminal. Follow-ups are created unassigned, so the factory never feeds itself.
+   a PR is terminal. The review waiver (see *Who reviews*) is that policy: a project-listed change
+   class, required checks green, merged by a merge identity separate from the coding bot, never
+   on the agent's say-so. Follow-ups are created unassigned, so the factory never feeds itself.
 7. **Portable from the first commit.** Local modules with `agents/<name>/AGENT.md` plus its
    `skills/`, `workflows/`, `runners/<name>.yaml` (image, setup commands, instance shape) and
    `api/`; the same file shapes Warp and SuperPlane consume, so a port is a directory move.
@@ -891,6 +962,10 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
 10. **Code first, because verification is cheapest there.** The loop is domain-agnostic, the
     definition of done is not. The second domain is chosen where the system of record is ours,
     tasks originate as events in it, and "done" checks against data (see *Beyond code*).
+11. **Reviewers are routed by change class, not fixed.** An engineer, a lawyer, both in parallel,
+    or none by waiver; the route takes the maximum of deterministic signals and the agent's
+    declared risk, so an agent can raise its risk but never lower it. Engineers review in GitHub,
+    everyone else in the Caseload, against a per-run preview.
 
 ## Open Questions
 
@@ -924,6 +999,16 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
   Resolves: when the first real target is wired.
 - **Environment contract for the runner.** Compose by convention now; `devcontainer.json` as the
   contract later. Decide before the first client repo is wired.
+- **Waiver merge mechanics on GitHub.** The waiver needs a merge identity (a second GitHub App)
+  allowed past the required-review rule for waiver classes only, e.g. a ruleset bypass for that
+  app, while the coding bot stays unable to merge. Confirm rulesets can express this per PR rather
+  than per branch. Resolves: before the first waiver is enabled; not needed for the hackathon.
+- **Preview hosting and cost.** Keeping run stacks alive for review holds a runner slot per open
+  PR. Keep on the runner VM with a TTL, or hand off to the repo's own preview environments where
+  they exist? Resolves: when the first real target is wired.
+- **Rendered-text diff for non-code reviewers.** What a lawyer sees: a text diff extracted from the
+  preview's pages before and after, or the source diff of content files. Resolves: with the legal
+  route.
 
 ## Changelog
 
@@ -933,3 +1018,4 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
 |------|--------|
 | 2026-09-18 | Ported from an internal draft; `tasks` module added as intake. |
 | 2026-09-18 | Hookup mechanics verified against 0.8.0 packages; process wiring, trigger, signal and seeding corrected. |
+| 2026-09-18 | Business-owner persona and business-data scenario; review routing by change class (developer, legal, waiver) with per-run previews. |
