@@ -8,7 +8,7 @@
 #               + seeded once) and CLONES each worktree's own DB from it (CREATE DATABASE
 #               <worktree> TEMPLATE om-software-factory) — so a new worktree starts already seeded,
 #               with no per-worktree reseed. The worktree DB name is derived from the worktree
-#               folder and written into this worktree's own apps/mercato/.env.
+#               folder and written into this worktree's own .env.
 #   - Infra:    one shared Postgres/Redis/Meilisearch docker stack (compose project
 #               om-software-factory), reused across worktrees; per-worktree DBs are separate
 #               databases inside it.

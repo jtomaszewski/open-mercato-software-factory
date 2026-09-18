@@ -5,10 +5,10 @@
 // no per-worktree `yarn initialize` reseed. This script runs the maintenance-level SQL that
 // `yarn db:migrate` / `yarn initialize` can't (create/clone/drop a database).
 //
-// Run it with cwd = apps/mercato so `pg` and ./dev-database-url.mjs resolve:
-//   ( cd apps/mercato && node scripts/conductor-db.mjs <cmd> [args] )
+// Run it with cwd = the repo root so `pg` and ./dev-database-url.mjs resolve:
+//   ( node scripts/conductor-db.mjs <cmd> [args] )
 //
-// Connection creds/host/port come from apps/mercato/.env DATABASE_URL; only the database
+// Connection creds/host/port come from .env DATABASE_URL; only the database
 // name is swapped (to the `postgres` maintenance DB for create/clone/drop/exists).
 //
 // Commands:

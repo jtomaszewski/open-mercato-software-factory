@@ -2,7 +2,7 @@
 # Conductor setup hook — one-time per-worktree provisioning (runs at workspace creation).
 # Install at scripts/conductor-setup.sh. Replace om-software-factory with the compose project name.
 #
-# Thin monorepo: all app code lives in apps/mercato (consumes published @open-mercato/*).
+# The app lives at the repo root (consumes published @open-mercato/*).
 #   - bring up the SHARED local infra stack (Postgres/Redis/Meilisearch) once, keyed by the
 #     compose project name so every worktree reuses the same containers + volumes.
 #   - install deps + generate module artifacts.
@@ -10,7 +10,7 @@
 #     its OWN database CLONED from that template (`CREATE DATABASE <worktree> TEMPLATE <tmpl>`),
 #     so it starts already migrated + seeded — NO per-worktree `yarn initialize` reseed.
 #   - derive the per-worktree DB name from the worktree folder (e.g. `feature-x` -> `feature_x`)
-#     and rewrite THIS worktree's own apps/mercato/.env DATABASE_URL to it. `.worktreeinclude`
+#     and rewrite THIS worktree's own .env DATABASE_URL to it. `.worktreeinclude`
 #     copies .env per worktree (not a symlink), so the rewrite stays local.
 #   - `yarn db:migrate` on the worktree afterwards is a cheap no-op that catches any migrations
 #     pulled onto the branch since the template was last refreshed.
@@ -20,7 +20,7 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 ROOT="$(pwd)"
-APP_DIR="apps/mercato"
+APP_DIR="."
 ENV_FILE="$APP_DIR/.env"
 COMPOSE_PROJECT="om-software-factory"
 # Project-level template DB: migrated + seeded once, then cloned per worktree. Named after the
@@ -49,8 +49,8 @@ fi
 # no DATABASE_URL — silently skipping would leave this worktree on the shared default DB.
 worktree_db="$(node --input-type=module -e '
 import fs from "node:fs"
-import { deriveDatabaseNameFromCwd, readEnvDatabaseUrl, validateDatabaseName } from "./apps/mercato/scripts/dev-database-url.mjs"
-const envFile = "apps/mercato/.env"
+import { deriveDatabaseNameFromCwd, readEnvDatabaseUrl, validateDatabaseName } from "./scripts/dev-database-url.mjs"
+const envFile = ".env"
 if (!readEnvDatabaseUrl(fs.readFileSync(envFile, "utf8"))) {
   console.error(`[conductor] DATABASE_URL missing from ${envFile} — cannot isolate this worktree database.`)
   process.exit(1)
@@ -66,13 +66,13 @@ process.stdout.write(name)
 
 echo "[conductor] worktree database: $worktree_db  (template: $TEMPLATE_DB)"
 
-# Point apps/mercato/.env DATABASE_URL at a given database name (in place).
+# Point .env DATABASE_URL at a given database name (in place).
 set_env_db() {
   node --input-type=module -e '
 import fs from "node:fs"
-import { updateDatabaseUrlInEnvText } from "./apps/mercato/scripts/dev-database-url.mjs"
+import { updateDatabaseUrlInEnvText } from "./scripts/dev-database-url.mjs"
 const [name] = process.argv.slice(1)
-const f = "apps/mercato/.env"
+const f = ".env"
 const { text, changed } = updateDatabaseUrlInEnvText(fs.readFileSync(f, "utf8"), name)
 if (changed) fs.writeFileSync(f, text)
 ' "$1"

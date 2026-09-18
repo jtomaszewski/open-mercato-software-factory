@@ -15,9 +15,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: apps/mercato
     services:
       postgres:
         image: pgvector/pgvector:pg17-trixie
@@ -39,7 +36,6 @@ jobs:
           node-version: 24
       - name: Enable corepack
         run: corepack enable
-        working-directory: .
       - name: Install
         run: yarn install --immutable
       - name: Prepare env

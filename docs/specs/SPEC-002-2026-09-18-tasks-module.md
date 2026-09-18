@@ -126,7 +126,7 @@ What we accept by reusing it:
 
 ### The module
 
-`apps/mercato/src/modules/tasks`, an ordinary app module. It has two entities (delegation and
+`src/modules/tasks`, an ordinary app module. It has two entities (delegation and
 process write), the delegate and un-delegate commands, a command interceptor on `staff`'s task
 commands, two injection widgets, events, ACL features, read-only AI tools, and the workflow-safe
 commands SPEC-001 calls.

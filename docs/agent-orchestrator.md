@@ -12,7 +12,7 @@ which builds on it.
 >
 > **Sources of truth** (read these when this brief and the code disagree):
 > - Module guide: [`agent_orchestrator/AGENTS.md`](https://github.com/open-mercato/open-mercato/blob/develop/packages/enterprise/src/modules/agent_orchestrator/AGENTS.md)
->   (also in `apps/mercato/node_modules/@open-mercato/enterprise/src/modules/agent_orchestrator/`)
+>   (also in `node_modules/@open-mercato/enterprise/src/modules/agent_orchestrator/`)
 > - Spec index: [`.ai/specs/enterprise/agent-orchestrator/`](https://github.com/open-mercato/open-mercato/blob/develop/.ai/specs/enterprise/agent-orchestrator/README.md);
 >   its `00-IMPLEMENTED-BASELINE.md` predates the process model, taxonomy and unification specs
 >   ([triggered process model](https://github.com/open-mercato/open-mercato/blob/develop/.ai/specs/enterprise/agent-orchestrator/2026-08-11-triggered-process-model.md),
@@ -306,7 +306,7 @@ agents/company_researcher/
 └── tools/lookup_history.ts   `// @ref <tool id>` to a central tool, OR a sandboxed run(args)
 ```
 
-Working example in this app: `apps/mercato/src/modules/agent_examples/agents/company_researcher/`.
+Working example in this app: `src/modules/agent_examples/agents/company_researcher/`.
 
 **AGENT.md**: frontmatter plus the agent's own instructions only.
 
