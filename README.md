@@ -14,6 +14,7 @@ Design: [`docs/specs/SPEC-001-2026-09-18-agentic-software-factory.md`](docs/spec
 |---|---|
 | `apps/mercato/` | Standalone Open Mercato 0.8 app (`create-mercato-app`, empty preset) with the enterprise `agent_orchestrator` module enabled |
 | `apps/mercato/src/modules/` | Our modules: `tasks` (the task board, the factory's intake), `factory` (agents, process definitions, webhooks) |
+| `docs/agent-orchestrator.md` | How the upstream Agent Orchestrator works (architecture brief) |
 | `docs/specs/` | Specs |
 
 ## Quick start

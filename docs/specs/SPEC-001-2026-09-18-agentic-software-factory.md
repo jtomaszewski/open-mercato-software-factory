@@ -77,6 +77,8 @@ the change class requires (an engineer, a lawyer, both, or none by policy).
 
 ### What the orchestrator gives us, verified against the published 0.8.0 packages
 
+How the orchestrator works end to end: [`docs/agent-orchestrator.md`](../agent-orchestrator.md).
+
 | Need | Orchestrator primitive | Where |
 |---|---|---|
 | Initiation | `ProcessDefinition.triggers`: `schedule`, `event { eventPattern, config }`, `manual { requireFeatures }`; wildcard subscriber with jsonb-GIN candidate probe. We use only `manual`, started by our own subscriber (see *The process*) | `lib/tasks/triggers.ts`, `subscribers/process-event-trigger.ts` |
@@ -1019,3 +1021,4 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
 | 2026-09-18 | Ported from an internal draft; `tasks` module added as intake. |
 | 2026-09-18 | Hookup mechanics verified against 0.8.0 packages; process wiring, trigger, signal and seeding corrected. |
 | 2026-09-18 | Business-owner persona and business-data scenario; review routing by change class (developer, legal, waiver) with per-run previews. |
+| 2026-09-18 | Linked the orchestrator architecture brief (`docs/agent-orchestrator.md`). |
