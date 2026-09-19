@@ -15,4 +15,5 @@ APP_DIR="."
 
 port="${CONDUCTOR_PORT:-3000}"
 cd "$APP_DIR"
-exec env OM_DEV_SPLASH_PORT=off PORT="$port" yarn dev
+# APP_URL builds absolute links (task board links, factory PRs); .env's value assumes port 3000.
+exec env OM_DEV_SPLASH_PORT=off PORT="$port" APP_URL="http://localhost:$port" yarn dev
