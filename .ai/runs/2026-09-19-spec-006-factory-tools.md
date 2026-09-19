@@ -42,11 +42,13 @@ any code is written.
 
 ## Progress
 
+PR: #11
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Design documents
 
-- [ ] 1.1 Spec and ledger
-- [ ] 1.2 Glossary and decisions
-- [ ] 1.3 Cross-references
-- [ ] 1.4 Docs-only validation
+- [x] 1.1 Spec and ledger — 2712bcf
+- [x] 1.2 Glossary and decisions — 2712bcf
+- [x] 1.3 Cross-references — 2712bcf
+- [x] 1.4 Docs-only validation — 2712bcf
