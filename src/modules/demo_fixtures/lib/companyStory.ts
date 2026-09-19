@@ -3,7 +3,7 @@
 // projects follow the landing's realizations (hackaton-stal-zbiorniki-landing, lib/realizations.ts).
 // The DEMO board belongs to task_delegation's seed and scene 3; nothing here touches it.
 
-export const DEMO_COMPANY_NAME = 'Stal-Zbiorniki Sp. z o.o.'
+export const DEMO_COMPANY_NAME = 'Stal-Zbiorniki ERP'
 export const DEMO_COMPANY_LOGO_FILE = 'public/brand/stal-zbiorniki-logo.png'
 
 export const DEMO_CUSTOMERS = [
