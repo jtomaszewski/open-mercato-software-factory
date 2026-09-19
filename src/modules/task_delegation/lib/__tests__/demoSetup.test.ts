@@ -35,7 +35,7 @@ beforeEach(() => {
   provision.mockReset().mockResolvedValue({ userId: 'factory-user' })
 })
 
-it('creates the Internal customer, admin staff member, DEMO project, factory columns and agent', async () => {
+it('creates the Internal customer, admin staff member, DEMO project and agent', async () => {
   const result = await seedTaskDelegationDemo(container(true), scope)
 
   expect(execute.mock.calls.map(([id]) => id)).toEqual([
@@ -43,16 +43,17 @@ it('creates the Internal customer, admin staff member, DEMO project, factory col
     'staff.team-members.create',
     'staff.timesheets.time_projects.create',
     'staff.timesheets.time_project_members.assign',
-    'staff.timesheets.task_statuses.create',
-    'staff.timesheets.task_statuses.create',
-    'staff.timesheets.task_statuses.create',
   ])
   expect(execute.mock.calls[1]![1].input).toMatchObject({ ...scope, userId: 'admin-user', displayName: 'Marek' })
   expect(execute.mock.calls[2]![1].input).toMatchObject({ ...scope, code: 'DEMO', customerId: 'customer-1', ownerUserId: 'admin-user' })
-  expect(provision).toHaveBeenCalledWith(scope, expect.objectContaining({ agentDefinitionId: 'factory', roleFeatures: ['task_delegation.view', 'task_delegation.process'] }))
+  // SPEC-008: the agent reads as a job title, while every identifier keeps saying `factory`.
+  expect(provision).toHaveBeenCalledWith(scope, expect.objectContaining({
+    agentDefinitionId: 'factory',
+    displayName: 'Software Engineer',
+    roleFeatures: ['task_delegation.view', 'task_delegation.process'],
+  }))
   expect(result).toEqual({
-    customerId: 'customer-1', staffMemberId: 'member-1', projectId: 'project-1',
-    createdColumns: ['queued', 'in-design', 'closed'], agentUserId: 'factory-user',
+    customerId: 'customer-1', staffMemberId: 'member-1', projectId: 'project-1', agentUserId: 'factory-user',
   })
 })
 
@@ -61,12 +62,11 @@ it('changes nothing when every record already exists', async () => {
     'customers:customer_entity': [{ id: 'other', display_name: 'Acme' }, { id: 'customer-1', display_name: 'Internal' }],
     'staff:staff_team_member': [{ id: 'member-1' }],
     'staff:staff_time_project': [{ id: 'project-1' }],
-    'staff:staff_time_task_status': ['backlog', 'queued', 'in-design', 'in-progress', 'in-review', 'done', 'closed'].map((slug) => ({ slug })),
   }
 
   const result = await seedTaskDelegationDemo(container(false), scope)
 
   expect(execute).not.toHaveBeenCalled()
   expect(provision).not.toHaveBeenCalled()
-  expect(result).toMatchObject({ customerId: 'customer-1', projectId: 'project-1', createdColumns: [], agentUserId: null })
+  expect(result).toMatchObject({ customerId: 'customer-1', projectId: 'project-1', agentUserId: null })
 })

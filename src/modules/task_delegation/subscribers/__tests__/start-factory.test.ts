@@ -4,9 +4,9 @@ import { TaskDelegation } from '../../data/entities'
 import startFactory from '../start-factory'
 
 const execute = jest.fn<(...args: unknown[]) => Promise<unknown>>()
-const findOne = jest.fn<(entity: unknown) => Promise<unknown>>()
+const findOne = jest.fn<(entity: unknown, where?: Record<string, unknown>) => Promise<unknown>>()
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({
-  findOneWithDecryption: (_em: unknown, entity: unknown) => findOne(entity),
+  findOneWithDecryption: (_em: unknown, entity: unknown, where: Record<string, unknown>) => findOne(entity, where),
 }))
 
 const payload = {
@@ -56,10 +56,16 @@ it('does not start a released or superseded delegation', async () => {
   expect(execute).not.toHaveBeenCalled()
 })
 
-it('ignores a non-factory event', async () => {
+it('ignores an event whose agent id no roster row names', async () => {
   await startFactory({ ...payload, agentId: 'other' }, context() as never)
   expect(findOne).not.toHaveBeenCalled()
   expect(execute).not.toHaveBeenCalled()
+})
+
+it('takes the principal and the process it starts from the roster row', async () => {
+  await startFactory(payload, context() as never)
+  expect(findOne).toHaveBeenCalledWith(AgentPrincipal, expect.objectContaining({ agentDefinitionId: 'factory' }))
+  expect(findOne).toHaveBeenCalledWith(ProcessDefinition, expect.objectContaining({ name: 'factory.deliver' }))
 })
 
 it('keeps the persistent event retryable when the required process is absent', async () => {

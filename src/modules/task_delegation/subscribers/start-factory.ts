@@ -4,6 +4,7 @@ import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { AgentPrincipal, ProcessDefinition } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
 import { TaskDelegation } from '../data/entities'
 import { emitTaskDelegationEvent } from '../events'
+import { findRosterEntry } from '../lib/agentRoster'
 import { canResolve } from '../lib/subscriberServices'
 
 export const metadata = {
@@ -28,7 +29,9 @@ type SubscriberContext = {
 }
 
 export default async function startFactory(payload: TaskDelegatedPayload, context: SubscriberContext): Promise<void> {
-  if (payload.agentId !== 'factory') return
+  // The roster owns the role → process pair. An agent id no row names is not ours to start.
+  const roster = findRosterEntry(payload.agentId)
+  if (!roster) return
   const { taskId, delegationId, delegatedBy, delegateUserId, tenantId, organizationId } = payload
   if (!taskId || !delegationId || !delegatedBy || !delegateUserId || !tenantId || !organizationId) {
     throw new Error('[internal] Scoped task delegation payload required')
@@ -43,14 +46,14 @@ export default async function startFactory(payload: TaskDelegatedPayload, contex
   }, {}, scope)
   if (!delegation) return
   const principal = await findOneWithDecryption(em, AgentPrincipal, {
-    ...scope, userId: delegateUserId, agentDefinitionId: 'factory', enabled: true, deletedAt: null,
+    ...scope, userId: delegateUserId, agentDefinitionId: roster.agentDefinitionId, enabled: true, deletedAt: null,
   }, {}, scope)
   if (!principal) return
   const definition = await findOneWithDecryption(em, ProcessDefinition, {
-    ...scope, name: 'factory.deliver', enabled: true, deletedAt: null,
+    ...scope, name: roster.processName, enabled: true, deletedAt: null,
   }, {}, scope)
   if (!definition || !definition.triggers?.some((trigger) => trigger.kind === 'manual')) {
-    throw new Error('[internal] factory.deliver is unavailable')
+    throw new Error(`[internal] ${roster.processName} is unavailable`)
   }
   const commandContext: CommandRuntimeContext = {
     container: { resolve: context.resolve } as CommandRuntimeContext['container'],

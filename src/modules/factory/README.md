@@ -13,7 +13,7 @@ catalog.product.created ─▶ subscribers/product-created.ts (is it in „Od r�
                     factory.prepare_checkout ─▶ In progress, the site cloned into the run sandbox
                     INVOKE_AGENT factory.developer ─▶ the orchestrator run (below)
                     factory.deliver_product_pr ─▶ diff ─▶ PR ─▶ task link `pr` ─▶ In review
-                                                        (any error ─▶ Closed, outcome failed)
+                                                        (any error ─▶ Backlog, outcome failed)
 The run, agents/developer + lib/checkout.ts: the Developer file agent edits and builds the
   checkout in the OpenCode sidecar (bash + edit inside the sandbox root), so the run, its tool
   calls, trace and cost are the orchestrator's (Backend → Agents, Traces, the process page); the

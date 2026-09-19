@@ -7,7 +7,6 @@
 type ColumnKey = object
 
 type ColumnContextState = {
-  createdColumns: WeakMap<ColumnKey, Map<string, string>>
   internalTransitions: WeakMap<ColumnKey, Map<string, string>>
 }
 
@@ -16,19 +15,8 @@ type ColumnContextState = {
 // command authorized. Keep one registry per process instead.
 const STATE_KEY = Symbol.for('open-mercato.task_delegation.column-context')
 const globalState = globalThis as typeof globalThis & { [STATE_KEY]?: ColumnContextState }
-const state = (globalState[STATE_KEY] ??= { createdColumns: new WeakMap(), internalTransitions: new WeakMap() })
-const { createdColumns, internalTransitions } = state
-
-export function rememberCreatedTaskColumn(key: ColumnKey | null | undefined, id: string, slug: string): void {
-  if (!key) return
-  const columns = createdColumns.get(key) ?? new Map<string, string>()
-  columns.set(id, slug)
-  createdColumns.set(key, columns)
-}
-
-export function createdTaskColumnSlug(key: ColumnKey | null | undefined, id: string): string | null {
-  return key ? createdColumns.get(key)?.get(id) ?? null : null
-}
+const state = (globalState[STATE_KEY] ??= { internalTransitions: new WeakMap() })
+const { internalTransitions } = state
 
 export function authorizeInternalTaskTransition(key: ColumnKey | null | undefined, taskId: string, slug: string): void {
   if (!key) throw new Error('[internal] Task transition requires an authenticated command context')

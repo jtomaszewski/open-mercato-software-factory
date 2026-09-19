@@ -23,7 +23,7 @@ it('keeps authorized delegation data when optional process reads fail', async ()
   findMany.mockImplementation(async (entity) => {
     if (entity === TaskDelegation) return [delegation]
     if (entity === ProcessInstance) throw new Error('optional table unavailable')
-    if (entity === User) return [{ id: 'agent-id', name: 'Factory' }]
+    if (entity === User) return [{ id: 'agent-id', name: 'Software Engineer' }]
     return []
   })
   const container = {

@@ -1,12 +1,17 @@
+/**
+ * The board is staff's default four columns; the factory adds none. The process phases before
+ * review share In progress (the card badge shows the run state), and a run that ends without
+ * shipping returns the task to Backlog, where it can be delegated again.
+ */
 export const PROCESS_STATUS_TO_COLUMN = {
   open: 'backlog',
-  queued: 'queued',
-  in_design: 'in-design',
+  queued: 'in-progress',
+  in_design: 'in-progress',
   in_progress: 'in-progress',
   in_review: 'in-review',
   done: 'done',
-  rejected: 'closed',
-  failed: 'closed',
+  rejected: 'backlog',
+  failed: 'backlog',
 } as const
 
 export type ProcessTaskStatus = keyof typeof PROCESS_STATUS_TO_COLUMN
@@ -29,7 +34,7 @@ type HumanMutationInput =
 
 export type HumanMutationDecision =
   | { allowed: true; releaseOutcome?: 'done' | 'rejected' }
-  | { allowed: false; code: 'process_owned' | 'process_only_column' }
+  | { allowed: false; code: 'process_owned' }
 
 export function evaluateHumanTaskMutation(input: HumanMutationInput): HumanMutationDecision {
   if (input.operation !== 'status_change') {
@@ -40,25 +45,19 @@ export function evaluateHumanTaskMutation(input: HumanMutationInput): HumanMutat
     if (input.actorIsAssignee && input.from === 'in-review' && input.to === 'done') {
       return { allowed: true, releaseOutcome: 'done' }
     }
-    if (input.actorIsAssignee && input.from === 'in-review' && input.to === 'closed') {
+    if (input.actorIsAssignee && input.from === 'in-review' && input.to === 'backlog') {
       return { allowed: true, releaseOutcome: 'rejected' }
     }
     return { allowed: false, code: 'process_owned' }
-  }
-  if (input.to === 'queued' || input.to === 'in-design') {
-    return { allowed: false, code: 'process_only_column' }
   }
   return { allowed: true }
 }
 
 const PROCESS_TRANSITIONS: Readonly<Record<FactoryTaskColumn, readonly FactoryTaskColumn[]>> = {
-  backlog: ['queued'],
-  queued: ['in-design', 'in-progress', 'closed'],
-  'in-design': ['in-progress', 'closed'],
-  'in-progress': ['in-review', 'closed'],
-  'in-review': ['done', 'closed', 'in-progress'],
+  backlog: ['in-progress'],
+  'in-progress': ['in-review', 'backlog'],
+  'in-review': ['done', 'in-progress', 'backlog'],
   done: [],
-  closed: [],
 }
 
 export function isAllowedProcessTransition(from: string, to: FactoryTaskColumn): boolean {

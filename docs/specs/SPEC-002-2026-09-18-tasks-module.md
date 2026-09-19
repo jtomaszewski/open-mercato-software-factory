@@ -36,10 +36,10 @@ The approved local slice reuses the staff board and adds delegation, permissions
 
 Staff 0.8.0 commits each of its commands separately, and a Core fork to make them join our transaction was not worth carrying for this feature. Instead every tasks command orders its writes so a failure leaves a state the board can show and a user can clear:
 
-- **Delegate**: validate everything first, then claim the delegation (the active-delegation unique index settles concurrent claims), then move the task to `queued` through staff's command. If the move fails, the claim is deleted. A crash between the two leaves a delegation without a run on a Backlog task; the badge shows it as `stalled` after a minute, and "Remove delegate" clears it.
+- **Delegate**: validate everything first, then claim the delegation (the active-delegation unique index settles concurrent claims), then move the task to `in-progress` through staff's command. If the move fails, the claim is deleted. A crash between the two leaves a delegation without a run on a Backlog task; the badge shows it as `stalled` after a minute, and "Remove delegate" clears it.
 - **Undelegate**: move the task back to `backlog` while the delegation still authorizes it, then release. A retry after a failed release finds the task in Backlog and only releases.
 - **Process commands** (`set_status`, `link`, `create_followup`): move the staff task first, then write the delegation change and the step receipt in one flush. A retried step finds the task already moved and only records the outcome. `create_followup` is the exception: a crash before the receipt is written can create a second follow-up on retry.
-- **Assignee closes a delegated task**: the guard's `afterExecute` releases the delegation after staff commits the move. It is best effort; if it fails, the task sits in Done/Closed with a live delegation until "Remove delegate".
+- **Assignee closes a delegated task**: the guard's `afterExecute` releases the delegation after staff commits the move. It is best effort; if it fails, the task sits in Done/Backlog with a live delegation until "Remove delegate".
 
 Nothing locks staff rows. Stale edits are caught by the optimistic version check staff already applies to status changes. Staff interceptors receive the caller's `auth` object but not the command context, so the single-use column-move authorization is keyed by that object. App code reads staff tasks through the query engine, never staff's private entities. No request-body flag may bypass task guards.
 
@@ -80,8 +80,8 @@ Building a board, a drawer, projects, references and comments for this is a week
 ## User Stories
 
 - **Product owner** creates a task on the `WEB` project board. It becomes `WEB-12`, assigned to
-  them, in `Backlog`. In the drawer they set the delegate to "Factory agent", and within a second
-  the card moves to `Queued` with a delegate badge, then the badge shows the pending Caseload
+  them, in `Backlog`. In the drawer they set the delegate to "Software Engineer", and within a second
+  the card moves to `In progress` with a delegate badge, then the badge shows the pending Caseload
   decision. They remain the assignee throughout. A user without `task_delegation.delegate` sees no delegate
   picker.
 - **Engineer** opens `WEB-12` from a PR titled "Fixes WEB-12". The drawer shows the delegate, the
@@ -90,8 +90,8 @@ Building a board, a drawer, projects, references and comments for this is a week
   delegate badge with the live run state.
 - **Product owner** removes the delegate before the sizer decides. The run is cancelled and
   the task goes back to `Backlog`. Removing it after the sizer has decided is refused: the drawer
-  points to the Caseload, where the decision now sits. When a run fails, the task lands in
-  `Closed` with the reason, and the owner can drag it back to `Backlog` and delegate again.
+  points to the Caseload, where the decision now sits. When a run fails, the task returns to
+  `Backlog` with a `Failed` badge carrying the reason, and the owner can delegate it again.
 - **Product owner** sees the PR merge in GitHub and drags the `In review` card to `Done`. The MVP
   has no merge hook, so the assignee is allowed to make this one move while the task is still
   delegated. Every other drag of a delegated card is refused.
@@ -102,7 +102,7 @@ Chat intake (next iteration, storyboarded now; see *Chat intake*):
 
 - **Business owner** opens the AI assistant on a product page, attaches the product, and writes
   "the product page on the website still shows last year's price". The intake agent asks one
-  question (which project), then proposes `WEB-13` delegated to the Factory agent in OM's
+  question (which project), then proposes `WEB-13` delegated to the Software Engineer in OM's
   standard "Review proposed changes" card. They confirm and get a link to the task; everything
   after that happens on the board and in the Caseload, not in the chat.
 - **Business owner without `task_delegation.delegate`** gets the same card without the delegate, and the
@@ -181,22 +181,21 @@ process write), the delegate and un-delegate commands, a command interceptor on 
 commands, two injection widgets, events, ACL features, read-only AI tools, and the workflow-safe
 commands SPEC-001 calls.
 
-**Status columns.** The factory's lifecycle maps to `staff` columns by slug:
+**Status columns.** The board is `staff`'s four default columns; the factory adds none. The
+process phases before review share `In progress` (the card badge carries the finer run state),
+and a run that ends without shipping returns the task to `Backlog`, where it can be delegated
+again:
 
-| Lifecycle (SPEC-001) | Column slug | Column |
-|---|---|---|
-| `open` | `backlog` | staff default |
-| `queued` | `queued` | added by us |
-| `in_design` | `in-design` | added by us |
-| `in_progress` | `in-progress` | staff default |
-| `in_review` | `in-review` | staff default |
-| `done` | `done` | staff default |
-| `rejected`, `failed` | `closed` | added by us, `isDone`; the outcome and reason are on the delegation |
+| Lifecycle (SPEC-001) | Column slug |
+|---|---|
+| `open` | `backlog` |
+| `queued`, `in_design`, `in_progress` | `in-progress` |
+| `in_review` | `in-review` |
+| `done` | `done` |
+| `rejected`, `failed` | `backlog`; the outcome and reason are on the delegation and show on the badge |
 
-`ensureFactoryColumns(projectId)` creates the three missing columns through
-`staff.timesheets.task_statuses.create`, in lifecycle order, when they are absent. It is called
-by delegation and by `set_status`, so a column someone deleted comes back before the process
-needs it. A renamed column keeps its slug and keeps working.
+A renamed column keeps its slug and keeps working. A project missing a required slug gets
+`409 invalid_transition` (`statusMissing`).
 
 **Delegation** is the whole trigger contract:
 
@@ -206,11 +205,11 @@ needs it. A renamed column keeps its slug and keeps working.
    the delegating user has no staff member, it returns `422 assignee_required`. If the
    `factory.deliver` process definition is missing or disabled, delegation is refused with
    `503 orchestrator_unavailable`, so no task can wait for a run that will never start.
-2. The command inserts a `task_delegations` row (its id is the `delegationId`), ensures the
-   factory columns, moves the task to `queued` through `staff`'s `status_change` command, and
+2. The command inserts a `task_delegations` row (its id is the `delegationId`), moves the task
+   to `in-progress` through `staff`'s `status_change` command, and
    emits `task_delegation.task.delegated` after commit.
 3. SPEC-001's `start-factory` subscriber starts `factory.deliver` with the idempotency key
-   `task:{taskId}:{delegationId}`, passing `delegationId` in the instance input. The start subscriber binds the returned process execution id to the exact delegation; process commands validate that persisted binding. SPEC-001's first `set_status → queued` is a
+   `task:{taskId}:{delegationId}`, passing `delegationId` in the instance input. The start subscriber binds the returned process execution id to the exact delegation; process commands validate that persisted binding. SPEC-001's first `set_status → queued` (or `in_progress`) is a
    no-op, because a transition to the current status is accepted and changes nothing.
 4. **Un-delegating** is allowed until the linked instance reaches SPEC-001's `sized`
    milestone. Before an instance is linked, it is always allowed. It releases the delegation,
@@ -221,14 +220,14 @@ needs it. A renamed column keeps its slug and keeps working.
    the instance input. A write whose `delegationId` is not the task's active delegation (the task
    was un-delegated, or re-delegated since) is a logged no-op. A cancelled run therefore cannot
    move a task someone has since taken back.
-6. **The delegate is released at the end.** When the task reaches `done` or `closed`, by the
-   process or by the assignee, the delegation gets `released_at`, its `outcome` (`done`,
+6. **The delegate is released at the end.** When the process sets `done`, `rejected` or `failed`, or the
+   assignee moves the task out of review, the delegation gets `released_at`, its `outcome` (`done`,
    `rejected` or `failed`) and `close_reason`, in the same command. The row stays as history. A
-   released task is an ordinary staff task again: a person can drag it back to `backlog` and
+   released task is an ordinary staff task again: from `backlog` a person can
    delegate it again, which creates a new delegation and therefore a new run.
 7. **Safety net.** A subscriber on `workflows.instance.failed` and
    `workflows.instance.cancelled` (for the instance linked to an active delegation) moves the
-   task to `closed` with outcome `failed` and the instance's error as `close_reason`. A crash or
+   task to `backlog` with outcome `failed` and the instance's error as `close_reason`. A crash or
    a cancel from the orchestrator's UI therefore cannot leave a task stuck in `in-progress`.
 
 **Who writes status.** The process writes through `task_delegation.task.set_status`, which validates its
@@ -239,21 +238,18 @@ applies the people column; it lets through any actor holding `task_delegation.pr
 
 | Move | Process (`set_status`) | Person, no active delegation | Person, active delegation |
 |---|---|---|---|
-| `backlog` → `queued` | ✓ (no-op after delegate) | — (only via delegate) | — |
-| `queued` → `backlog` | — | — | only via un-delegate |
-| `queued` → `in-design` / `in-progress` / `closed` | ✓ | — | — |
-| `in-design` → `in-progress` / `closed` | ✓ | — | — |
-| `in-progress` → `in-review` / `closed` | ✓ | ✓ | — |
-| `in-review` → `done` / `closed` / `in-progress` (fix round) | ✓ | ✓ | `done` and `closed` only, by the assignee |
-| any other move between `backlog`, `in-progress`, `in-review`, `done`, `closed` | — | ✓ (staff as usual) | — |
-| any move into `queued` or `in-design` | as above | — | — |
+| `backlog` → `in-progress` | ✓ (no-op after delegate) | ✓ (staff as usual) | — (only via delegate) |
+| `in-progress` → `backlog` | ✓ (`failed`/`rejected`) | ✓ | only via un-delegate |
+| `in-progress` → `in-review` | ✓ | ✓ | — |
+| `in-review` → `done` / `backlog` / `in-progress` (fix round) | ✓ | ✓ | `done` (approve) and `backlog` (reject) only, by the assignee |
+| any other move between `backlog`, `in-progress`, `in-review`, `done` | — | ✓ (staff as usual) | — |
 | X → X | no-op | no-op | no-op |
 
 A refused move returns `409 process_owned` (active delegation) or `409 process_only_column`
-(`queued`, `in-design`). Deleting a task with an active delegation returns `409 process_owned`.
+(a target column the project does not have). Deleting a task with an active delegation returns `409 process_owned`.
 The interceptor's `beforeUndo` refuses undoing a status change on a task with an active
 delegation for all callers, since human undo must not bypass process ownership. Internal process writes use separately validated, single-use transition admission. The assignee's
-`in-review` → `done`/`closed` move exists because the MVP has no PR-merged hook; its
+`in-review` → `done`/`backlog` move exists because the MVP has no PR-merged hook; its
 `afterExecute` releases the delegation (outcome `done` or `rejected`) once staff has committed the move; see [Write ordering without a shared transaction](#write-ordering-without-a-shared-transaction). No request-body flag bypasses the guard.
 
 **The run state on the card** is derived at read time, never stored. The card-badge widget reads
@@ -277,7 +273,7 @@ The widgets refetch on these client-broadcast events: `task_delegation.task.dele
 `workflows.instance.{started,completed,failed,cancelled}` and
 `agent_orchestrator.proposal.{created,disposed}`. The `staff` board already refreshes the card's
 column on `status_changed`. If the orchestrator is absent or the lookup fails, the badge shows
-only "Delegated to Factory agent", and the board still renders.
+only "Delegated to Software Engineer", and the board still renders.
 
 **Follow-ups** (`task_delegation.task.create_followup`) create a subtask through `staff`'s `create`
 command, in `backlog`, with the parent's assignee and no delegate. `staff` allows one level of
@@ -444,12 +440,12 @@ SQL, and ask before applying.
    Then `yarn generate`. *Test:* the `DEMO` board shows the seven columns; the ACL syncs.
 2. Entities and migration for `task_delegations` and `task_delegation_process_writes`. *Test:* migration SQL
    reviewed; the partial unique index refuses a second active delegation.
-3. `ensureFactoryColumns`, `task_delegation.task.{delegate,undelegate}`, the events, and SPEC-001's
+3. `task_delegation.task.{delegate,undelegate}`, the events, and SPEC-001's
    `start-factory` subscriber switched to `task_delegation.task.delegated` with the key
    `task:{taskId}:{delegationId}`. *Tests:* delegate without an assignee makes the actor's staff
    member the assignee; an actor without a staff member gets `assignee_required`; a non-agent
-   delegate returns 422; a missing definition returns 503; a deleted `queued` column is
-   recreated; un-delegate before `sized` emits `undelegated`, and after it returns
+   delegate returns 422; a missing definition returns 503; a missing `in-progress` column
+   returns `statusMissing`; un-delegate before `sized` emits `undelegated`, and after it returns
    `decision_pending`.
 4. The `task_delegation.guard-process-owned` interceptor. *Tests:* every row of the transition table
    through `staff`'s PATCH status route and `PUT /tasks`; delete refused; undo refused; the
@@ -458,14 +454,14 @@ SQL, and ask before applying.
    seed, plus the `fail-on-instance-end` subscriber. *Tests:* replay idempotency; a stale
    `delegationId` is a no-op; terminal columns release the delegation; reopen and re-delegate
    give a new `delegationId`; a follow-up of a subtask attaches to the root; an instance
-   cancelled from the orchestrator moves the task to `closed` with outcome `failed`.
+   cancelled from the orchestrator moves the task to `backlog` with outcome `failed`.
 
 **Phase 2: API and widgets**
 
 6. Delegation routes and the agents list, with OpenAPI. *Tests:* the ACL matrix; the batched
    GET issues one orchestrator lookup per call.
 7. Card badge and drawer sidebar widgets, with the shared batching loader. *Test:* integration:
-   delegate from the drawer; the card moves to `Queued` with a `starting` badge; a refused drag
+   delegate from the drawer; the card moves to `In progress` with a `starting` badge; a refused drag
    of a delegated card shows the 409 message and the card stays.
 8. Client-broadcast refresh. *Test:* integration: the badge goes `starting` → `running` without a
    reload.
@@ -494,11 +490,10 @@ test`; `yarn test:integration:ephemeral` after steps 7, 8 and 10.
    because `staff`'s custom fields can't be written through its API. Naming note: the
    orchestrator also has *delegation grants* (`agentDelegationGrantService`, OAuth on behalf of a
    user). Task delegation is unrelated, and code and docs say "task delegate" to avoid confusion.
-3. **Process columns by frozen slug, self-healing.** The process addresses columns by slug, and
-   `ensureFactoryColumns` recreates a missing one. Users may still rename and recolour them.
+3. **Staff's default columns, addressed by slug.** The board keeps `staff`'s four columns; the
+   finer run phase lives on the badge, not in extra columns. Users may rename and recolour them.
 4. **Guard only the moves that matter.** `staff` doesn't validate transitions, and we don't add a
-   full workflow to human-only tasks. The interceptor protects delegated tasks and the two
-   process-only columns.
+   full workflow to human-only tasks. The interceptor protects delegated tasks.
 5. **The run state is derived, not stored.** No agent-session table. The orchestrator is the
    single source of what a run is doing.
 6. **Manual triggers only.** The only way work starts is a person setting a delegate. Intake
@@ -533,3 +528,4 @@ test`; `yarn test:integration:ephemeral` after steps 7, 8 and 10.
 | 2026-09-18 | Chat intake aligned with the `staff` rebuild: creates through the intake command, lands in `Backlog`, brings the `tasks_intake` table; storyboard board frames flagged as pre-rebuild. |
 | 2026-09-19 | AI tools deduplicated with SPEC-007: `tasks_get` and `tasks_search` removed in favour of `task_tools.get_task` / `search_tasks`; chat intake reads through `task_tools.*`; the module keeps only `task_delegation.get_delegation`. |
 | 2026-09-19 | Module renamed `tasks` → `task_delegation`: it holds no tasks, only delegation on top of `staff`. Tables `task_delegations` / `task_delegation_process_writes`, ACL, event, command, API (`/api/task_delegation/*`) and CLI ids follow; the initial migration was regenerated. |
+| 2026-09-19 | Board simplified to `staff`'s four default columns: `queued`/`in_design` map to `In progress`, `rejected`/`failed` return the task to `Backlog` (badge shows `Failed`/`Rejected`); the assignee rejects a review by moving it to `Backlog`. `Queued`, `In design` and `Closed` columns and `ensureFactoryColumns` removed. |

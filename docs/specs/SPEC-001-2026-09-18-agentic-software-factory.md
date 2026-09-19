@@ -56,7 +56,7 @@ the change class requires (an engineer, a lawyer, both, or none by policy).
 
 ## User Stories
 
-- **Product owner** delegates a task on the board to the factory agent, staying its assignee →
+- **Product owner** delegates a task on the board to the Software Engineer, staying its assignee →
   gets a design to approve in the Caseload, then a PR link on the task. Empty board shows how to
   create a task; a user without the delegate feature cannot delegate to an agent; a failed run
   leaves the task `failed` with the reason.
@@ -117,10 +117,10 @@ comments are the core `staff` module's (time tracking), enabled as shipped with 
 
 - A task is a `staff` task with a human **assignee** (accountable) and an optional agent
   **delegate** (the agent principal's `auth.User`, `kind='agent'`, provisioned once per org with
-  `agentPrincipalService.provision({ agentDefinitionId: 'factory' })` and shown as "Factory
-  agent"), held in the `tasks` module's delegation table. Tasks belong to a `staff` project whose
-  `code` is the `projectKey` and prefixes a frozen reference (`WEB-12`). The code can be renamed,
-  so configuration keys on the project id.
+  `agentPrincipalService.provision({ agentDefinitionId: 'factory' })` and shown as "Software
+  Engineer", SPEC-008), held in the `tasks` module's delegation table. Tasks belong to a `staff`
+  project whose `code` is the `projectKey` and prefixes a frozen reference (`WEB-12`). The code
+  can be renamed, so configuration keys on the project id.
 - Delegating emits `task_delegation.task.delegated { taskId, reference, delegationId, delegateUserId,
   agentId, assigneeUserId, delegatedBy, projectId, projectKey, source, title }`, persistent, with scope in
   the emit **options** as well as the payload. `agentId` is the agent definition id read from
@@ -825,11 +825,11 @@ Ours, in the `tasks` module:
   `startExecution` with the idempotency key (see *The process*); a subscriber on
   `task_delegation.task.undelegated` cancels the instance.
 - `POST /api/tasks/hooks/sentry`: Sentry issue-alert webhook, HMAC verified with the Sentry client
-  secret; creates (or dedups on `source_ref`) a `staff` task delegated to the factory agent, with the
+  secret; creates (or dedups on `source_ref`) a `staff` task delegated to the Software Engineer, with the
   project's default assignee. Drops anything
   below the configured event count.
 - `POST /api/tasks/hooks/github`: signature verified. `pull_request.opened` creates a review task
-  delegated to the factory agent and **drops PRs authored by the bot** (loop guard).
+  delegated to the Software Engineer and **drops PRs authored by the bot** (loop guard).
   `check_suite.completed` and `workflow_run.completed` on a `factory/<runId>` branch resolve the
   task from the branch name, and its linked workflow instance, and send the signal
   `factory.checks.settled { sha,
@@ -839,7 +839,7 @@ Ours, in the `tasks` module:
 - MCP tool `factory_send_task { projectKey, title, body, links[] }`: the seam between an
   interactive coding session and the factory. A research or brainstorm session ends by handing
   its result to the factory in one call instead of a human copying it into a ticket (Warp's
-  `send_task`). It creates a task with `source: mcp`, delegated to the factory agent, with the
+  `send_task`). It creates a task with `source: mcp`, delegated to the Software Engineer, with the
   session's user as initiator.
 
 Ours, on the runner: `POST /runs` and `POST /review-comment` as above, bearer-authenticated with a

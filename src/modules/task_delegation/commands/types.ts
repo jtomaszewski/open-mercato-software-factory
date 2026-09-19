@@ -1,9 +1,20 @@
 import type { ProcessTaskStatus } from '../lib/transitionPolicy'
 import type { TaskDelegationLinkKind } from '../data/entities'
 
-export type { DelegateTaskInput, UndelegateTaskInput } from '../data/validators'
+export type { AssignTaskInput, DelegateTaskInput, UndelegateTaskInput } from '../data/validators'
 export type DelegateTaskResult = { taskId: string; delegationId: string }
 export type UndelegateTaskResult = { taskId: string; delegationId: string; released: boolean }
+/**
+ * `previousAssigneeStaffMemberId` and `assigneeChanged` are what the audit entry needs to undo the
+ * human half; the route answers with the first three fields only.
+ */
+export type AssignTaskResult = {
+  taskId: string
+  assigneeStaffMemberId: string | null
+  delegation: { id: string } | null
+  previousAssigneeStaffMemberId: string | null
+  assigneeChanged: boolean
+}
 
 export type ProcessCommandIdentity = {
   delegationId: string

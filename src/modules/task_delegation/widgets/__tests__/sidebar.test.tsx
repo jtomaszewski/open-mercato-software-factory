@@ -1,66 +1,56 @@
 /** @jest-environment jsdom */
 import * as React from 'react'
 import { beforeEach, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import TaskDelegateSidebar from '../injection/task-delegate-sidebar/widget.client'
 
-const mockApi = jest.fn<(...args: unknown[]) => Promise<unknown>>()
-const mockHeaders = jest.fn<(...args: unknown[]) => Promise<unknown>>()
 const mockRefresh = jest.fn()
-const mockRead = jest.fn<() => Promise<{ items: unknown[] }>>()
 let mockActive = true
-let mockFeatures = ['task_delegation.*']
+let mockLoading = false
+let mockError = false
 const mockItem = {
   taskId: '11111111-1111-4111-8111-111111111111', taskUpdatedAt: '2026-09-19T10:00:00.000Z',
-  delegation: { id: 'delegation', delegateUserId: 'agent', delegateName: 'Developer', releasedAt: null, updatedAt: 'version', processInstanceId: null, outcome: null, closeReason: null, runState: 'starting', links: [] },
+  assigneeStaffMemberId: null, assigneeName: null,
+  delegation: { id: 'delegation', delegateUserId: 'agent', delegateName: 'Software Engineer', releasedAt: null, updatedAt: 'version', processInstanceId: null, outcome: null, closeReason: null, runState: 'running', links: [{ kind: 'pr', ref: '#7', url: 'https://example.test/pr/7', addedAt: '2026-09-19T10:00:00.000Z' }] },
 }
 jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => (key: string) => key }))
-jest.mock('@open-mercato/ui/backend/BackendChromeProvider', () => ({ useBackendChrome: () => ({ payload: { grantedFeatures: mockFeatures } }) }))
-jest.mock('../use-task-delegation', () => ({ useTaskDelegation: () => ({ item: { ...mockItem, delegation: mockActive ? mockItem.delegation : null }, loading: false, error: false, refresh: mockRefresh }) }))
-jest.mock('@open-mercato/ui/backend/utils/apiCall', () => ({
-  apiCallOrThrow: (...args: unknown[]) => mockApi(...args),
-  readApiResultOrThrow: () => mockRead(),
-  withScopedApiRequestHeaders: (headers: unknown, operation: () => Promise<unknown>) => { mockHeaders(headers); return operation() },
+jest.mock('../use-task-delegation', () => ({
+  useTaskDelegation: () => ({
+    item: mockLoading ? null : { ...mockItem, delegation: mockActive ? mockItem.delegation : null },
+    loading: mockLoading, error: mockError, refresh: mockRefresh,
+  }),
 }))
-jest.mock('@open-mercato/ui/backend/injection/useGuardedMutation', () => ({ useGuardedMutation: () => ({ runMutation: ({ operation }: { operation: () => Promise<unknown> }) => operation(), retryLastMutation: async () => true }) }))
 
 beforeEach(() => {
-  mockFeatures = ['task_delegation.*']
   mockActive = true
-  mockRead.mockReset().mockResolvedValue({ items: [] })
-  mockApi.mockReset().mockResolvedValue({ ok: true })
-  mockHeaders.mockReset()
+  mockLoading = false
+  mockError = false
   mockRefresh.mockClear()
 })
 
-it('shows delegation without controls to a read-only user', () => {
-  mockFeatures = ['task_delegation.view']
+it('reports what the run produced without offering a second assignment control', () => {
   render(<TaskDelegateSidebar context={{ taskId: mockItem.taskId }} />)
-  expect(screen.getByText('Developer')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'task_delegation.delegate.remove' })).not.toBeInTheDocument()
+  expect(screen.getByText('Software Engineer')).toBeInTheDocument()
+  expect(screen.getByText('task_delegation.runState.running')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'task_delegation.links.pr' })).toHaveAttribute('href', 'https://example.test/pr/7')
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
 })
 
-it('sends the task version on un-delegation and refreshes after success', async () => {
-  render(<TaskDelegateSidebar context={{ taskId: mockItem.taskId }} />)
-  fireEvent.click(screen.getByRole('button', { name: 'task_delegation.delegate.remove' }))
-  await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(1))
-  expect(mockApi).toHaveBeenCalledWith(`/api/task_delegation/delegations/${mockItem.taskId}`, { method: 'DELETE' })
-  expect(mockHeaders).toHaveBeenCalledWith(expect.objectContaining({ 'x-om-ext-optimistic-lock-expected-updated-at': mockItem.taskUpdatedAt }))
-})
-
-it('keeps the delegate visible and shows a refused operation', async () => {
-  mockApi.mockRejectedValueOnce(new Error('Decision already pending'))
-  render(<TaskDelegateSidebar context={{ taskId: mockItem.taskId }} />)
-  fireEvent.click(screen.getByRole('button', { name: 'task_delegation.delegate.remove' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('Decision already pending')
-  expect(screen.getByText('Developer')).toBeInTheDocument()
-  expect(mockRefresh).not.toHaveBeenCalled()
-})
-
-it('shows loading while agent choices are pending instead of an empty picker', () => {
+it('says the task has no delegate rather than rendering an empty section', () => {
   mockActive = false
-  mockRead.mockReturnValue(new Promise(() => {}))
   render(<TaskDelegateSidebar context={{ taskId: mockItem.taskId }} />)
+  expect(screen.getByText('task_delegation.delegate.none')).toBeInTheDocument()
+})
+
+it('shows loading before the first read and an error when it fails', () => {
+  mockLoading = true
+  const { unmount } = render(<TaskDelegateSidebar context={{ taskId: mockItem.taskId }} />)
   expect(screen.getByText('task_delegation.loading')).toBeInTheDocument()
-  expect(screen.queryByText('task_delegation.delegate.noAgents')).not.toBeInTheDocument()
+  unmount()
+  mockLoading = false
+  mockError = true
+  render(<TaskDelegateSidebar context={{ taskId: mockItem.taskId }} />)
+  // `ErrorMessage` humanizes the label it is given, so match the rendered wording, not the key.
+  expect(screen.getByText(/errors\s*load/i)).toBeInTheDocument()
 })
