@@ -14,7 +14,8 @@ import type { ActivityContext } from '@open-mercato/core/modules/workflows/lib/a
 import { ProcessDefinition, ProcessInstance } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
 import type { CatalogRecordView, Scope } from './catalogRecord'
 import { actingContext, readOrderIdFromTask, readProductIdFromTask } from './board'
-import { GitHubClient, readGitHubConfigFromEnv } from './github'
+import { GitHubClient, type GitHubConfig } from './github'
+import { resolveFactoryGitHub } from './github-source'
 import { loadCatalogRecordView } from './catalogRecord'
 import { loadOrderRecordView, type OrderRecordView } from './orderRecord'
 import { collectChanges, prepareCheckout, readCheckoutConfigFromEnv, removeCheckout, type CollectedChange, type PreparedCheckout } from './checkout'
@@ -279,21 +280,25 @@ export type DeliverDeps = {
   resolveContainer: () => Promise<AwilixContainer>
   loadRecord: (em: EntityManager, scope: Scope, productId: string) => Promise<CatalogRecordView | null>
   loadOrder: (em: EntityManager, scope: Scope, orderId: string) => Promise<OrderRecordView | null>
-  prepareCheckout: (taskId: string) => Promise<PreparedCheckout>
+  /** The task project's site repo and token (registered repository, else the env). */
+  resolveGitHub: (container: AwilixContainer, scope: Scope, projectId: string) => Promise<GitHubConfig>
+  prepareCheckout: (taskId: string, github: GitHubConfig) => Promise<PreparedCheckout>
   collectChanges: (taskId: string) => Promise<CollectedChange>
   removeCheckout: (taskId: string) => Promise<void>
-  openPullRequest: (task: DeveloperTask, change: DeveloperChange) => Promise<DeliveredPr>
+  openPullRequest: (task: DeveloperTask, change: DeveloperChange, github: GitHubConfig) => Promise<DeliveredPr>
 }
 
 const defaultDeps: DeliverDeps = {
   resolveContainer: () => createRequestContainer(),
   loadRecord: loadCatalogRecordView,
   loadOrder: loadOrderRecordView,
-  prepareCheckout: (taskId) => prepareCheckout(readCheckoutConfigFromEnv(), taskId),
+  resolveGitHub: (container, scope, projectId) => resolveFactoryGitHub(container, scope, projectId),
+  prepareCheckout: (taskId, github) =>
+    prepareCheckout({ ...readCheckoutConfigFromEnv(), repo: github.repo, baseBranch: github.baseBranch }, taskId, undefined, github.token),
   collectChanges: (taskId) => collectChanges(readCheckoutConfigFromEnv(), taskId),
   removeCheckout: (taskId) => removeCheckout(readCheckoutConfigFromEnv(), taskId),
-  openPullRequest: (task, change) => openDeveloperPullRequest({
-    github: new GitHubClient(readGitHubConfigFromEnv()),
+  openPullRequest: (task, change, github) => openDeveloperPullRequest({
+    github: new GitHubClient(github),
     agentLabel: 'agent Developer (OpenCode w sandboxie orkiestratora)',
     appUrl: process.env.APP_URL ?? null,
   }, task, change),
@@ -304,6 +309,7 @@ type BoundRun = {
   container: AwilixContainer
   em: EntityManager
   task: DeveloperTask
+  projectId: string
   /** A task write through the task_delegation commands, replay-safe per step id. */
   run: (commandId: string, stepId: string, extra: Record<string, unknown>) => Promise<unknown>
 }
@@ -337,12 +343,12 @@ async function bindRun(functionName: string, context: ActivityContext, deps: Del
   const run: BoundRun['run'] = (commandId, stepId, extra) =>
     bus.execute(commandId, { input: { ...identity, stepId, ...extra }, ctx: actingContext(container, scope, actorUserId) })
 
-  const tasks = await container.resolve<QueryEngine>('queryEngine').query<{ id: string; title: string; description: string | null }>('staff:staff_time_task', {
-    fields: ['id', 'title', 'description'], filters: { id: taskId }, page: { page: 1, pageSize: 1 }, ...scope,
+  const tasks = await container.resolve<QueryEngine>('queryEngine').query<{ id: string; title: string; description: string | null; time_project_id: string }>('staff:staff_time_task', {
+    fields: ['id', 'title', 'description', 'time_project_id'], filters: { id: taskId }, page: { page: 1, pageSize: 1 }, ...scope,
   })
   const task = tasks.items[0]
   if (!task) throw new Error(`${functionName}: task ${taskId} is not visible in its organization`)
-  return { scope, container, em, task: { id: task.id, title: task.title, description: task.description }, run }
+  return { scope, container, em, task: { id: task.id, title: task.title, description: task.description }, projectId: task.time_project_id, run }
 }
 
 /** The only release on failure: with one engine attempt per function, this is final. */
@@ -368,8 +374,9 @@ export function createPrepareFunction(deps: DeliverDeps = defaultDeps) {
       const catalogRecord = productId ? await deps.loadRecord(bound.em, bound.scope, productId) : null
       const orderId = readOrderIdFromTask(bound.task.description)
       const order = orderId ? await deps.loadOrder(bound.em, bound.scope, orderId) : null
-      const checkout = await deps.prepareCheckout(bound.task.id)
-      logger.info('website checked out for the Developer agent', { taskId: bound.task.id, productId, orderId, baseSha: checkout.baseSha })
+      const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
+      const checkout = await deps.prepareCheckout(bound.task.id, github)
+      logger.info('website checked out for the Developer agent', { taskId: bound.task.id, productId, orderId, repo: github.repo, baseSha: checkout.baseSha })
       return {
         taskId: bound.task.id,
         title: bound.task.title,
@@ -396,7 +403,8 @@ export function createDeliverFunction(deps: DeliverDeps = defaultDeps) {
     try {
       const change = await deps.collectChanges(bound.task.id)
       const summary = typeof args.summary === 'string' && !args.summary.startsWith('{{') ? args.summary : ''
-      const result = await deps.openPullRequest(bound.task, { ...change, summary })
+      const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
+      const result = await deps.openPullRequest(bound.task, { ...change, summary }, github)
       await bound.run('task_delegation.task.link', `${DELIVER_FUNCTION}:pr`, { kind: 'pr', ref: result.prLabel, url: result.prUrl })
       await bound.run('task_delegation.task.set_status', `${DELIVER_FUNCTION}:in_review`, { status: 'in_review' })
       await deps.removeCheckout(bound.task.id).catch((cleanupError: unknown) =>

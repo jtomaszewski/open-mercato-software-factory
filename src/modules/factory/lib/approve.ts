@@ -19,11 +19,11 @@ async function refuse(status: number, code: string, key: string, fallback: strin
  * Marek's „zatwierdź” (SPEC-004 scene 3): merges the website PR the factory linked on the task and
  * closes the task as Done. Every precondition is checked before the merge, because the merge is
  * the one step that cannot be undone: task access, an active delegation with a PR on the
- * configured site repo, the task In review, and the caller as its accountable assignee. The
+ * project's site repo, the task In review, and the caller as its accountable assignee. The
  * merge is pinned to the PR head the check saw; Done then goes through staff's status change,
  * which the tasks guard turns into a release with outcome `done`.
  */
-export async function approveProductTask(ctx: CommandRuntimeContext, taskId: string, github: GitHubClient): Promise<ApproveResult> {
+export async function approveProductTask(ctx: CommandRuntimeContext, taskId: string, githubFor: (projectId: string) => Promise<GitHubClient>): Promise<ApproveResult> {
   const scope = await requireTaskScope(ctx)
   const service = ctx.container.resolve<TaskDelegationService>('taskDelegationService')
   const [item] = await service.getDelegations(ctx, [taskId])
@@ -33,6 +33,8 @@ export async function approveProductTask(ctx: CommandRuntimeContext, taskId: str
     throw await refuse(409, 'not_delegated', 'factory.approve.errors.notDelegated', 'The task is not delegated to the factory.')
   }
   const prLink = [...delegation.links].reverse().find((link) => link.kind === 'pr')
+  if (!prLink?.url) throw await refuse(409, 'no_pull_request', 'factory.approve.errors.noPullRequest', 'The task has no website pull request yet.')
+  const github = await githubFor(item.projectId)
   const prNumber = pullRequestNumberFromUrl(prLink?.url, github.repo)
   if (!prLink?.url || !prNumber) throw await refuse(409, 'no_pull_request', 'factory.approve.errors.noPullRequest', 'The task has no website pull request yet.')
 

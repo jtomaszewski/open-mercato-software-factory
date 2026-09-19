@@ -42,6 +42,11 @@ Task drawer „Zatwierdź i opublikuj” ─▶ POST /api/factory/tasks/:id/appr
   final error.
 - The agent follows the site repo's own AGENTS.md (file layout, the product mapping table); the
   linked product's catalog record is in its prompt as the source of truth.
+- Site repo and token: the task project's default (or only) repository linked in Code repositories
+  (`src/modules/repositories`), with a GitHub App installation token scoped to that repository;
+  the clone, the PR, the review panel and approve all use it. A project with no linked repository
+  falls back to the env below; a linked repository that is disabled or no longer granted fails
+  the run instead of falling back.
 - Env: `FACTORY_GITHUB_TOKEN` (contents + pull requests on the site repo), `FACTORY_SITE_REPO`
   (default `jtomaszewski/hackaton-stal-zbiorniki-landing`), `FACTORY_SITE_BASE_BRANCH` (default
   `main`), `FACTORY_GITHUB_API_URL` (default `https://api.github.com`), `APP_URL` (links in the task and PR).

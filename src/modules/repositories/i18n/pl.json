@@ -1,0 +1,134 @@
+{
+  "repositories": {
+    "nav": {
+      "title": "Repozytoria kodu"
+    },
+    "actions": {
+      "connect": "Połącz GitHub",
+      "connectExisting": "Połącz istniejącą instalację",
+      "configure": "Skonfiguruj",
+      "register": "Zarejestruj",
+      "edit": "Edytuj",
+      "save": "Zapisz",
+      "disable": "Wyłącz",
+      "enable": "Włącz",
+      "remove": "Usuń"
+    },
+    "status": {
+      "active": "Aktywne",
+      "disabled": "Wyłączone"
+    },
+    "list": {
+      "title": "Repozytoria kodu",
+      "search": "Szukaj repozytoriów...",
+      "loadError": "Nie udało się wczytać repozytoriów.",
+      "confirmRemove": "Usunąć to wyłączone repozytorium?",
+      "columns": {
+        "repository": "Repozytorium",
+        "branch": "Gałąź bazowa",
+        "status": "Status"
+      },
+      "empty": {
+        "title": "Brak repozytoriów",
+        "description": "Połącz GitHub, aby wybrać repozytoria dla projektów."
+      },
+      "success": {
+        "disable": "Repozytorium wyłączone.",
+        "enable": "Repozytorium włączone.",
+        "remove": "Repozytorium usunięte."
+      },
+      "error": {
+        "disable": "Nie udało się wyłączyć repozytorium.",
+        "enable": "Nie udało się włączyć repozytorium.",
+        "remove": "Nie udało się usunąć repozytorium."
+      }
+    },
+    "connect": {
+      "title": "Połącz repozytoria GitHub",
+      "existingTitle": "Połącz istniejącą instalację GitHub",
+      "existingInstallationHelp": "Identyfikator instalacji znajdziesz w ustawieniach instalacji aplikacji GitHub.",
+      "loading": "Weryfikowanie zgody GitHub...",
+      "loadError": "Nie udało się wczytać repozytoriów z połączonej instalacji GitHub.",
+      "invalidReturn": "Odpowiedź połączenia GitHub jest niepełna. Rozpocznij połączenie ponownie.",
+      "startError": "Nie udało się rozpocząć połączenia z GitHub. Sprawdź konfigurację aplikacji GitHub.",
+      "completeError": "Nie udało się zweryfikować zgody GitHub. Rozpocznij nowe połączenie.",
+      "waitingTitle": "Oczekiwanie na zatwierdzenie",
+      "waitingDescription": "Właściciel organizacji GitHub musi zatwierdzić instalację aplikacji, zanim zarejestrujesz repozytoria.",
+      "emptyTitle": "Brak udostępnionych repozytoriów",
+      "emptyDescription": "Zmień instalację aplikacji GitHub i udostępnij co najmniej jedno repozytorium.",
+      "configureTitle": "Skonfiguruj {repository}",
+      "registered": "Repozytorium zarejestrowane."
+    },
+    "detail": {
+      "title": "Repozytorium",
+      "loading": "Wczytywanie repozytorium...",
+      "loadError": "Nie udało się wczytać danych repozytorium.",
+      "notFound": "Nie znaleziono repozytorium.",
+      "saved": "Repozytorium zapisane."
+    },
+    "form": {
+      "fullName": "Repozytorium",
+      "installationId": "Identyfikator instalacji GitHub",
+      "baseBranch": "Gałąź bazowa"
+    },
+    "errors": {
+      "unauthorized": "Wymagane jest uwierzytelnienie.",
+      "forbidden": "Brak uprawnień.",
+      "scopeRequired": "Wybierz tenant i organizację.",
+      "agentForbidden": "Konta agentów nie mogą zarządzać repozytoriami.",
+      "validation": "Sprawdź zaznaczone pola.",
+      "notFound": "Nie znaleziono repozytorium.",
+      "connectionNotFound": "Nie znaleziono połączenia repozytorium.",
+      "connectionStateExpired": "Łącze połączenia wygasło lub zostało już użyte.",
+      "installationBound": "Ta instalacja jest już połączona.",
+      "installationMismatch": "GitHub zwrócił inną instalację niż wskazana.",
+      "invalidReturn": "Odpowiedź połączenia GitHub jest niepełna lub nieprawidłowa.",
+      "repositoryNotGranted": "GitHub nie udostępnia już tego repozytorium.",
+      "branchNotGranted": "Wybrana gałąź nie istnieje w udostępnionym repozytorium.",
+      "connectionUnavailable": "Połączenie GitHub jest niedostępne.",
+      "alreadyRegistered": "To repozytorium jest już zarejestrowane.",
+      "repositoryUnavailable": "Repozytorium jest wyłączone lub GitHub nie daje do niego dostępu.",
+      "disableBeforeRemove": "Wyłącz repozytorium przed usunięciem.",
+      "projectNotFound": "Nie znaleziono projektu.",
+      "projectForbidden": "Wymagany jest dostęp do projektu.",
+      "projectLinkChanged": "Powiązanie repozytorium z projektem uległo zmianie. Odśwież i spróbuj ponownie.",
+      "projectLinkNotFound": "Nie znaleziono powiązania repozytorium z projektem.",
+      "defaultRepositoryRequired": "Projekt ma kilka repozytoriów. Oznacz jedno jako domyślne.",
+      "github": {
+        "not_configured": "Aplikacja GitHub nie jest skonfigurowana.",
+        "unavailable": "GitHub jest niedostępny. Spróbuj ponownie.",
+        "consent_refused": "GitHub nie potwierdził Twojego dostępu do tej instalacji.",
+        "not_granted": "Aplikacja GitHub nie ma dostępu do tego repozytorium.",
+        "invalid_response": "GitHub zwrócił nieoczekiwaną odpowiedź."
+      }
+    },
+    "audit": {
+      "connection": {
+        "start": "Rozpoczęcie połączenia repozytorium",
+        "complete": "Zakończenie połączenia repozytorium"
+      },
+      "repository": {
+        "register": "Rejestracja repozytorium",
+        "update": "Aktualizacja repozytorium",
+        "active": "Włączenie repozytorium",
+        "disabled": "Wyłączenie repozytorium",
+        "remove": "Usunięcie repozytorium"
+      }
+    },
+    "validation": {
+      "codeRequired": "Kod autoryzacyjny GitHub jest wymagany.",
+      "installationRequired": "Identyfikator instalacji GitHub jest wymagany."
+    },
+    "projectLinks": {
+      "tab": "Repozytoria",
+      "loading": "Ładowanie repozytoriów...",
+      "error": "Nie udało się wczytać repozytoriów.",
+      "choose": "Wybierz repozytorium",
+      "add": "Dodaj repozytorium",
+      "empty": "Z tym projektem nie jest połączone żadne repozytorium.",
+      "default": "Domyślne",
+      "makeDefault": "Ustaw jako domyślne",
+      "remove": "Usuń"
+    }
+  }
+}

@@ -3,7 +3,7 @@ import { readTaskReview } from '../lib/review'
 
 const REPO = 'o/site'
 function ctx(delegation: unknown) {
-  return { container: { resolve: () => ({ getDelegations: async () => [{ taskId: 't', taskUpdatedAt: 'v', delegation }] }) } } as never
+  return { container: { resolve: () => ({ getDelegations: async () => [{ taskId: 't', projectId: 'project-1', taskUpdatedAt: 'v', delegation }] }) } } as never
 }
 const github = {
   repo: REPO,
@@ -12,16 +12,18 @@ const github = {
   listCheckRuns: jest.fn(async (_sha: string) => [{ name: 'site', status: 'completed', conclusion: 'success', url: null }]),
   findPreviewUrl: jest.fn(async () => 'https://preview.example'),
 }
+const githubFor = jest.fn(async (_projectId: string) => github as never)
 
 it('returns the PR files, checks and preview of the task’s factory PR', async () => {
-  const review = await readTaskReview(ctx({ releasedAt: null, links: [{ kind: 'pr', url: `https://github.com/${REPO}/pull/3` }] }), 't', github as never)
+  const review = await readTaskReview(ctx({ releasedAt: null, links: [{ kind: 'pr', url: `https://github.com/${REPO}/pull/3` }] }), 't', githubFor)
   expect(review).toMatchObject({ delegationActive: true, pr: { number: 3, headSha: 'head' }, previewUrl: 'https://preview.example', checks: [{ name: 'site' }], files: [{ filename: 'app/a.tsx' }] })
   expect(github.listCheckRuns).toHaveBeenCalledWith('head')
+  expect(githubFor).toHaveBeenCalledWith('project-1')
 })
 
-it('reads nothing for a task without a PR on the configured repository', async () => {
+it('reads nothing for a task without a PR on the project repository', async () => {
   github.getPullRequest.mockClear()
-  await expect(readTaskReview(ctx({ releasedAt: null, links: [{ kind: 'pr', url: 'https://github.com/evil/repo/pull/3' }] }), 't', github as never)).resolves.toBeNull()
-  await expect(readTaskReview(ctx(null), 't', github as never)).resolves.toBeNull()
+  await expect(readTaskReview(ctx({ releasedAt: null, links: [{ kind: 'pr', url: 'https://github.com/evil/repo/pull/3' }] }), 't', githubFor)).resolves.toBeNull()
+  await expect(readTaskReview(ctx(null), 't', githubFor)).resolves.toBeNull()
   expect(github.getPullRequest).not.toHaveBeenCalled()
 })

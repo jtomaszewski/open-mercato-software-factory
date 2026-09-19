@@ -54,7 +54,7 @@ function delegation(overrides: Partial<TaskDelegationDto> = {}): TaskDelegationD
 
 function show(delegationOverrides: Partial<TaskDelegationDto> | null) {
   current = {
-    taskId: TASK_ID, taskUpdatedAt: 'version', assigneeStaffMemberId: 'member', assigneeName: 'Jan Kowalski',
+    taskId: TASK_ID, projectId: 'project', taskUpdatedAt: 'version', assigneeStaffMemberId: 'member', assigneeName: 'Jan Kowalski',
     delegation: delegationOverrides ? delegation(delegationOverrides) : null,
   }
   return render(<TaskRunStatus context={{ taskId: TASK_ID }} />)

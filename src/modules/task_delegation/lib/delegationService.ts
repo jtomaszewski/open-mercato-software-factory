@@ -32,6 +32,7 @@ export type TaskDelegationDto = {
 }
 export type TaskDelegationReadItem = {
   taskId: string
+  projectId: string
   taskUpdatedAt: string
   assigneeStaffMemberId: string | null
   assigneeName: string | null
@@ -136,6 +137,7 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
         const delegation = latest.get(task.id) ?? null
         return {
           taskId: task.id,
+          projectId: task.time_project_id,
           taskUpdatedAt: new Date(task.updated_at).toISOString(),
           assigneeStaffMemberId: task.assignee_staff_member_id ?? null,
           assigneeName: task.assignee_staff_member_id ? memberNames.get(task.assignee_staff_member_id) ?? null : null,

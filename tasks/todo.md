@@ -105,3 +105,40 @@ activity trail, cost per run), not a docker call the orchestrator never sees. Sa
   also used by `task_tools`; lesson recorded).
 - After approval the chat only shows "Action applied"; the task reference isn't shown back
   (installed pending-action flow gives the model no follow-up turn).
+
+---
+
+# Repository registry only (trimmed PR #43)
+
+Goal: add GitHub repos through OM (GitHub App) and let the factory get its GitHub token from the
+App instead of `gh auth token` → `FACTORY_GITHUB_TOKEN`. The Developer agent flow on main
+(sidecar OpenCode, local checkout, diff → PR, in-app approve) stays as is.
+
+Decisions (user, 2026-09-19): no qualification; broker optional → GitHub App calls in-app; new PR.
+
+## Plan
+
+- [x] `repositories` module from #43, trimmed: connections (GitHub App install + OAuth consent),
+      register / edit base branch / disable / enable / remove, project links + default.
+      Drop: kind/profile, qualification, broker transport, internal callback routes, outbox,
+      replay table, recovery worker/schedule.
+- [x] `lib/github-app.ts`: App JWT, installation grant, consent verify, branches, and a
+      repo-scoped installation token (contents + pull_requests write) for the factory.
+- [x] Fresh migration for the trimmed tables.
+- [x] Factory: resolve `{ repo, baseBranch, token }` from the task project's default linked repo;
+      fall back to `FACTORY_SITE_REPO` + `FACTORY_GITHUB_TOKEN`. Clone with the token (private repos).
+- [x] Review/approve read the PR from the delegation's repo (PR URL), token from the same source.
+- [x] Tests for token resolution, repo selection, App client, authenticated clone; README/.env.example/spec note.
+
+## Verification
+
+- `yarn generate && yarn typecheck && yarn lint && yarn test`
+- Manual: connect the App, register the Stal-Zbiorniki repo, link to the demo project, run a task.
+
+## Review (2026-09-19)
+
+- `yarn generate`, `yarn typecheck`, `yarn lint` (0 errors), `yarn test` (46 suites / 228 tests), `yarn build` pass.
+  `yarn ds:check` reports only the two findings already on main (`BackendHeaderChrome.tsx`).
+- Migration `Migration20260919180625_repositories` creates only the 4 `repositories_*` tables; not applied.
+- Not exercised live: GitHub App connect, register, and a task run with an App token (needs the App
+  env + migration applied).

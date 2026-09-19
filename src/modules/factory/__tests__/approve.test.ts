@@ -11,10 +11,10 @@ let delegation: Record<string, unknown> | null
 let statusSlug: string
 let assigneeUserId: string
 
-const github = { repo: REPO, getPullRequest, mergePullRequest } as never
+const githubFor = jest.fn(async (_projectId: string) => ({ repo: REPO, getPullRequest, mergePullRequest }) as never)
 function ctx() {
   const services: Record<string, unknown> = {
-    taskDelegationService: { getDelegations: async () => [{ taskId: 'task-1', taskUpdatedAt: 'v', delegation }] },
+    taskDelegationService: { getDelegations: async () => [{ taskId: 'task-1', projectId: 'project-1', taskUpdatedAt: 'v', delegation }] },
     commandBus: { execute },
     queryEngine: {
       query: async (entity: string) => {
@@ -41,14 +41,15 @@ beforeEach(() => {
 })
 
 it('merges the PR at the head it checked and closes the task as Done', async () => {
-  await expect(approveProductTask(ctx(), 'task-1', github)).resolves.toEqual({ taskId: 'task-1', prUrl: PR_URL, merged: true, alreadyMerged: false })
+  await expect(approveProductTask(ctx(), 'task-1', githubFor)).resolves.toEqual({ taskId: 'task-1', prUrl: PR_URL, merged: true, alreadyMerged: false })
   expect(mergePullRequest).toHaveBeenCalledWith(8, 'abc')
+  expect(githubFor).toHaveBeenCalledWith('project-1')
   expect(execute).toHaveBeenCalledWith('staff.timesheets.tasks.status_change', expect.objectContaining({ input: { id: 'task-1', taskStatusId: 'done-id' } }))
 })
 
 it('finishes a retry after an earlier merge without merging again', async () => {
   getPullRequest.mockResolvedValue({ number: 8, state: 'closed', merged: true, htmlUrl: PR_URL, headSha: 'abc' })
-  await expect(approveProductTask(ctx(), 'task-1', github)).resolves.toMatchObject({ alreadyMerged: true })
+  await expect(approveProductTask(ctx(), 'task-1', githubFor)).resolves.toMatchObject({ alreadyMerged: true })
   expect(mergePullRequest).not.toHaveBeenCalled()
   expect(execute).toHaveBeenCalled()
 })
@@ -60,7 +61,7 @@ it.each([
   ['a PR on another repository', () => { delegation = { releasedAt: null, links: [{ kind: 'pr', ref: 'x', url: 'https://github.com/evil/repo/pull/1' }] } }, 'no_pull_request'],
 ])('refuses %s before touching GitHub', async (_label, arrange, code) => {
   arrange()
-  await expect(approveProductTask(ctx(), 'task-1', github)).rejects.toMatchObject({ body: { code } })
+  await expect(approveProductTask(ctx(), 'task-1', githubFor)).rejects.toMatchObject({ body: { code } })
   expect(getPullRequest).not.toHaveBeenCalled()
   expect(mergePullRequest).not.toHaveBeenCalled()
   expect(execute).not.toHaveBeenCalled()
@@ -68,7 +69,7 @@ it.each([
 
 it('reports a merge GitHub refuses and leaves the task in review', async () => {
   mergePullRequest.mockRejectedValue(new GitHubApiError(405, '/merge', 'Required status check "site" is failing'))
-  await expect(approveProductTask(ctx(), 'task-1', github)).rejects.toMatchObject({ status: 409, body: { code: 'merge_blocked' } })
+  await expect(approveProductTask(ctx(), 'task-1', githubFor)).rejects.toMatchObject({ status: 409, body: { code: 'merge_blocked' } })
   expect(execute).not.toHaveBeenCalled()
 })
 
