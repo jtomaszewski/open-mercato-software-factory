@@ -28,3 +28,9 @@ it('shows no badge after the task was undelegated', () => {
   const { container } = render(<TaskDelegateBadge context={{ taskId: 'task' }} />)
   expect(container.textContent).toBe('')
 })
+
+it('marks a rejected delegation back in Backlog as rejected, not complete', () => {
+  mockDelegation = { releasedAt: '2026-09-19T10:00:00.000Z', outcome: 'rejected', runState: 'rejected', closeReason: null }
+  render(<TaskDelegateBadge context={{ taskId: 'task' }} />)
+  expect(screen.getByText('task_delegation.runState.rejected')).toBeTruthy()
+})

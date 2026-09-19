@@ -29,7 +29,6 @@ const seedDemo: ModuleCli = {
     const result = await seedTaskDelegationDemo(container, { tenantId, organizationId }, { adminEmail: readFlag(rest, 'admin') })
     console.log(
       `Task delegation demo (org=${organizationId}): project DEMO ${result.projectId}, ` +
-        `columns added: ${result.createdColumns.join(', ') || 'none'}, ` +
         `staff member ${result.staffMemberId ?? 'skipped (no admin user)'}, ` +
         `${FACTORY_AGENT_DISPLAY_NAME} agent ${result.agentUserId ?? 'skipped (orchestrator disabled)'}`,
     )

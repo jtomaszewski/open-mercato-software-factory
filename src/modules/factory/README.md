@@ -11,7 +11,7 @@ catalog.product.created ─▶ subscribers/product-created.ts (is it in „Od r�
         └─▶ task_delegation start-factory ─▶ process factory.deliver ─▶ workflow factory.deliver_product
               └─▶ lib/deliver.ts (EXECUTE_FUNCTION, as the workflow's own principal):
                     In progress ─▶ the change (below) ─▶ task link `pr` ─▶ In review
-                                                        (any error ─▶ Closed, outcome failed)
+                                                        (any error ─▶ Backlog, outcome failed)
 The change (execution spec EX-P0), lib/runner.ts + lib/developer.ts: the host clones the site,
   the Developer agent (OpenCode 1.18.3) edits and builds it in a disposable om-developer-runner
   container that holds only the model key; the host refuses protected paths/links, commits on

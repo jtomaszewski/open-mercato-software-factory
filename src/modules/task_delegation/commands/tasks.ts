@@ -14,7 +14,7 @@ import { delegateSchema, undelegateSchema } from '../data/validators'
 import { emitTaskDelegationEvent } from '../events'
 import { requireFeature, readTaskAssignmentGraceDays, type TaskScope } from '../lib/auth'
 import { hasReachedMilestone, isAllowedProcessTransition, mapProcessStatus, type DelegationOutcome, type ProcessTaskStatus } from '../lib/transitionPolicy'
-import { authorizeInternalTaskTransition, rememberCreatedTaskColumn, revokeInternalTaskTransition } from '../lib/columnContext'
+import { authorizeInternalTaskTransition, revokeInternalTaskTransition } from '../lib/columnContext'
 import { requireProcessAuthority } from '../lib/processAuthority'
 import { readTaskSnapshot } from '../lib/taskSnapshot'
 import type {
@@ -29,7 +29,6 @@ import type {
   UndelegateTaskInput,
   UndelegateTaskResult,
 } from './types'
-import { FACTORY_COLUMNS } from '../lib/factoryColumns'
 
 const UUID = z.string().uuid()
 const processIdentitySchema = z.object({ delegationId: UUID, processInstanceId: UUID, stepId: z.string().min(1).max(100) })
@@ -66,31 +65,7 @@ async function requireProjectAccess(ctx: CommandRuntimeContext, em: EntityManage
 }
 
 
-async function ensureFactoryColumns(ctx: CommandRuntimeContext, projectId: string, feature: 'task_delegation.delegate' | 'task_delegation.process'): Promise<Map<string, string>> {
-  const scope = await requireFeature(ctx, feature)
-  const queryEngine = ctx.container.resolve<QueryEngine>('queryEngine')
-  const existing = await queryEngine.query<StatusRow>('staff:staff_time_task_status', {
-    fields: ['id', 'slug'], filters: { time_project_id: projectId }, page: { page: 1, pageSize: 100 },
-    tenantId: scope.tenantId, organizationId: scope.organizationId,
-  })
-  const ids = new Map(existing.items.map((status) => [status.slug, status.id]))
-  const bus = ctx.container.resolve<CommandBus>('commandBus')
-  for (const column of FACTORY_COLUMNS) {
-    if (ids.has(column.slug)) continue
-    const created = await bus.execute<Record<string, unknown>, { taskStatusId: string }>('staff.timesheets.task_statuses.create', {
-      input: { tenantId: scope.tenantId, organizationId: scope.organizationId, timeProjectId: projectId, ...column },
-      ctx,
-    })
-    ids.set(column.slug, created.result.taskStatusId)
-    rememberCreatedTaskColumn(ctx.auth, created.result.taskStatusId, column.slug)
-  }
-  return ids
-}
-
 async function resolveStatus(ctx: CommandRuntimeContext, projectId: string, slug: string, feature: 'task_delegation.delegate' | 'task_delegation.process'): Promise<StatusRow> {
-  const columns = await ensureFactoryColumns(ctx, projectId, feature)
-  const id = columns.get(slug)
-  if (id) return { id, slug }
   const scope = await requireFeature(ctx, feature)
   const queried = await ctx.container.resolve<QueryEngine>('queryEngine').query<StatusRow>('staff:staff_time_task_status', {
     fields: ['id', 'slug'], filters: { time_project_id: projectId, slug }, page: { page: 1, pageSize: 1 },
@@ -224,9 +199,9 @@ const delegateTaskCommand: CommandHandler<DelegateTaskInput, DelegateTaskResult>
       throw error
     }
     try {
-      const queued = await resolveStatus(ctx, snapshot.timeProjectId, 'queued', 'task_delegation.delegate')
+      const inProgress = await resolveStatus(ctx, snapshot.timeProjectId, 'in-progress', 'task_delegation.delegate')
       const current = await readTaskSnapshot(ctx.container.resolve<QueryEngine>('queryEngine'), scope, { taskId: snapshot.taskId })
-      await withExpectedVersion(ctx, current.updatedAt, () => runInternalStaffStatus(ctx, snapshot.taskId, queued))
+      await withExpectedVersion(ctx, current.updatedAt, () => runInternalStaffStatus(ctx, snapshot.taskId, inProgress))
     } catch (error) {
       // The task never left Backlog, so the claim must not survive.
       await em.nativeDelete(TaskDelegation, { ...decryptScope, id: delegation.id })

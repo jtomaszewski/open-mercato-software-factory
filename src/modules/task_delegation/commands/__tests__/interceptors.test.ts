@@ -69,12 +69,12 @@ describe('tasks process-owned interceptors', () => {
   })
 
   it('lets the delegate command move a process-owned task only through the same auth object', async () => {
-    const { context, auth } = harness({ from: 'backlog', to: 'queued' })
-    authorizeInternalTaskTransition({ ...auth }, TASK_ID, 'queued')
-    await expect(guard('status_change').beforeExecute?.({ id: TASK_ID, taskStatusId: 'queued-id' }, context('staff.timesheets.tasks.status_change')))
+    const { context, auth } = harness({ from: 'backlog', to: 'in-progress' })
+    authorizeInternalTaskTransition({ ...auth }, TASK_ID, 'in-progress')
+    await expect(guard('status_change').beforeExecute?.({ id: TASK_ID, taskStatusId: 'in-progress-id' }, context('staff.timesheets.tasks.status_change')))
       .resolves.toMatchObject({ ok: false })
-    authorizeInternalTaskTransition(auth, TASK_ID, 'queued')
-    await expect(guard('status_change').beforeExecute?.({ id: TASK_ID, taskStatusId: 'queued-id' }, context('staff.timesheets.tasks.status_change')))
+    authorizeInternalTaskTransition(auth, TASK_ID, 'in-progress')
+    await expect(guard('status_change').beforeExecute?.({ id: TASK_ID, taskStatusId: 'in-progress-id' }, context('staff.timesheets.tasks.status_change')))
       .resolves.toMatchObject({ ok: true })
   })
 })
@@ -87,7 +87,7 @@ describe('PUT status transitions', () => {
   })
 
   it('releases the delegation after staff commits the assignee close', async () => {
-    const { context, em, delegation } = harness({ from: 'in-review', to: 'closed' })
+    const { context, em, delegation } = harness({ from: 'in-review', to: 'backlog' })
     await guard('update').afterExecute?.({ id: TASK_ID }, {}, context('staff.timesheets.tasks.update', { releaseDelegationId: DELEGATION_ID, releaseOutcome: 'rejected' }))
     expect(delegation).toMatchObject({ outcome: 'rejected', releasedAt: expect.any(Date) })
     expect(em.flush).toHaveBeenCalled()
@@ -100,8 +100,8 @@ describe('PUT status transitions', () => {
   })
 
   it('accepts an unchanged process column through PUT', async () => {
-    const { context } = harness({ from: 'queued', to: 'queued' })
-    await expect(guard('update').beforeExecute?.({ id: TASK_ID, taskStatusId: 'queued-id' }, context('staff.timesheets.tasks.update')))
+    const { context } = harness({ from: 'in-progress', to: 'in-progress' })
+    await expect(guard('update').beforeExecute?.({ id: TASK_ID, taskStatusId: 'in-progress-id' }, context('staff.timesheets.tasks.update')))
       .resolves.toMatchObject({ ok: true })
   })
 })

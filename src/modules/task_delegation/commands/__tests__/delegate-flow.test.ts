@@ -40,7 +40,7 @@ function harness(options: { statusChange?: () => Promise<unknown>; statusSlug?: 
     if (commandId === 'staff.timesheets.tasks.status_change' && options.statusChange) return options.statusChange()
     return { result: {} }
   })
-  const columns = ['backlog', 'queued', 'in-design', 'in-progress', 'in-review', 'done', 'closed'].map((slug) => ({ id: `${slug}-id`, slug }))
+  const columns = ['backlog', 'in-progress', 'in-review', 'done'].map((slug) => ({ id: `${slug}-id`, slug }))
   const ctx = {
     auth: { sub: 'human-id', tenantId: 'tenant-id', orgId: 'org-id' },
     selectedOrganizationId: 'org-id', organizationIds: ['org-id'], organizationScope: null,
@@ -51,7 +51,7 @@ function harness(options: { statusChange?: () => Promise<unknown>; statusSlug?: 
         if (name === 'rbacService') return { userHasAllFeatures: async () => true }
         if (name === 'moduleConfigService') return { getRecord: async () => null }
         if (name === 'timeTrackingAccessResolver') return { resolveProjectAccess: async () => ({ canManageAll: true, projectIds: [] }) }
-        if (name === 'queryEngine') return { query: async () => ({ items: columns }) }
+        if (name === 'queryEngine') return { query: async (_entity: string, query: { filters: { slug?: string } }) => ({ items: columns.filter((column) => !query.filters.slug || column.slug === query.filters.slug) }) }
         if (name === 'commandBus') return { execute }
         throw new Error(`unexpected ${name}`)
       }),
@@ -85,7 +85,7 @@ describe('delegate without a shared transaction', () => {
 describe('undelegate without a shared transaction', () => {
   it('moves the task back before releasing the delegation', async () => {
     const active = { id: 'delegation-id', taskId: TASK_ID, processInstanceId: null, releasedAt: null }
-    const { ctx, steps } = harness({ statusSlug: 'queued', active })
+    const { ctx, steps } = harness({ statusSlug: 'in-progress', active })
     await expect(undelegateTaskCommand.execute({ taskId: TASK_ID }, ctx)).resolves.toMatchObject({ released: true })
     expect(steps).toEqual(['staff.timesheets.tasks.status_change', 'flush'])
     expect(active.releasedAt).toBeInstanceOf(Date)

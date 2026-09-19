@@ -12,9 +12,9 @@ function delegation(outcome: TaskDelegation['outcome']): TaskDelegation {
 }
 
 describe('tasks delegation service', () => {
-  it('treats terminal task outcomes as complete without a process lookup', () => {
+  it('reads terminal task outcomes without a process lookup', () => {
     expect(deriveTaskRunState(delegation('done'), null, new Date('2026-09-19T10:02:00Z'))).toBe('complete')
-    expect(deriveTaskRunState(delegation('rejected'), null, new Date('2026-09-19T10:02:00Z'))).toBe('complete')
+    expect(deriveTaskRunState(delegation('rejected'), null, new Date('2026-09-19T10:02:00Z'))).toBe('rejected')
     expect(deriveTaskRunState(delegation('failed'), null, new Date('2026-09-19T10:02:00Z'))).toBe('failed')
   })
 

@@ -4,7 +4,7 @@ import type { QueryEngine } from '@open-mercato/shared/lib/query/types'
 import { TaskDelegation } from '../data/entities'
 import type { TaskScope } from '../lib/auth'
 import { evaluateHumanTaskMutation, type DelegationOutcome } from '../lib/transitionPolicy'
-import { consumeInternalTaskTransition, createdTaskColumnSlug } from '../lib/columnContext'
+import { consumeInternalTaskTransition } from '../lib/columnContext'
 import { readTaskSnapshot } from '../lib/taskSnapshot'
 import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 
@@ -78,12 +78,11 @@ function makeGuard(targetCommand: string, operation: 'create' | 'status_change' 
         return delegations.length ? rejection('process_owned') : { ok: true }
       }
       if (!input.taskStatusId) return rejection('process_owned')
-      const knownSlug = createdTaskColumnSlug(context.auth, input.taskStatusId)
-      const rows = knownSlug ? null : await context.container.resolve<QueryEngine>('queryEngine').query<{ slug: string }>('staff:staff_time_task_status', {
+      const rows = await context.container.resolve<QueryEngine>('queryEngine').query<{ slug: string }>('staff:staff_time_task_status', {
         fields: ['slug'], filters: { id: input.taskStatusId, time_project_id: snapshot.timeProjectId }, page: { page: 1, pageSize: 1 },
         tenantId: scope.tenantId, organizationId: scope.organizationId,
       })
-      const targetSlug = knownSlug ?? rows?.items[0]?.slug
+      const targetSlug = rows.items[0]?.slug
       if (!targetSlug) return rejection('process_only_column')
       if (consumeInternalTaskTransition(context.auth, snapshot.taskId, targetSlug)) return { ok: true }
       if (operation === 'update' && delegations.length > 0) {
@@ -103,7 +102,7 @@ function makeGuard(targetCommand: string, operation: 'create' | 'status_change' 
     },
     async afterExecute(_input, _result, context) {
       // The assignee closed a delegated task. Staff has already committed the move; release the
-      // delegation now. If this fails the task sits in Done/Closed with a live delegation, which
+      // delegation now. If this fails the task sits in Done/Backlog with a live delegation, which
       // "Remove delegate" clears.
       const metadata = context.metadata as GuardMetadata | undefined
       const scope = guardScope(context)
@@ -116,7 +115,7 @@ function makeGuard(targetCommand: string, operation: 'create' | 'status_change' 
       const { translate } = await resolveTranslations()
       delegation.outcome = metadata.releaseOutcome as DelegationOutcome
       delegation.closeReason = metadata.releaseOutcome === 'rejected'
-        ? translate('task_delegation.outcome.closedByAssignee', 'Closed by the accountable assignee.')
+        ? translate('task_delegation.outcome.closedByAssignee', 'Sent back to Backlog by the accountable assignee.')
         : null
       delegation.releasedAt = new Date()
       delegation.updatedAt = new Date()

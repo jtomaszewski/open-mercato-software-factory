@@ -4,7 +4,6 @@ import type { CommandBus } from '@open-mercato/shared/lib/commands'
 import type { QueryEngine } from '@open-mercato/shared/lib/query/types'
 import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { User } from '@open-mercato/core/modules/auth/data/entities'
-import { FACTORY_COLUMNS } from './factoryColumns'
 import { systemContext, type TaskDelegationScope } from './systemContext'
 import { FACTORY_AGENT_DISPLAY_NAME, FACTORY_AGENT_ID } from './agentIdentity'
 
@@ -18,7 +17,6 @@ export type TaskDelegationDemoResult = {
   customerId: string
   staffMemberId: string | null
   projectId: string
-  createdColumns: string[]
   agentUserId: string | null
 }
 
@@ -47,7 +45,7 @@ async function resolveAdminUser(em: EntityManager, scope: TaskDelegationDemoScop
 
 /**
  * Seeds the delegation board (SPEC-002 Phase 1 step 1): an "Internal" customer company, a staff
- * member for the admin, a `DEMO` project with the factory columns, and the `factory` agent
+ * member for the admin, a `DEMO` project on staff's default columns, and the `factory` agent
  * principal. Writes go through the owning modules' commands and services; every step is
  * find-or-create, so repeated runs change nothing and never overwrite operator edits.
  */
@@ -100,18 +98,6 @@ export async function seedTaskDelegationDemo(
     }
   }
 
-  const columns = await qe.query<{ slug: string }>('staff:staff_time_task_status', {
-    fields: ['slug'], filters: { time_project_id: projectId }, page: { page: 1, pageSize: 100 },
-    tenantId: scope.tenantId, organizationId: scope.organizationId,
-  })
-  const slugs = new Set(columns.items.map((column) => column.slug))
-  const createdColumns: string[] = []
-  for (const column of FACTORY_COLUMNS) {
-    if (slugs.has(column.slug)) continue
-    await bus.execute('staff.timesheets.task_statuses.create', { input: { ...scope, timeProjectId: projectId, ...column }, ctx })
-    createdColumns.push(column.slug)
-  }
-
   let agentUserId: string | null = null
   const hasRegistration = (container as { hasRegistration?: (name: string) => boolean }).hasRegistration
   if (typeof hasRegistration === 'function' && hasRegistration.call(container, 'agentPrincipalService')) {
@@ -123,5 +109,5 @@ export async function seedTaskDelegationDemo(
     agentUserId = principal.userId
   }
 
-  return { customerId, staffMemberId, projectId, createdColumns, agentUserId }
+  return { customerId, staffMemberId, projectId, agentUserId }
 }
