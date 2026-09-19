@@ -1,76 +1,98 @@
-# Fabryka oprogramowania Open Mercato
+# Open Mercato Software Factory
 
-Słownik pojęć wspólny dla specyfikacji w `docs/specs/`: fabryka agentowa uruchamiana z tablicy
-zadań Open Mercato, katalog produktów jako źródło prawdy i strona firmy jako repo docelowe.
+Shared vocabulary for the specs in `docs/specs/`: an agentic factory started from the Open Mercato
+task board, the product catalog as the source of truth, and the company website as the target repo.
 
-## Język
+## Language
 
-### Zadania i fabryka
+### Tasks and the factory
 
-**Fabryka** (factory):
-Proces agentowy, który bierze delegowane zadanie i doprowadza je do zmiany (PR, zmiana rekordu,
-wiadomość) przez bramki decyzyjne człowieka.
-_Avoid_: orkiestrator (to silnik pod spodem), agent (to jedna rola w fabryce)
+**Factory**:
+The agentic process that takes a delegated task and carries it to a change (a PR, a record change,
+a message) through human decision gates.
+_Avoid_: orchestrator (the engine underneath), agent (one role inside the factory)
 
-**Zadanie** (task):
-Rekord na tablicy zadań z zamrożoną referencją; jednostka pracy, którą fabryka może dostać.
+**Task**:
+A record on the task board with a frozen reference; the unit of work the factory can receive.
 _Avoid_: ticket, issue, task order
 
-**Referencja** (reference):
-Stały identyfikator zadania w formie `KOD-PROJEKTU-numer` (np. `WEB-12`), nadawany raz i nigdy
-nie zmieniany.
-_Avoid_: numer zadania, id
+**Reference**:
+The permanent task identifier of the form `PROJECT-CODE-number` (e.g. `WEB-12`), assigned once
+and never changed.
+_Avoid_: task number, id
 
-**Delegacja** (delegation):
-Wskazanie agenta jako delegata zadania; moment, w którym fabryka startuje. **Delegat** to zawsze
-agent; człowiek odpowiedzialny za zadanie pozostaje **przypisanym** (assignee).
-_Avoid_: przypisanie do agenta, trigger
+**Delegation**:
+Naming an agent as a task's delegate; the moment the factory starts. The **delegate** is always an
+agent; the person responsible for the task stays the **assignee**.
+_Avoid_: assigning to an agent, trigger
 
-**Intake** (zgłoszenie):
-Droga, którą zadanie trafia na tablicę: ręcznie, z chatu, od klienta MCP, ze zdarzenia. Źródło
-intake jest zapisane przy zadaniu.
+**Intake**:
+The path by which a task reaches the board: by hand, from the chat, from an MCP client, from an
+event. The intake source is recorded with the task.
 _Avoid_: import, ingestion
 
+**Intake agent**:
+The chat agent that turns a request into a well-formed task and proposes its delegation. It is
+the only writer the chat has, and it writes nothing but tasks and comments.
+_Avoid_: factory agent (that is the delegate), assistant
+
 **Caseload**:
-Miejsce decyzji człowieka w fabryce: bramka projektu, zatwierdzenie zmiany rekordu, recenzja.
-_Avoid_: inbox, approvals, skrzynka
+Where a person decides inside the factory: the design gate, approval of a record change, review.
+_Avoid_: inbox, approvals
 
-### Katalog i strona
+### Catalog and website
 
-**Katalog** (catalog):
-Produkty w Open Mercato; jedyne źródło prawdy o nazwie, SKU, cenie, pojemności i atestach.
-_Avoid_: baza produktów, CMS
+**Catalog**:
+The products in Open Mercato; the only source of truth for name, SKU, price, capacity and
+certifications.
+_Avoid_: product database, CMS
 
-**Strona produktu** (product page):
-Publiczna strona jednego produktu w repo strony firmy; zmienia się wyłącznie przez PR.
-_Avoid_: landing (to cała strona), karta produktu (to kafelek na liście)
+**Site**:
+The company's public website, a repo the factory changes only through pull requests.
+_Avoid_: landing page (the demo's Polish shorthand), frontend
 
-**Od ręki** (in stock):
-Produkty dostępne natychmiast; w katalogu to kategoria, na stronie to lista zbudowana z tej
-kategorii.
-_Avoid_: dostępność, magazyn
+**Product page**:
+The public page of one product on the site.
+_Avoid_: product card (the list tile), landing
 
-### Chat i MCP
+**In stock** (PL „Od ręki”):
+Products available immediately; a category in the catalog, a list built from that category on
+the site.
+_Avoid_: availability, stock level
 
-**Narzędzie AI** (AI tool):
-Jedna zdolność udostępniona modelowi, z opisem, schematem wejścia i wymaganymi uprawnieniami. Ta
-sama definicja działa w chacie Open Mercato i na serwerze MCP.
-_Avoid_: „MCP” jako nazwa narzędzia, funkcja, endpoint
+**Drift**:
+A difference between a product record in the catalog and its published product page, or a
+product present in the catalog but absent from the site. Drift is detected, never repaired in
+place: the repair is a task for the factory.
+_Avoid_: desync, mismatch (one field of a drift), out of date
 
-**Serwer MCP** (MCP server):
-Usługa Open Mercato, przez którą klient zewnętrzny woła narzędzia AI z uprawnieniami swojego
-klucza API.
-_Avoid_: „MCP” bez dopowiedzenia, którą z trzech rzeczy mamy na myśli
+### Chat and MCP
 
-**Klient MCP** (MCP client):
-Zewnętrzne narzędzie dewelopera (Claude Code, Cursor) podłączone do serwera MCP.
-_Avoid_: integracja, wtyczka
+**AI tool**:
+One capability exposed to a model, with a description, an input schema and required permissions.
+One definition serves both the Open Mercato chat and the MCP server. Open Mercato's own code
+calls these "MCP tools" regardless of surface.
+_Avoid_: "MCP" as the name of a tool, function, endpoint
 
-**Agent chatu** (chat agent):
-Wyspecjalizowany asystent w chacie Open Mercato z własną instrukcją i listą dozwolonych narzędzi.
-_Avoid_: bot, asystent (to cała powierzchnia chatu)
+**Factory tools**:
+The AI tools this project adds: task intake, task reading, comments and drift detection.
+_Avoid_: the MCP, tasks MCP
 
-**Karta zatwierdzenia** (approval card):
-Podgląd zmiany przed → po, który chat pokazuje zanim cokolwiek zapisze; zapis następuje dopiero
-po potwierdzeniu. Istnieje tylko w chacie, klient MCP jej nie ma.
-_Avoid_: preview (to podgląd strony z PR), dialog potwierdzenia
+**Chat agent**:
+A specialised assistant inside the Open Mercato chat with its own instructions and allow-list of
+AI tools.
+_Avoid_: bot, assistant (the whole chat surface)
+
+**Approval card**:
+The before → after preview the chat shows before it writes anything; the write happens only after
+confirmation. It exists only in the chat; an MCP client has none.
+_Avoid_: preview (a PR's site preview), confirm dialog
+
+**MCP server**:
+The Open Mercato service through which an external client calls AI tools with the permissions of
+its API key. A secondary surface: the chat is the primary one.
+_Avoid_: "MCP" without saying which of the three things is meant
+
+**MCP client**:
+An external developer tool (Claude Code, Cursor) connected to the MCP server.
+_Avoid_: integration, plugin
