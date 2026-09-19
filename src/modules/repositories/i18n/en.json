@@ -12,7 +12,7 @@
       "save": "Save",
       "disable": "Disable",
       "enable": "Enable",
-      "remove": "Remove"
+      "remove": "Remove from registry"
     },
     "status": {
       "active": "Active",
@@ -22,7 +22,7 @@
       "title": "Code repositories",
       "search": "Search repositories...",
       "loadError": "Repositories could not be loaded.",
-      "confirmRemove": "Remove this disabled repository?",
+      "confirmRemove": "Remove this disabled repository from the registry and disconnect it from all projects? The GitHub repository will remain unchanged.",
       "columns": {
         "repository": "Repository",
         "branch": "Base branch",
@@ -35,12 +35,12 @@
       "success": {
         "disable": "Repository disabled.",
         "enable": "Repository enabled.",
-        "remove": "Repository removed."
+        "remove": "Repository removed from the registry."
       },
       "error": {
         "disable": "Repository could not be disabled.",
         "enable": "Repository could not be enabled.",
-        "remove": "Repository could not be removed."
+        "remove": "Could not remove the repository from the registry."
       }
     },
     "connect": {
@@ -128,7 +128,11 @@
       "empty": "No repositories are linked to this project.",
       "default": "Default",
       "makeDefault": "Make default",
-      "remove": "Remove"
+      "remove": "Disconnect from project",
+      "noneRegistered": "Register a repository before linking it to this project.",
+      "allLinked": "The listed repositories are already linked to this project.",
+      "manage": "Manage repositories",
+      "defaultHelp": "Agents use the default repository for this project's code changes."
     }
   }
 }
