@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 30 770 150" role="img" aria-labelledby="title" shape-rendering="geometricPrecision">
+  <title>fullstack.house lockup</title>
+  
+  
+  <g id="icon" transform="translate(20,18) scale(0.75)">
+    <polygon points="128.0,24.0 208.0,62.0 128.0,100.0 48.0,62.0" fill="#9E1B32"/>
+    <polygon points="48.0,78.0 120.0,110.4 120.0,132.4 48.0,100.0" fill="#FFFFFF"/>
+    <polygon points="48.0,114.0 120.0,146.4 120.0,168.4 48.0,136.0" fill="#FFFFFF"/>
+    <polygon points="48.0,150.0 72.0,160.8 72.0,182.8 48.0,172.0" fill="#FFFFFF"/>
+    <polygon points="184.0,88.8 208.0,78.0 208.0,136.0 184.0,146.8" fill="#FFFFFF"/>
+    <polygon points="136.0,158.0 160.0,147.2 160.0,193.2 136.0,204.0" fill="#FFFFFF"/>
+    <polygon points="136.0,110.4 208.0,78.0 208.0,100.0 136.0,132.4" fill="#FFFFFF"/>
+    <polygon points="136.0,146.4 208.0,114.0 208.0,136.0 136.0,168.4" fill="#FFFFFF"/>
+    <polygon points="136.0,182.4 208.0,150.0 208.0,172.0 136.0,204.4" fill="#FFFFFF"/>
+  </g>
+  <text x="228" y="118" font-family="'JetBrains Mono','IBM Plex Mono','SFMono-Regular','Menlo','Consolas','Liberation Mono',monospace" font-size="54" font-weight="700" letter-spacing="0.5" fill="#FFFFFF">fullstack<tspan fill="#9E1B32">.house</tspan></text>
+
+</svg>

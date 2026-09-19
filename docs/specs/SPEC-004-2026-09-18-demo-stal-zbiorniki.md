@@ -25,11 +25,11 @@ się na żywo; uruchomienia kodujące startują przed pitchem, a na scenie pokaz
 
 | Scena | Forma | Zbudowane | Brakuje | Kto |
 |---|---|---|---|---|
-| 1. Hook | slajd | — | slajd | demo owner |
+| 1. Hook | slajd | slajdy tytuł, hook i mapa w `public/pitch/` | — | demo owner |
 | 2. Poprawa rekordu | na żywo | katalog demo z błędnym `ZDP-5000` (`demo_fixtures`); tablica DEMO z delegowaniem do Factory (moduł `task_delegation`) | chat intake (SPEC-002), zmiany `record` w Caseload (SPEC-003) | tasks owner |
 | 3. Katalog → strona | na żywo, uruchomienie przed pitchem | strona z produktami i „Od ręki” w repo landing; moduł `factory`: produkt w „Od ręki” → zadanie na tablicy DEMO delegowane do Factory → `factory.deliver` otwiera PR ze stroną, podpina go do zadania i przesuwa je do „In review” → „Zatwierdź i opublikuj” w szufladzie merguje PR i zamyka zadanie jako Done | stronę pisze agent Developer (OpenCode + Claude przez OpenRouter) w jednorazowym kontenerze, a szuflada pokazuje diff, checki i podgląd (EX-P0; próba 19.09: 144 s, 0,25 USD, `site` zielony); zostaje próba z kliknięciem Marka na prawdziwym repo | process + runner owner |
 | 3b. Sprzedaż → referencja | na żywo, uruchomienie przed pitchem | klient Park of Poland i zamówienie `SO-2026-0042` w seedzie; strona „Realizacje” + „Zaufali nam” na `main` repo landing z fikcyjnym browarem jako pierwszą referencją; ręczny PR #7 z wpisem Park of Poland otwarty jako fallback; fixture scrape'u | intake z `sales.order.updated`, researcher z `web_fetch`, runner (SPEC-006 Fazy 2–3) | jak wyżej |
-| 5. Co dalej | slajd | — | slajd | demo owner |
+| 5. Co dalej | slajd | slajdy liczby z próby, co dalej, podziękowanie i 4 zapasowe na Q&A | nagranie `public/pitch/video/run.mp4` do slajdu B4 | demo owner |
 
 Na `main` tego repo są specki, `demo_fixtures`, `task_tools` i `task_delegation` (tablica z delegowaniem); `factory` dochodzi razem ze sceną 3 na tablicy.
 PR #8 (kolegi) to spec wykonania i dostawy: wymaga jednego kliknięcia człowieka „Approve merge
@@ -50,15 +50,28 @@ and deploy” przy każdym merge'u, co pasuje do decyzji „klik Marka” poniż
 
 | Czas | Scena | Na ekranie | Dowodzi |
 |---|---|---|---|
-| 0:00–0:35 | **1. Hook** | Slajd: Marek, jego strona z nieaktualną sekcją „Od ręki”, oferty w Excelu, agencja „dwa tygodnie na każdą zmianę”. | problemu, w jednej osobie |
+| 0:00–0:35 | **1. Hook** | Slajd: Marek (28 mln zł rocznie, 35 osób, 0 programistów), jego strona z nieaktualną sekcją „Od ręki”, agencja „dwa tygodnie na każdą poprawkę”, a dane firmy już w Open Mercato. | problemu, w jednej osobie |
 | 0:35–1:50 | **2. Poprawa rekordu** | Marek na stronie produktu otwiera asystenta (⌘L): „ZDP-5000 ma 5200 l, nie 5000, i brakuje wymiarów”. Powstaje zadanie, delegowane. Caseload pokazuje jedną zmianę w *ZDP-5000*: pojemność i wymiary przed → po. Marek zatwierdza, rekord się zmienia, szuflada zadania pokazuje `applied`. | plan przed działaniem; bramka człowieka; compare-and-set; nic ukrytego |
 | 1:50–3:30 | **3. Katalog → strona** | Marek dodaje *ZWM-1500 Zbiornik mobilny na wodę pitną 1500 l* z zaznaczonym „Od ręki”. Tablica pokazuje nowe zadanie, delegowane, z `catalog.product.created`. Przeskok do gotowego uruchomienia: sizer „small”, PR w repo strony, preview z nową kartą w „Od ręki”, zielone checki i `catalog-match`. **Marek klika „zatwierdź”**, merge, strona na żywo pokazuje zbiornik, zadanie w `Done`. | wyzwalacz jest w systemie ewidencji, którego fabryki widzące tylko repo nie widzą; „done” sprawdzane względem danych |
 | 3:30–4:30 | **3b. Sprzedaż → referencja** | Handlowiec zmienia status zamówienia *Park of Poland (Suntago)* na *Fulfilled*. Tablica pokazuje zadanie z `sales.order.updated`. Przeskok do gotowego uruchomienia: artefakt researchera z logo Suntago i opisem pobranym z parkofpoland.com, PR z preview: logo Suntago obok browaru w „Zaufali nam”, karta w „Realizacje” z danymi z zamówienia. Marek zatwierdza, strona na żywo. Jeśli jest czas: dwa zdjęcia przeciągnięte na zamówienie → drugi PR z galerią. | wyzwalacz w sprzedaży; fabryka wciąga do systemu dane z internetu, których tam nie było |
 | 4:30–5:00 | **5. Co dalej** | Jeden slajd: merge bez człowieka dla klas niskiego ryzyka (waiver) i ścieżka prawna (regulamin czeka na prawnika); zgoda klienta mailem wysyłanym i czytanym przez Open Mercato; InboxOps (mail z zapytaniem → zadanie); WordPress; koszt i ewaluacje na zadanie z orkiestratora. | że to uogólnia się poza kod |
 
+### Slajdy
+
+`public/pitch/index.html`: jeden plik bez zależności, serwowany przez aplikację pod
+`/pitch/index.html`, więc to pierwsza karta okna demo. Działa offline, bo fonty są w repo.
+Tekst do powiedzenia jest w notatkach slajdów: `N` otwiera okno prelegenta z notatkami,
+następnym slajdem i zegarem 5:00. Strzałki przełączają slajd w obu oknach, `B` wygasza ekran,
+`P` drukuje do PDF. Kolejność: tytuł stawia problem („Firma zmienia się codziennie. Jej
+strona — niekoniecznie.”), hook pokazuje go na Marku, a slajd „Jak to działa” robi zwrot
+(„Marek nie ma programisty. Ma Open Mercato.”), zapowiada sceny i zajmuje 10 s z czasu demo.
+Na slajdach są same hasła; szczegóły (parametry próby, pozostałe kierunki „co dalej”) są w
+notatkach. Podziękowanie pokazuje repo i zespół z logo firm i wisi przez Q&A. Po nim są slajdy
+zapasowe B1–B4: architektura, porównanie z Linear i Copilot, bezpieczeństwo, nagranie.
+
 ### Na scenie
 
-- **Jedno okno przeglądarki, karty w tej kolejności:** tablica zadań · produkt `ZDP-5000` ·
+- **Jedno okno przeglądarki, karty w tej kolejności:** slajdy · tablica zadań · produkt `ZDP-5000` ·
   Caseload · formularz nowego produktu · PR ze sceny 3 · preview 3 · zamówienie `SO-2026-0042` ·
   PR ze sceny 3b · preview 3b · strona na żywo. Żadnego wpisywania URL-i.
 - **Kto klika:** Marek (sceny 2, 3, zatwierdzenia), handlowiec (status zamówienia w 3b). Prawnik
