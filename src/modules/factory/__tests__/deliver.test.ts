@@ -11,10 +11,11 @@ jest.mock('@open-mercato/core/modules/workflows/lib/definition-grant', () => ({ 
 jest.mock('@open-mercato/shared/lib/di/container', () => ({ createRequestContainer: jest.fn() }))
 
 import { createDeliverFunction, createPrepareFunction, DELIVER_FUNCTION, PREPARE_FUNCTION, type DeliverDeps } from '../lib/deliver'
-import { productTaskDescription } from '../lib/board'
+import { orderTaskDescription, productTaskDescription } from '../lib/board'
 
 const scope = { tenantId: 'tenant-1', organizationId: 'org-1' }
 const productId = 'aaaaaaaa-0000-4000-8000-000000000003'
+const orderId = 'bbbbbbbb-0000-4000-8000-000000000004'
 const execute = jest.fn<(id: string, args: { input: Record<string, unknown>; ctx: { auth: { sub: string } } }) => Promise<unknown>>()
 let description: string | null
 
@@ -28,6 +29,7 @@ const container = {
 const deps = {
   resolveContainer: async () => container as never,
   loadRecord: jest.fn<DeliverDeps['loadRecord']>(),
+  loadOrder: jest.fn<DeliverDeps['loadOrder']>(),
   prepareCheckout: jest.fn<DeliverDeps['prepareCheckout']>(),
   collectChanges: jest.fn<DeliverDeps['collectChanges']>(),
   removeCheckout: jest.fn<DeliverDeps['removeCheckout']>(),
@@ -44,6 +46,7 @@ beforeEach(() => {
   execute.mockReset().mockResolvedValue({ result: {} })
   resolveExecutionUser.mockReset().mockResolvedValue('principal-1')
   deps.loadRecord.mockReset().mockResolvedValue({ id: productId, sku: 'ZWM-1500' } as never)
+  deps.loadOrder.mockReset().mockResolvedValue({ id: orderId, orderNumber: 'SO-2026-0042' } as never)
   deps.prepareCheckout.mockReset().mockResolvedValue({ baseSha: 'base-sha', workDir: '/home/opencode/work/factory/task-1' })
   deps.collectChanges.mockReset().mockResolvedValue({ baseSha: 'base-sha', files: [{ path: 'app/a.tsx', content: 'x' }] })
   deps.removeCheckout.mockReset().mockResolvedValue(undefined)
@@ -62,9 +65,17 @@ it('prepare: moves the bound task to In progress and hands the agent the checkou
   expect(deps.loadRecord).toHaveBeenCalledWith(expect.anything(), scope, productId)
   expect(deps.prepareCheckout).toHaveBeenCalledWith('task-1')
   expect(input).toEqual({
-    taskId: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description, record: { id: productId, sku: 'ZWM-1500' },
+    taskId: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description, record: { id: productId, sku: 'ZWM-1500' }, order: null,
     workDir: '/home/opencode/work/factory/task-1', baseSha: 'base-sha',
   })
+})
+
+it('prepare: a realization task hands the agents the fulfilled order instead of a catalog record', async () => {
+  description = orderTaskDescription({ id: orderId, orderNumber: 'SO-2026-0042', customerName: 'Park of Poland (Suntago)' }, 'https://demo.example')
+  const input = await prepare({}, context)
+  expect(deps.loadRecord).not.toHaveBeenCalled()
+  expect(deps.loadOrder).toHaveBeenCalledWith(expect.anything(), scope, orderId)
+  expect(input).toMatchObject({ record: null, order: { id: orderId, orderNumber: 'SO-2026-0042' } })
 })
 
 it('prepare: a task without a product link gets no record, and a clone failure closes the task with the reason', async () => {

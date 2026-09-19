@@ -22,7 +22,15 @@ export type CheckoutConfig = {
   gitRoot: string
 }
 
-export type ChangedFile = { path: string; content: string | null }
+/** `content: null` is a deletion; binary files (images) travel base64-encoded. */
+export type ChangedFile = { path: string; content: string | null; encoding?: 'utf-8' | 'base64' }
+
+/** Text is valid UTF-8 without NUL bytes; anything else is committed as a binary blob. */
+export function toChangedFile(path: string, bytes: Buffer): ChangedFile {
+  const text = bytes.toString('utf8')
+  const binary = bytes.includes(0) || !Buffer.from(text, 'utf8').equals(bytes)
+  return binary ? { path, content: bytes.toString('base64'), encoding: 'base64' } : { path, content: text }
+}
 
 export type PreparedCheckout = { baseSha: string; workDir: string }
 
@@ -157,7 +165,7 @@ export async function collectChanges(config: CheckoutConfig, taskId: string, exe
     if (!absolute.startsWith(`${paths.work}/`) || (await lstat(absolute)).isSymbolicLink()) {
       throw new CheckoutError(`The Developer agent produced a link or path outside the repository: ${change.path}`, 'protected_path')
     }
-    files.push({ path: change.path, content: await readFile(absolute, 'utf8') })
+    files.push(toChangedFile(change.path, await readFile(absolute)))
   }
   return { baseSha, files }
 }

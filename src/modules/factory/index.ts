@@ -5,8 +5,8 @@ export const metadata: ModuleInfo = {
   title: 'Software factory',
   version: '0.1.0',
   description:
-    'Turns catalog changes into website pull requests: a product added to „Od ręki” becomes a DEMO board task delegated to Factory, whose run opens a PR with its product page (SPEC-001, SPEC-004 scene 3, SPEC-005).',
+    'Turns catalog and sales changes into website pull requests: a product added to „Od ręki” becomes its product page, a fulfilled order becomes a customer reference (SPEC-001, SPEC-004 scenes 3 and 3b, SPEC-005, SPEC-006).',
   author: 'HackOn team',
   license: 'MIT',
-  requires: ['catalog', 'workflows', 'task_delegation'],
+  requires: ['catalog', 'sales', 'customers', 'workflows', 'task_delegation'],
 }

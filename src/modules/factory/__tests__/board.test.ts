@@ -4,7 +4,7 @@ import { CrudHttpError } from '@open-mercato/shared/lib/crud/errors'
 const findOne = jest.fn<(...args: unknown[]) => Promise<unknown>>()
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({ findOneWithDecryption: (...args: unknown[]) => findOne(...args) }))
 
-import { openProductTask, productTaskDescription, readProductIdFromTask } from '../lib/board'
+import { openOrderTask, openProductTask, orderTaskDescription, productTaskDescription, readOrderIdFromTask, readProductIdFromTask } from '../lib/board'
 
 const scope = { tenantId: '00000000-0000-4000-8000-000000000001', organizationId: '00000000-0000-4000-8000-000000000002' }
 const product = { id: 'AAAAAAAA-0000-4000-8000-000000000003', sku: 'ZWM-1500', title: 'Zbiornik mobilny na wodę pitną 1500 l' }
@@ -34,6 +34,29 @@ describe('product ↔ task link', () => {
     expect(readProductIdFromTask(productTaskDescription(product))).toBe(product.id.toLowerCase())
     expect(readProductIdFromTask('Zadanie bez linku')).toBeNull()
     expect(readProductIdFromTask(null)).toBeNull()
+  })
+})
+
+describe('order ↔ task link', () => {
+  const order = { id: 'BBBBBBBB-0000-4000-8000-000000000004', orderNumber: 'SO-2026-0042', customerName: 'Park of Poland (Suntago)' }
+
+  it('round-trips the order id and never mistakes it for a product', () => {
+    const description = orderTaskDescription(order, 'https://demo.example/')
+    expect(readOrderIdFromTask(description)).toBe(order.id.toLowerCase())
+    expect(readProductIdFromTask(description)).toBeNull()
+    expect(readOrderIdFromTask(productTaskDescription(product))).toBeNull()
+  })
+
+  it('opens one delegated DEMO task per order and reuses it on a repeated intake', async () => {
+    const first = await openOrderTask(container(), scope, order)
+    expect(execute.mock.calls[0]![1].input).toMatchObject({ title: 'Realizacja: Park of Poland (Suntago) — SO-2026-0042' })
+    expect(first).toMatchObject({ status: 'delegated', created: true })
+
+    execute.mockClear()
+    rows['staff:staff_time_task'] = [{ id: 'task-9', description: orderTaskDescription(order) }]
+    const second = await openOrderTask(container(), scope, order)
+    expect(execute.mock.calls.map(([id]) => id)).toEqual(['task_delegation.task.delegate'])
+    expect(second).toMatchObject({ taskId: 'task-9', created: false })
   })
 })
 

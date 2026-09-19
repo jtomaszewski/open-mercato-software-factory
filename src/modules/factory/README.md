@@ -18,6 +18,11 @@ The run, agents/developer + lib/checkout.ts: the Developer file agent edits and 
   checkout in the OpenCode sidecar (bash + edit inside the sandbox root), so the run, its tool
   calls, trace and cost are the orchestrator's (Backend → Agents, Traces, the process page); the
   host refuses protected paths/links, commits on the cloned base and opens one PR per task
+Scene 3b (SPEC-006): sales.orders.update ─▶ commands/interceptors.ts (status → fulfilled?)
+  └─▶ factory.order.fulfilled ─▶ subscribers/order-fulfilled.ts ─▶ lib/board.ts: DEMO task (links the order)
+        └─▶ the same factory.deliver: prepare_checkout loads the order (lib/orderRecord.ts), then
+              INVOKE_AGENT factory.researcher (web_fetch on the customer's website; only when there is
+              an order) ─▶ factory.developer adds the logo + the realization entry ─▶ PR ─▶ In review
 Task drawer ─▶ GET /api/factory/tasks/:id/review: the PR's diff, checks and preview
 Task drawer „Zatwierdź i opublikuj” ─▶ POST /api/factory/tasks/:id/approve (assignee only)
   └─▶ lib/approve.ts: squash-merge at the checked head ─▶ task Done (delegation released, outcome done)
@@ -50,6 +55,9 @@ Task drawer „Zatwierdź i opublikuj” ─▶ POST /api/factory/tasks/:id/appr
   the agent's file-plane frontmatter into `docker/opencode/agents-local/` (the CLI renders
   `write/edit/bash: deny`), which docker-compose mounts over the generated file. After editing
   `agents/developer`: `yarn generate`, then restart the sidecar.
+- Rehearsal of scene 3b: set order SO-2026-0042 to *Fulfilled* on its page (or PUT
+  `/api/sales/orders` with the `fulfilled` status entry). A `web_fetch` failure leaves the
+  Researcher's description thin; `demo_fixtures/lib/suntago.json` is the cached scrape.
 - Rehearsal: `yarn mercato factory publish-product --product <id> --tenant <t> --org <o>` puts
   the product on the board like the intake does.
   Approving merges into the site repo's `main`, which publishes the page: reset the site after a
