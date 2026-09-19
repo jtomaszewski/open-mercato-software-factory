@@ -49,7 +49,7 @@ it('creates the Internal customer, admin staff member, DEMO project, factory col
   ])
   expect(execute.mock.calls[1]![1].input).toMatchObject({ ...scope, userId: 'admin-user', displayName: 'Marek' })
   expect(execute.mock.calls[2]![1].input).toMatchObject({ ...scope, code: 'DEMO', customerId: 'customer-1', ownerUserId: 'admin-user' })
-  expect(provision).toHaveBeenCalledWith(scope, expect.objectContaining({ agentDefinitionId: 'factory', roleFeatures: ['task_delegation.view', 'task_delegation.process'] }))
+  expect(provision).toHaveBeenCalledWith(scope, expect.objectContaining({ agentDefinitionId: 'factory', displayName: 'Software Engineer', roleFeatures: ['task_delegation.view', 'task_delegation.process'] }))
   expect(result).toEqual({
     customerId: 'customer-1', staffMemberId: 'member-1', projectId: 'project-1',
     createdColumns: ['queued', 'in-design', 'closed'], agentUserId: 'factory-user',

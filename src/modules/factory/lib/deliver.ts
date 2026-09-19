@@ -132,7 +132,7 @@ export async function ensureFactoryDeliver(container: AwilixContainer, scope: Sc
     definition = em.create(ProcessDefinition, {
       ...scope,
       name: FACTORY_DELIVER_PROCESS,
-      description: 'A board task delegated to Factory becomes the product page PR in the website repo (SPEC-004 scene 3).',
+      description: 'A board task delegated to Software Engineer becomes the product page PR in the website repo (SPEC-004 scene 3).',
       workflowId: DELIVER_WORKFLOW_ID,
       inputDefaults: null,
       inputSchema: null,

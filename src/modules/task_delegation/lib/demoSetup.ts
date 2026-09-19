@@ -124,7 +124,7 @@ export async function seedTaskDelegationDemo(
   if (typeof hasRegistration === 'function' && hasRegistration.call(container, 'agentPrincipalService')) {
     const principal = await container.resolve<AgentPrincipalService>('agentPrincipalService').provision(scope, {
       agentDefinitionId: FACTORY_AGENT_ID,
-      displayName: 'Factory',
+      displayName: 'Software Engineer',
       roleFeatures: ['task_delegation.view', 'task_delegation.process'],
     })
     agentUserId = principal.userId

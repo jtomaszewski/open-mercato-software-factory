@@ -80,7 +80,7 @@ Building a board, a drawer, projects, references and comments for this is a week
 ## User Stories
 
 - **Product owner** creates a task on the `WEB` project board. It becomes `WEB-12`, assigned to
-  them, in `Backlog`. In the drawer they set the delegate to "Factory agent", and within a second
+  them, in `Backlog`. In the drawer they set the delegate to "Software Engineer", and within a second
   the card moves to `Queued` with a delegate badge, then the badge shows the pending Caseload
   decision. They remain the assignee throughout. A user without `task_delegation.delegate` sees no delegate
   picker.
@@ -102,7 +102,7 @@ Chat intake (next iteration, storyboarded now; see *Chat intake*):
 
 - **Business owner** opens the AI assistant on a product page, attaches the product, and writes
   "the product page on the website still shows last year's price". The intake agent asks one
-  question (which project), then proposes `WEB-13` delegated to the Factory agent in OM's
+  question (which project), then proposes `WEB-13` delegated to the Software Engineer in OM's
   standard "Review proposed changes" card. They confirm and get a link to the task; everything
   after that happens on the board and in the Caseload, not in the chat.
 - **Business owner without `task_delegation.delegate`** gets the same card without the delegate, and the
@@ -277,7 +277,7 @@ The widgets refetch on these client-broadcast events: `task_delegation.task.dele
 `workflows.instance.{started,completed,failed,cancelled}` and
 `agent_orchestrator.proposal.{created,disposed}`. The `staff` board already refreshes the card's
 column on `status_changed`. If the orchestrator is absent or the lookup fails, the badge shows
-only "Delegated to Factory agent", and the board still renders.
+only "Delegated to Software Engineer", and the board still renders.
 
 **Follow-ups** (`task_delegation.task.create_followup`) create a subtask through `staff`'s `create`
 command, in `backlog`, with the parent's assignee and no delegate. `staff` allows one level of

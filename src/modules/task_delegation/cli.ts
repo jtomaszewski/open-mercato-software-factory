@@ -28,7 +28,7 @@ const seedDemo: ModuleCli = {
       `Task delegation demo (org=${organizationId}): project DEMO ${result.projectId}, ` +
         `columns added: ${result.createdColumns.join(', ') || 'none'}, ` +
         `staff member ${result.staffMemberId ?? 'skipped (no admin user)'}, ` +
-        `factory agent ${result.agentUserId ?? 'skipped (orchestrator disabled)'}`,
+        `Software Engineer agent ${result.agentUserId ?? 'skipped (orchestrator disabled)'}`,
     )
   },
 }

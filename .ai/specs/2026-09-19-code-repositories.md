@@ -1,18 +1,18 @@
-# Code repositories and the Developer agent
+# Code repositories and the Software Engineer agent
 
 **Date**: 2026-09-19
-**Status**: Draft
+**Status**: Phase 1 implemented and verified locally; Phases 2-4 remain Draft
 **Scope**: Specification only. Registry, project links and repository-bound delegation; execution and delivery remain in their companions.
 **Companions**: [Agent execution and verified previews](2026-09-19-agent-execution-and-preview.md), [Candidate approval and delivery](2026-09-19-instance-delivery-and-recovery.md)
 **Decisions**: D-043..D-047 in [accepted decisions](2026-09-19-instance-development-decisions.md)
 
 ## TLDR
 
-Administrators connect GitHub repositories to Open Mercato from a **Code repositories** settings page, and project managers link them to staff projects. A task on a project is delegated to the **Developer** agent, which works on one of that project's repositories; the server resolves the repository from the project, never from the caller. Open Mercato is the authority for which repositories exist, which projects use them and who may delegate. GitHub's App installation screen is the per-repository consent, and the credential broker keeps the GitHub App key. The agent never edits the hosting Open Mercato instance (D-043), which is what makes an in-app authority safe.
+Administrators connect GitHub repositories to Open Mercato from a **Code repositories** settings page, and project managers link them to staff projects. A task on a project is delegated to the **Software Engineer** agent, which works on one of that project's repositories; the server resolves the repository from the project, never from the caller. Open Mercato is the authority for which repositories exist, which projects use them and who may delegate. GitHub's App installation screen is the per-repository consent, and the credential broker keeps the GitHub App key. The agent never edits the hosting Open Mercato instance (D-043), which is what makes an in-app authority safe.
 
 ## Problem Statement
 
-The execution spec registers targets only in external installation policy: config files and CLI, with no in-app view of which repositories exist, whether they are qualified, or who may use them. Adding a repository means an operator editing supervisor config. Targets are not tied to projects, so every delegation needs a target choice even though a project's work lives in a small, known set of codebases. The seeded agent is called `factory` and the specs call it "Open Mercato Developer", although it will never edit Open Mercato itself.
+The execution spec registers targets only in external installation policy: config files and CLI, with no in-app view of which repositories exist, whether they are qualified, or who may use them. Adding a repository means an operator editing supervisor config. Targets are not tied to projects, so every delegation needs a target choice even though a project's work lives in a small, known set of codebases. The seeded agent is called `factory` and the earlier specs call it "Open Mercato Developer", although it will never edit Open Mercato itself.
 
 ## Overview and Success Measures
 
@@ -26,9 +26,9 @@ The execution spec registers targets only in external installation policy: confi
 - **REQ-001** — An administrator connects a GitHub App installation and registers repositories it grants, with no secret entered or stored in Open Mercato.
 - **REQ-002** — Each repository has a profile kind (`pr_only` or `static_site`), editable commands/settings and a visible qualification result; only qualified, active repositories can receive work.
 - **REQ-003** — A project manager links one or more registered repositories to a project and marks at most one as default.
-- **REQ-004** — Delegating a task to Developer resolves the repository from the task's project: automatic for one link or a default, a required choice otherwise; the choice is frozen on the delegation.
+- **REQ-004** — Delegating a task to Software Engineer resolves the repository from the task's project: automatic for one link or a default, a required choice otherwise; the choice is frozen on the delegation.
 - **REQ-005** — Disabling a repository, losing GitHub access or unlinking it stops new work immediately and stops in-flight publication at the next broker operation.
-- **REQ-006** — The seeded agent is named Developer (`developer`); existing `factory` principals keep working until migrated.
+- **REQ-006** — The seeded agent is named Software Engineer with the existing `factory` identity; existing principals and delegations keep working.
 
 ## Non-goals
 
@@ -42,7 +42,7 @@ The execution spec registers targets only in external installation policy: confi
 
 ## Proposed Solution
 
-A new app module `repositories` owns the registry: GitHub App connections, repositories with their frozen profile and qualification, and project links. It talks to the credential broker (execution spec) over an authenticated server-to-server contract for everything that needs the GitHub App key: verifying an installation, listing granted repositories and branches, and running qualification. `tasks` consumes the registry through an optional DI resolver when delegating. Settings UI uses `DataTable`/`CrudForm`; the project link is an injected tab on the staff project detail page; the task delegate sidebar gains a repository select.
+A new app module `repositories` owns the registry: GitHub App connections, repositories with their frozen profile and qualification, and project links. It talks to the credential broker (execution spec) over an authenticated server-to-server contract for everything that needs the GitHub App key: verifying an installation, listing granted repositories and branches, and running qualification. `task_delegation` consumes the registry through an optional DI resolver when delegating. Settings UI uses `DataTable`/`CrudForm`; the project link is an injected tab on the staff project detail page; the task delegate sidebar gains a repository select.
 
 ### Design Decisions and Alternatives
 
@@ -51,7 +51,7 @@ A new app module `repositories` owns the registry: GitHub App connections, repos
 | Open Mercato is the registry authority (D-044) | Agent never edits OM (D-043), so app-stored authority cannot be widened by agent code; normal OM features/roles and audit apply | External supervisor policy with OM as a request surface | Needed only while the agent could deploy OM code; adds a second admin UI for no remaining threat |
 | GitHub App install as consent | GitHub's own screen selects repositories; installation tokens are short-lived and limited to granted repositories | PAT/deploy-key form | Long-lived secrets in OM, no consent screen, no revocation signal |
 | Broker keeps App key; OM stores only installation and repository IDs | OM and the sandbox never hold a credential that can push, merge or read unregistered repositories | `integrations` credential store in OM | Would place the App private key inside the app the agent's candidates run beside |
-| New module `repositories`, consumed by `tasks` via optional DI | Registry is meaningful without delegation (and vice versa); keeps `tasks` focused on delegation | Extend `tasks` | Mixes provider connection lifecycle into delegation state |
+| New module `repositories`, consumed by `task_delegation` via optional DI | Registry is meaningful without delegation (and vice versa); keeps `task_delegation` focused on delegation | Extend `task_delegation` | Mixes provider connection lifecycle into delegation state |
 | Many repositories per project, optional default (D-045) | Projects often span a site and a service | Exactly one per project | Forces duplicate projects |
 | Generic `pr_only` kind (D-046) | Any qualified repository can receive PRs; preview/delivery stay limited to vetted kinds | Only `static_site` | Nothing but the demo site could be connected |
 | Repository frozen on delegation | Execution spec invariant: changing target invalidates plan/candidate/approval | Resolve at each run step | Target could drift mid-run |
@@ -67,7 +67,7 @@ A new app module `repositories` owns the registry: GitHub App connections, repos
 | Qualified | `qualification.status = passed` for the current epoch | repository row | Delegation refused with `repository_not_qualified` |
 | Usable | status `active` AND qualified AND connection `active` AND repository still granted | derived | Delegation refused; broker refuses publication |
 | Project link | Repository ↔ staff project; at most one `isDefault` per project | `repositories_project_link` | Setting a second default clears the first in the same transaction |
-| Frozen binding | `repositoryId` + `configEpoch` + profile digest stored on the delegation at delegate time | `tasks_delegation` | Changed epoch or unusable repository fails the run at its next broker operation, never silently retargets |
+| Frozen binding | `repositoryId` + `configEpoch` + profile digest stored on the delegation at delegate time | `task_delegations` | Changed epoch or unusable repository fails the run at its next broker operation, never silently retargets |
 
 Qualification checks (run by the broker, recorded as a report of named checks): App has the required repository permissions; base branch exists and is protected; every workflow reachable from `push`/`pull_request`/`pull_request_target`/`workflow_run` runs agent-authored code without secrets, writable tokens or privileged runners (execution spec "Before the first push"); declared commands are present in the profile. `static_site` adds the Vercel checks of D-042 and the execution spec (protection, disabled Git builds, prebuilt upload).
 
@@ -77,23 +77,23 @@ Qualification checks (run by the broker, recorded as a report of named checks): 
 |---|---|---|---|
 | Repository administrator | Connect installations; register, edit, qualify, disable, remove repositories | organization | `repositories.view`, `repositories.manage` |
 | Project manager | Link/unlink registered repositories, set default | organization + project access (`staff.timesheets.projects.manage` or project membership) | `repositories.link` |
-| Delegator | Delegate a task to Developer on one of its project's usable repositories | task project access | `tasks.delegate` (unchanged) |
+| Delegator | Delegate a task to Software Engineer on one of its project's usable repositories | task project access | `task_delegation.delegate` (unchanged) |
 | Viewer | See repositories and their qualification | organization | `repositories.view` |
 | Agent principal | None on this module; reads its frozen binding through the run envelope only | — | none; `repositories.*` commands refuse `kind = agent` users |
 | Broker (service) | Report installation/repository changes; check usability before publication | installation-level service credential | internal routes, not user features |
 
-Trusted `tenantId`/`organizationId` come from the authenticated session (or, for broker callbacks, from the stored connection row matched by installation ID). A connection, repository or link is never readable across organizations; foreign IDs return 404. Developer enrollment and "external instance administrator" from the execution/delivery specs are replaced by these features plus project access (D-044). Delivery approvals for `static_site` keep `tasks.deployments.approve` (+ legal/commercial features) from the delivery spec.
+Trusted `tenantId`/`organizationId` come from the authenticated session (or, for broker callbacks, from the stored connection row matched by installation ID). A connection, repository or link is never readable across organizations; foreign IDs return 404. Software Engineer enrollment and "external instance administrator" from the execution/delivery specs are replaced by these features plus project access (D-044). Delivery approvals for `static_site` keep `tasks.deployments.approve` (+ legal/commercial features) from the delivery spec.
 
 ## Reuse and Ownership Map
 
 | Capability | Reuse / extend / app-own | Existing module or new module | Integration seam | Why |
 |---|---|---|---|---|
 | Projects, tasks, board, drawer | reuse | core `staff` | project/task IDs | Source of truth for work |
-| Delegation | extend | app `tasks` | `tasks.task.delegate` input + two nullable columns; optional DI `repositoryTargetResolver` | Delegation already owns target freezing |
+| Delegation | extend | app `task_delegation` | `task_delegation.task.delegate` input + three nullable columns; optional DI `repositoryTargetResolver` | Delegation already owns target freezing |
 | Registry, connections, links, qualification state | app-own | new `repositories` | commands, events | No installed equivalent |
 | GitHub App key, installation tokens, qualification runs | reuse (planned) | broker (execution spec) | authenticated HTTP contract below | Credentials stay outside the app |
 | Project tab | UMES injection | `detail:staff:staff_time_project:tabs` | widget | No edit of staff pages |
-| Delegate sidebar repository select | extend | `tasks.injection.task-delegate-sidebar` | existing widget | Already renders the delegate control |
+| Delegate sidebar repository select | extend | `task_delegation.injection.task-delegate-sidebar` | existing widget | Already renders the delegate control |
 | Audit | reuse | `audit_logs` via command bus | commands | Every registry change is a command |
 | Agent principal | reuse | `agent_orchestrator` `agentPrincipalService` | seed | Rename only |
 
@@ -105,16 +105,16 @@ GitHub ─► /backend/repositories/connect?installation_id&state ─► reposit
                                    └─► broker GET /installations/{id} (verify account + granted repos)
 Admin ─► register repos ─► repositories.repository.register ─► broker POST /qualifications ─► callback ─► qualification stored
 PM ─► project tab ─► repositories.project_link.set
-Delegator ─► task sidebar ─► tasks.task.delegate {agentUserId, repositoryId?}
+Delegator ─► task sidebar ─► task_delegation.task.delegate {agentUserId, repositoryId?}
                                    └─► repositoryTargetResolver.resolve(projectId, repositoryId?) ─► freeze {repositoryId, configEpoch}
 Run ─► broker push/PR ─► broker GET OM /api/repositories/internal/usability?repositoryId&epoch ─► allow / refuse
 GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/installation-events
 ```
 
-- **Module boundaries:** `repositories` owns connection/profile/link invariants; `tasks` owns delegation and stores only IDs and the epoch. No ORM relations across modules or to `staff`.
+- **Module boundaries:** `repositories` owns connection/profile/link invariants; `task_delegation` owns delegation and stores only IDs and the epoch. No ORM relations across modules or to `staff`.
 - **Extension points:** injected project tab; existing delegate sidebar widget; settings navigation entry.
 - **Alternatives considered:** a custom field on staff project holding repository IDs — rejected: no default flag, no uniqueness, no link audit.
-- **Compatibility:** `tasks.task.delegate` gains an optional `repositoryId` (additive). Delegations created before this spec have a null binding: their existing (non-target-aware) process keeps running to completion exactly as today, but they can never publish through the broker, because `usability` requires a binding. `/api/tasks/targets` from the execution spec is replaced by `GET /api/repositories/for-project`.
+- **Compatibility:** `task_delegation.task.delegate` gains an optional `repositoryId` (additive). Delegations created before this spec have a null binding: their existing (non-target-aware) process keeps running to completion exactly as today, but they can never publish through the broker, because `usability` requires a binding. `/api/tasks/targets` from the execution spec is replaced by `GET /api/repositories/for-project`.
 
 ## User Journeys
 
@@ -135,7 +135,7 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 
 ### Journey J-003 — Delegate
 
-1. Delegator opens a backlog task and chooses **Developer**.
+1. Delegator opens a backlog task and chooses **Software Engineer**.
 2. If the project has one usable repository or a usable default, the sidebar shows it preselected and changeable; with several and no default it requires a choice; with none it shows "No usable repository is linked to this project" with a link to the project tab (if the user has `repositories.link`).
 3. Delegate freezes repository + epoch; the run envelope carries them.
 4. Conflicts: repository disabled or re-qualified between opening and submitting → 409 `repository_changed`, sidebar reloads options.
@@ -166,7 +166,7 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 | Surface / widget | Empty state guidance and action | Responsive behavior | Keyboard / focus behavior |
 |---|---|---|---|
 | Repository list | "No repositories yet. Connect a GitHub account to choose repositories." + Connect GitHub | table collapses to name + status | primary action first in tab order |
-| Project tab | "Link a repository so tasks here can be delegated to Developer." + Add | single column | add dialog traps focus, Esc cancels |
+| Project tab | "Link a repository so tasks here can be delegated to Software Engineer." + Add | single column | add dialog traps focus, Esc cancels |
 | Delegate sidebar | "No usable repository is linked to this project." | inline | select labelled "Repository"; errors announced via live region |
 
 ### `/backend/repositories` — Code repositories
@@ -187,7 +187,7 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 
 - **Behavior:** status badges use shared status tokens; remove is a destructive confirmation that lists linked projects and active delegations; edit uses optimistic locking with 409 reload.
 - **Responsive and accessibility:** badges carry text, not colour alone.
-- **Localization:** `repositories.*` namespace; `tasks.delegate.repository.*` for sidebar strings.
+- **Localization:** `repositories.*` namespace; `task_delegation.delegate.repository.*` for sidebar strings.
 - **Design-system and theming:** shared primitives and semantic tokens only.
 
 ## Data Models
@@ -231,7 +231,7 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 
 `id`, scope, `project_id` (staff project ID, no ORM relation), `repository_id`, `is_default` bool, `created_by`, `created_at`, `updated_at`. Unique (`organization_id`, `project_id`, `repository_id`); partial unique (`organization_id`, `project_id`) where `is_default`.
 
-### `tasks_delegation` (extended)
+### `task_delegations` (extended)
 
 Add nullable `repository_id` UUID, `repository_config_epoch` int and `repository_profile_digest` varchar(64) (SHA-256 of the canonical profile JSON). Set once at delegate; never updated.
 
@@ -250,9 +250,9 @@ Migrations are generated with `yarn db:generate`, reviewed, and applied only aft
 | `POST` | `/api/repositories/{id}/disable` / `enable` | `repositories.manage` | `{ updatedAt }` | `repositories.repository.status_changed` | 409 | REQ-005 |
 | `DELETE` | `/api/repositories/{id}` → `repositories.repository.remove` | `repositories.manage` | `updatedAt` | soft delete; links removed | 409 active delegations (must disable first) | REQ-005 |
 | `GET` | `/api/repositories/options?search` | `repositories.link` or `repositories.view` | search, page ≤50 | `{ items: [{id, fullName, kind, qualificationStatus}] }` | — | REQ-003 |
-| `GET` | `/api/repositories/for-project?projectId` | `tasks.delegate` + project access | projectId | `{ items: [{id, fullName, kind, isDefault, usable, reason?}] }` | 404 project | REQ-004 |
+| `GET` | `/api/repositories/for-project?projectId` | `task_delegation.delegate` + project access | projectId | `{ items: [{id, fullName, kind, isDefault, usable, reason?}] }` | 404 project | REQ-004 |
 | `GET/POST/DELETE` | `/api/repositories/project-links` → `repositories.project_link.set` / `.remove` | `repositories.link` + project access | `{ projectId, repositoryId, isDefault, updatedAt? }` (required when changing an existing link) | `repositories.project_link.changed` | 404; 409 stale version or concurrent default flip | REQ-003 |
-| command | `tasks.task.delegate` (extended) | `tasks.delegate` | `+ repositoryId?` | delegation with frozen binding | 422 `repository_required`, `repository_not_linked`, `repository_not_qualified`; 409 `repository_changed` | REQ-004 |
+| command | `task_delegation.task.delegate` (extended) | `task_delegation.delegate` | `+ repositoryId?` | delegation with frozen binding | 422 `repository_required`, `repository_not_linked`, `repository_not_qualified`; 409 `repository_changed` | REQ-004 |
 | `POST` | `/api/repositories/internal/qualification-results` | broker service credential | `{ repositoryId, epoch, status, report }` | stored if epoch current, else ignored | 401 | REQ-002 |
 | `POST` | `/api/repositories/internal/installation-events` | broker service credential | `{ installationId, event, repositoryIds? }` | status updates | 401; unknown installation ignored | REQ-005 |
 | `GET` | `/api/repositories/internal/usability` | broker service credential | `delegationId, repositoryId, epoch, profileDigest` | `{ usable, reason? }` — false unless the repository is usable at that epoch/digest, the delegation is active with that frozen binding, and the repository is still linked to the delegation's project | 401 | REQ-005 |
@@ -277,7 +277,7 @@ All public routes declare per-method `metadata` and OpenAPI, zod validation, sco
 | `repositories.connection.connected` / `status_changed` | `repositories` | audit, list cache | — | — |
 | `repositories.repository.registered` / `updated` | `repositories` | outbox → broker | queue qualification | idempotent on (repositoryId, epoch) |
 | `repositories.repository.qualified` (from qualification-results) | `repositories` | notifications | notify the connecting admin on failure | once per epoch |
-| `repositories.repository.status_changed` | `repositories` | `tasks` subscriber | comment on tasks with active delegations on that repository | idempotent per delegation + status |
+| `repositories.repository.status_changed` | `repositories` | `task_delegation` subscriber | comment on tasks with active delegations on that repository | idempotent per delegation + status |
 | `repositories.project_link.changed` | `repositories` (also emitted per link when a repository is removed) | cache | invalidate `for-project` | — |
 | installation removed/suspended (webhook via broker) | broker | `repositories` | connection + repositories `unavailable` | replay-safe on request ID |
 
@@ -289,7 +289,7 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 - **Tenant isolation:** an installation binds to one organization (global unique); all reads filtered by scope; foreign IDs 404; `for-project` validates project scope before listing.
 - **Sensitive data:** no tokens, keys or Vercel secrets stored; profile validators reject fields named like secrets; broker HMAC secret only in environment.
 - **Abuse and failure modes:** the state nonce stops CSRF and replays; the install-time OAuth `code` proves the returning GitHub user can access the installation, so a pasted foreign `installation_id` is refused (the redirect's `installation_id` is attacker-controllable); profile commands are untrusted and run only in the credential-free sandbox; host policy caps from the execution spec still apply on top of the profile.
-- **Residual trust:** anyone holding `repositories.manage` can point Developer at any repository their GitHub installation grants. GitHub's install screen bounds that set.
+- **Residual trust:** anyone holding `repositories.manage` can point Software Engineer at any repository their GitHub installation grants. GitHub's install screen bounds that set.
 
 ## Integration Coverage
 
@@ -306,21 +306,21 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 | TEST-009 | UI | admin + PM + delegator | list empty/populated, connect errors, project tab, sidebar none/one/many, keyboard, dark mode | observable states | REQ-001..004 |
 | TEST-011 | integration | stale qualification; qualification with no callback; broker 502 during complete | delegate; wait past timeout; complete | 422 `repository_not_qualified`; re-qualify offered after 15 min; nothing stored | REQ-002, REQ-001 |
 | TEST-012 | integration | active delegation; link removed | usability check | false with `repository_unlinked` | REQ-005 |
-| TEST-010 | integration | DB with `factory` principal | run setup | `developer` provisioned; `factory` still accepted by start subscriber | REQ-006 |
+| TEST-010 | integration | DB with `factory` principal | fresh setup; rerun setup after operator rename through the existing user-management API/form; exercise stale-version rejection | Software Engineer on fresh setup; operator/custom name preserved on rerun; same factory principal, roles and delegations; existing delegation still starts | REQ-006 |
 
 ## Implementation Phases
 
-### Phase 1 — Developer rename
+### Phase 1 — Software Engineer display name
 
 - **Depends on:** none
-- **Outcome:** board offers "Developer"; existing `factory` delegations keep working.
+- **Outcome:** board offers "Software Engineer"; existing `factory` delegations keep working.
 - **Why this order / value delivered:** tiny and independent of the registry; ships as its own PR. Removes the misleading name everywhere users see it.
-- **Deliverables:** `FACTORY_AGENT_ID` → `DEVELOPER_AGENT_ID = 'developer'`, display name "Developer"; seed provisions `developer`; start subscriber and delegation accept both IDs; setup disables the old `factory` principal only when it has no active delegation.
+- **Deliverables:** Keep `FACTORY_AGENT_ID = 'factory'`; seed display name "Software Engineer"; existing installations use the standard user-management form to change the old default name `Factory` to Software Engineer. No new CLI or Core change is included. Existing principal IDs, roles, process bindings and delegations remain unchanged. Setup preserves existing and custom names; repeated setup keeps the same principal. An operator leaves a custom name unchanged.
 - **Independent slices / estimated commits:** 1–2
 - **Requirements closed:** REQ-006
 - **Tests:** TEST-010
-- **Validation:** `yarn generate && yarn typecheck && yarn test`
-- **Exit gate:** fresh seed shows Developer; existing DEMO delegation still starts.
+- **Validation:** focused Jest; `yarn generate && yarn typecheck && yarn lint && yarn ds:check && yarn test && yarn build`; isolated TEST-010 integration
+- **Exit gate:** fresh seed shows Software Engineer; existing DEMO delegation still starts.
 
 ### Phase 2 — Registry and connect flow
 
@@ -337,9 +337,9 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 ### Phase 3 — Project links and repository-bound delegation
 
 - **Depends on:** Phase 2
-- **Outcome:** tasks delegate to Developer against a project repository, frozen on the delegation.
+- **Outcome:** tasks delegate to Software Engineer against a project repository, frozen on the delegation.
 - **Why this order / value delivered:** closes the user journey end to end.
-- **Deliverables:** project tab widget, link commands, `for-project` route, `repositoryTargetResolver` DI, `tasks.task.delegate` extension and migration, sidebar select, run envelope fields, status-change subscriber.
+- **Deliverables:** project tab widget, link commands, `for-project` route, `repositoryTargetResolver` DI, `task_delegation.task.delegate` extension and migration, sidebar select, run envelope fields, status-change subscriber.
 - **Independent slices / estimated commits:** links; delegation; sidebar — 3–4
 - **Requirements closed:** REQ-003, REQ-004, REQ-005 (delegation side)
 - **Tests:** TEST-005, TEST-006, TEST-009 (tab/sidebar)
@@ -362,7 +362,7 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 | REQ-001 | J-001, list/connect | connection, connect state, `connections/*`, register | 2 | TEST-001..003, 009 | AC-001, AC-004 |
 | REQ-002 | J-001, detail | repository, update/qualify, qualification-results | 2, 4 | TEST-004, 009 | AC-002 |
 | REQ-003 | J-002, project tab | project link, `project-links` | 3 | TEST-005, 006, 009 | AC-003 |
-| REQ-004 | J-003, sidebar | `for-project`, `tasks.task.delegate` | 3 | TEST-005, 006 | AC-003 |
+| REQ-004 | J-003, sidebar | `for-project`, `task_delegation.task.delegate` | 3 | TEST-005, 006 | AC-003 |
 | REQ-005 | J-004 | status, installation-events, usability | 2, 3 | TEST-007, 008 | AC-005 |
 | REQ-006 | board | seed, subscriber | 1 | TEST-010 | AC-006 |
 
@@ -372,16 +372,16 @@ Reviewed against `.ai/guides/upstream/BACKWARD_COMPATIBILITY.md`.
 
 | Surface | Change | Treatment |
 |---|---|---|
-| `tasks.task.delegate` input / route | adds optional `repositoryId` | additive |
-| `tasks.task.delegated` event payload | adds optional `repositoryId`, `repositoryConfigEpoch` | additive (§5 allows new optional fields) |
-| Agent definition ID `factory` | new ID `developer` | deprecation bridge: subscriber and delegation accept both for one minor release; `factory` principal disabled by setup once it has no active delegation; removal noted in the changelog |
-| `tasks_delegation` table | three nullable columns | additive-only (§8) |
+| `task_delegation.task.delegate` input / route | adds optional `repositoryId` | additive |
+| `task_delegation.task.delegated` event payload | adds optional `repositoryId`, `repositoryConfigEpoch` | additive (§5 allows new optional fields) |
+| Agent definition ID `factory` | unchanged; display name becomes Software Engineer | Existing identity, roles and process bindings preserved; an operator updates the legacy display name through the existing user-management form |
+| `task_delegations` table | three nullable columns | additive-only (§8) |
 | `/api/tasks/targets`, external enrollment | replaced | spec-only, never shipped; no bridge needed |
 | New `repositories.*` routes, events, DI `repositoryTargetResolver`, `repositoryBroker` | new | become stable on first release |
 
 ## Rollout, Migration, and Rollback
 
-Additive tables and two nullable columns; no data backfill except Phase 4's idempotent website registration. The module can be disabled in `src/modules.ts`; delegation then refuses target-aware runs with `repositories_unavailable` while ordinary staff work continues. Rollback: disable module; the columns stay null-tolerant. The `factory` agent ID remains accepted for one release after Phase 1.
+Additive tables and three nullable columns; no data backfill except Phase 4's idempotent website registration. The module can be disabled in `src/modules.ts`; delegation then refuses target-aware runs with `repositories_unavailable` while ordinary staff work continues. Rollback: disable module; the columns stay null-tolerant. The `factory` agent ID remains unchanged. Phase 1 renames only the display name. Existing databases use the standard user-management form as described below; setup never overwrites an operator name.
 
 ## Risks and Tradeoffs
 
@@ -400,7 +400,7 @@ Additive tables and two nullable columns; no data backfill except Phase 4's idem
 - [ ] **AC-003** — A project with one default among two linked repositories auto-selects the default; without a default, delegation without a choice returns `repository_required`.
 - [ ] **AC-004** — An installation cannot be bound to a second organization, and a forged or reused state is refused.
 - [ ] **AC-005** — Disabling a repository blocks new delegations at once and makes the broker usability check return false.
-- [ ] **AC-006** — The board offers "Developer"; pre-existing `factory` delegations complete normally.
+- [ ] **AC-006** — The board offers "Software Engineer"; pre-existing `factory` delegations complete normally.
 - [ ] Every listed backend surface matches its recorded Open Mercato reference and uses the canonical shell/components, shared API helpers, semantic tokens, and complete loading, empty, error, conflict, keyboard, accessibility, responsive, light-mode, and dark-mode states.
 - [ ] Every affected API and UI path has self-contained integration coverage and the configured validation gate passes.
 
@@ -424,12 +424,49 @@ Verdict: `Blocked — broker installation/qualification endpoints are specified 
 | Q-001 | Cardinality | Jacek | — | Many per project, optional default (D-045), 2026-09-19 |
 | Q-002 | Authority | Jacek | — | OM (D-044), 2026-09-19 |
 | Q-003 | Profile kinds | Jacek | — | `pr_only` + `static_site` (D-046), 2026-09-19 |
-| Q-004 | Agent name | Jacek | — | Developer (D-047), 2026-09-19 |
+| Q-004 | Agent name | Jacek | — | Software Engineer with `factory` identity, approved 2026-09-19 following SPEC-008 in PR #24; supersedes the naming portion of D-047 |
 | Q-005 | Who links | Jacek | — | `repositories.link` + project access, 2026-09-19 |
 | Q-006 | Split | — | — | One spec, phased, 2026-09-19 |
+| Q-007 | Existing-install display-name update | Maintainer | no | Use the existing admin form, no new CLI or Core changes; explicitly selected on 2026-09-19 |
 
 ## Changelog
 
 | Date | Change |
 |---|---|
 | 2026-09-19 | Initial draft after D-043..D-047. |
+| 2026-09-19 | User selected Software Engineer with the existing factory identity, following PR #24. Reconciled task_delegation contracts and three binding columns. Fresh-seed implementation started; existing installations use the existing admin form as explicitly approved after security review. |
+
+## Implementation Status
+
+Source doc: .ai/specs/2026-09-19-code-repositories.md
+
+The Phase 1 identity decision was explicitly revised on 2026-09-19 to match SPEC-008 in PR #24: Software Engineer, identifier `factory`. SPEC-009 assignment-picker work and PR #23 container execution are outside this increment.
+
+| Phase | State | Dependencies | Acceptance IDs | Focused validation | Exit gate |
+|---|---|---|---|---|---|
+| 1: Display name | verified | none | AC-006 | focused Jest, generation, types, lint, DS, full tests, build, isolated integration | new and existing principal names, identity and delegation preserved |
+| 2: Registry | pending | Phase 1; readiness audit and fake broker | AC-001, AC-002, AC-004, AC-005 | not run | connect/register/qualify |
+| 3: Project links | pending | Phase 2 | AC-003, AC-005 | not run | frozen delegation |
+| 4: Live target | pending | Phase 3; qualified broker | AC-002 | not run | verified live binding |
+
+### Phase 1 progress
+
+- [x] Baseline: four focused delegation suites, 13 tests passed with `corepack yarn test --watchman=false --runInBand --runTestsByPath src/modules/task_delegation/lib/__tests__/demoSetup.test.ts src/modules/task_delegation/lib/__tests__/delegationService.test.ts src/modules/task_delegation/subscribers/__tests__/start-factory.test.ts src/modules/task_delegation/commands/__tests__/delegate-flow.test.ts`.
+- [x] Fresh-install seed display name: `src/modules/task_delegation/lib/demoSetup.ts`; seed assertion failed with Factory and passed with Software Engineer. Final retained unit suite: `corepack yarn test --watchman=false --runInBand` passed (28 suites, 147 tests).
+- [x] TEST-010 passed against the reusable local disposable database: fresh naming, legacy/custom-name preservation, stable principal/roles/delegation, stale-version 409 and local workflow completion.
+- [x] Existing Users admin form exercised locally: save Factory -> Software Engineer and reload, preserving role, organization and login settings.
+- [x] Final cleanup revalidation: explicit integration-test TypeScript and ESLint passed; managed integration passed 2/2. Primary and security review reported no remaining findings.
+
+### Existing-install display-name update
+
+The maintainer selected the existing admin form on 2026-09-19. No `rename-agent` command is added. The rejected direct-command candidate is not part of the deliverable.
+
+1. Select the intended tenant and organization, then open the existing Users administration page.
+2. Locate the agent user belonging to the existing `factory` principal. Its generated email is `agent+factory+<organizationId>@agent.internal`; verify the organization and identity before editing.
+3. If its display name is already Software Engineer, nothing is required. If an operator has chosen any name other than the old default `Factory`, preserve it.
+4. For the old default, open `/backend/users/<userId>/edit`, change only the display name to Software Engineer, and save through the existing form. Keep email, roles, organization and login settings unchanged.
+5. If a version conflict appears, reload and inspect the new values before deciding whether to change the name. Confirm the task delegate picker and existing task show the updated name with the same user identity.
+
+The installed form uses `CrudForm`, the loaded user's `updatedAt`, and the guarded auth API. This is an explicit operator edit, not an automatic background migration. Re-running setup preserves the name and existing delegation identity. Source rollback does not revert a stored name; use the same admin form to restore it if required. The procedure was exercised against the local disposable test database only.
+
+Phase 1 passed the isolated TEST-010 and review gates. Local browser evidence covers the existing Users form and saved name; no new UI component was introduced. Provider inference and external broker execution were not exercised. Later phases remain pending.

@@ -23,7 +23,7 @@ it('keeps authorized delegation data when optional process reads fail', async ()
   findMany.mockImplementation(async (entity) => {
     if (entity === TaskDelegation) return [delegation]
     if (entity === ProcessInstance) throw new Error('optional table unavailable')
-    if (entity === User) return [{ id: 'agent-id', name: 'Factory' }]
+    if (entity === User) return [{ id: 'agent-id', name: 'Software Engineer' }]
     return []
   })
   const container = {
@@ -41,5 +41,5 @@ it('keeps authorized delegation data when optional process reads fail', async ()
     selectedOrganizationId: 'org-id', organizationIds: ['org-id'], organizationScope: null,
   } as unknown as CommandRuntimeContext
   const result = await createTaskDelegationService({ em: {} as EntityManager }).getDelegations(ctx, ['task-id'])
-  expect(result[0]).toMatchObject({ taskId: 'task-id', delegation: { id: 'delegation-id', runState: null } })
+  expect(result[0]).toMatchObject({ taskId: 'task-id', delegation: { id: 'delegation-id', delegateName: 'Software Engineer', runState: null } })
 })

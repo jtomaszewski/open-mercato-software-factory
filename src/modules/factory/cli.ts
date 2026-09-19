@@ -12,7 +12,7 @@ const USAGE = [
   '  mercato factory publish-product --product <productId> --tenant <tenantId> --org <organizationId> [--direct]',
   '  mercato factory ensure-process --tenant <tenantId> --org <organizationId>',
   '',
-  '  publish-product  puts the product on the DEMO board as a task delegated to Factory (needs the workers);',
+  '  publish-product  puts the product on the DEMO board as a task delegated to Software Engineer (needs the workers);',
   '                   with --direct it opens the PR in-process instead, for rehearsals and debugging.',
   '  ensure-process   creates factory.deliver and its workflow for a tenant seeded before this module existed.',
 ].join('\n')

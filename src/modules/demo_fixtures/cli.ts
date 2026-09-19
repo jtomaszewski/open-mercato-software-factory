@@ -37,7 +37,7 @@ const seedDemo: ModuleCli = {
     )
     // The board scenes delegate tasks on the DEMO project to the factory agent (SPEC-004).
     const board = await seedTaskDelegationDemo(container, { tenantId, organizationId })
-    console.log(`Task board: DEMO project ${board.projectId}, factory agent ${board.agentUserId ?? 'skipped (orchestrator disabled)'}`)
+    console.log(`Task board: DEMO project ${board.projectId}, Software Engineer agent ${board.agentUserId ?? 'skipped (orchestrator disabled)'}`)
   },
 }
 
