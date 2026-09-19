@@ -41,7 +41,7 @@ function toolFake(options: { includeAgent?: boolean } = {}) {
           data: {
             items: options.includeAgent === false
               ? []
-              : [{ userId: AGENT_USER_ID, agentId: 'factory', name: 'Developer', label: 'Developer', description: 'Opens a PR' }],
+              : [{ userId: AGENT_USER_ID, agentId: 'developer', name: 'Developer', label: 'Developer', description: 'Opens a PR' }],
           },
         }
       }

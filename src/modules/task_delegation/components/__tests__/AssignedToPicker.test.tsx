@@ -78,7 +78,7 @@ beforeEach(() => {
   mockHeaders.mockReset()
   mockReadApi.mockReset().mockImplementation(async (path: string) => path.includes('assignable-people')
     ? { items: [{ staffMemberId: MEMBER, name: 'Ola Nowak', userId: 'user-1' }] }
-    : { items: [{ userId: AGENT_USER, agentId: 'factory', name: 'Factory', label: 'Software Engineer', description: 'Researches, plans and opens a PR' }] })
+    : { items: [{ userId: AGENT_USER, agentId: 'developer', name: 'Factory', label: 'Software Engineer', description: 'Researches, plans and opens a PR' }] })
 })
 
 it('names the current value on the trigger and offers both sections when opened', async () => {

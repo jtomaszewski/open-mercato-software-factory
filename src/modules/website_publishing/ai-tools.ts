@@ -6,7 +6,7 @@ import { createStaffApi, boardHref, toTaskToolError, type StaffApi } from '../ta
 import { createScopedApiOperationRunner } from '../task_tools/lib/scoped-runner'
 import { installNextServerResolveShim } from '../task_tools/lib/next-server-resolve-shim'
 import { DEMO_PROJECT_CODE } from '../task_delegation/lib/demoSetup'
-import { FACTORY_AGENT_ID } from '../task_delegation/lib/agentIdentity'
+import { DEVELOPER_AGENT_IDS, isDeveloperAgentId } from '../task_delegation/lib/agentIdentity'
 
 export const REQUEST_CHANGE_TOOL = 'website_publishing.request_change'
 export const REQUEST_CHANGE_FEATURES = [
@@ -121,7 +121,10 @@ const requestChangeTool: AiToolDefinition = defineAiTool<unknown, RequestChangeR
       path: '/task_delegation/agents',
     })
     if (!agents.success) throw toTaskToolError(agents)
-    const agentUserId = agents.data?.items?.find((agent) => agent.agentId === FACTORY_AGENT_ID)?.userId
+    // Ordered by the accepted ids, so a legacy principal is only used when the current one is absent.
+    const agentUserId = (agents.data?.items ?? [])
+      .filter((agent) => isDeveloperAgentId(agent.agentId))
+      .sort((a, b) => DEVELOPER_AGENT_IDS.indexOf(a.agentId!) - DEVELOPER_AGENT_IDS.indexOf(b.agentId!))[0]?.userId
     if (typeof agentUserId !== 'string') {
       throw new Error(JSON.stringify({ code: 'developer_unavailable', message: 'Developer is not available.' }))
     }

@@ -10,7 +10,7 @@ import { canResolve } from '../lib/subscriberServices'
 export const metadata = {
   event: 'task_delegation.task.delegated',
   persistent: true,
-  id: 'tasks:start-factory',
+  id: 'task_delegation:start-delegated-run',
 }
 
 export type TaskDelegatedPayload = {
@@ -28,7 +28,7 @@ type SubscriberContext = {
   hasRegistration?: (name: string) => boolean
 }
 
-export default async function startFactory(payload: TaskDelegatedPayload, context: SubscriberContext): Promise<void> {
+export default async function startDelegatedRun(payload: TaskDelegatedPayload, context: SubscriberContext): Promise<void> {
   // The roster owns the role → process pair. An agent id no row names is not ours to start.
   const roster = findRosterEntry(payload.agentId)
   if (!roster) return
@@ -37,7 +37,7 @@ export default async function startFactory(payload: TaskDelegatedPayload, contex
     throw new Error('[internal] Scoped task delegation payload required')
   }
   if (!canResolve(context, 'ProcessDefinition') || !canResolve(context, 'AgentPrincipal')) {
-    throw new Error('[internal] factory orchestrator is unavailable')
+    throw new Error('[internal] the agent orchestrator is unavailable')
   }
   const em = context.resolve<EntityManager>('em').fork()
   const scope = { tenantId, organizationId }
@@ -45,8 +45,10 @@ export default async function startFactory(payload: TaskDelegatedPayload, contex
     ...scope, id: delegationId, taskId, delegateUserId, releasedAt: null,
   }, {}, scope)
   if (!delegation) return
+  // `payload.agentId` rather than the roster's own id: a principal provisioned under a legacy
+  // id still matches a roster entry, and this must find that principal, not its successor's id.
   const principal = await findOneWithDecryption(em, AgentPrincipal, {
-    ...scope, userId: delegateUserId, agentDefinitionId: roster.agentDefinitionId, enabled: true, deletedAt: null,
+    ...scope, userId: delegateUserId, agentDefinitionId: payload.agentId, enabled: true, deletedAt: null,
   }, {}, scope)
   if (!principal) return
   const definition = await findOneWithDecryption(em, ProcessDefinition, {

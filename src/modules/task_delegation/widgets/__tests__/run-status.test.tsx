@@ -62,7 +62,7 @@ function show(delegationOverrides: Partial<TaskDelegationDto> | null) {
 
 beforeEach(() => {
   apiCall.mockReset().mockResolvedValue({})
-  readApi.mockReset().mockResolvedValue({ items: [{ userId: 'agent-user', agentId: 'factory', name: 'Software Engineer', label: 'Software Engineer', description: '' }] })
+  readApi.mockReset().mockResolvedValue({ items: [{ userId: 'agent-user', agentId: 'developer', name: 'Software Engineer', label: 'Software Engineer', description: '' }] })
   refresh.mockReset()
   guardedPayloads.length = 0
   grantedFeatures = ['task_delegation.view', 'task_delegation.delegate']

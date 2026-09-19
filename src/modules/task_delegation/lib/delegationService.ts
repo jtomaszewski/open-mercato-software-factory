@@ -165,6 +165,10 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
       if (!hasOrchestrator) return []
       const decryptScope = { tenantId: scope.tenantId, organizationId: scope.organizationId }
       const principals = await findWithDecryption(em, AgentPrincipal, { ...decryptScope, agentDefinitionId: { $in: rosterAgentDefinitionIds() }, enabled: true, deletedAt: null }, {}, decryptScope)
+      // The roster's own order, so a role provisioned under both its current and a legacy id
+      // is offered under the current one.
+      const idOrder = rosterAgentDefinitionIds()
+      principals.sort((a, b) => idOrder.indexOf(a.agentDefinitionId) - idOrder.indexOf(b.agentDefinitionId))
       if (!principals.length) return []
       // A roster entry whose process cannot be started is not an offer we can honour: the
       // delegate command answers `orchestrator_unavailable` for it, so it is never listed.
@@ -175,17 +179,22 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
       const users = await findWithDecryption(em, User, { ...decryptScope, kind: 'agent', deletedAt: null, id: { $in: principals.map((item) => item.userId) } }, {}, decryptScope)
       const usersById = new Map(users.map((user) => [user.id, user]))
       const { translate } = await resolveTranslations()
+      // One offer per role: a legacy id is accepted, but if its successor is provisioned too
+      // (a mixed rollout, or a hand-edited row) the picker must not show the same role twice.
+      const offered = new Set<string>()
       return principals.flatMap((principal) => {
         const entry = findRosterEntry(principal.agentDefinitionId)
-        if (!entry || !startable.has(entry.processName)) return []
+        if (!entry || !startable.has(entry.processName) || offered.has(entry.agentDefinitionId)) return []
         const user = usersById.get(principal.userId)
-        return user ? [{
+        if (!user) return []
+        offered.add(entry.agentDefinitionId)
+        return [{
           userId: user.id,
           agentId: principal.agentDefinitionId,
           name: user.name ?? user.email,
           label: translate(entry.labelKey, entry.labelFallback),
           description: translate(entry.descriptionKey, entry.descriptionFallback),
-        }] : []
+        }]
       })
     },
     /**

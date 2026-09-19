@@ -3,6 +3,12 @@
 **Date**: 2026-09-19
 **Status**: Implemented
 
+**Renamed since (2026-09-19):** the `factory` module became `code_changes` + `website_publishing`,
+so the names below now read: `factory.request_change` → `website_publishing.request_change`,
+`factory.deliver` → the `website_publishing.website_change` process, `factory.developer` →
+`website_publishing.developer`, the `start-factory` subscriber → `start-delegated-run`, and the
+agent principal id `factory` → `developer` (the old id is still accepted). The design is unchanged.
+
 ## TLDR
 
 Add one approval-aware `factory.request_change` AI/MCP tool. It creates a scoped staff task in a

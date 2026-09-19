@@ -3,7 +3,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandBus } from '@open-mercato/shared/lib/commands'
 import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { User } from '@open-mercato/core/modules/auth/data/entities'
-import { FACTORY_AGENT_DISPLAY_NAME, FACTORY_AGENT_ID } from './agentIdentity'
+import { DEVELOPER_AGENT_DISPLAY_NAME, DEVELOPER_AGENT_IDS } from './agentIdentity'
 import { systemContext, type TaskDelegationScope } from './systemContext'
 
 /**
@@ -14,8 +14,8 @@ type AgentPrincipalService = {
   resolve(scope: TaskDelegationScope, agentDefinitionId: string): Promise<{ userId: string } | null>
 }
 
-export type RenameFactoryAgentOutcome =
-  /** The principal's name was `Factory` (or anything else) and is now the display name. */
+export type RenameAgentOutcome =
+  /** The principal's name was something else and is now the display name. */
   | 'renamed'
   /** The principal already reads as the display name — a repeated run. */
   | 'unchanged'
@@ -24,14 +24,14 @@ export type RenameFactoryAgentOutcome =
   /** The enterprise orchestrator is disabled in this deployment; agents do not exist here. */
   | 'orchestrator-disabled'
 
-export type RenameFactoryAgentResult = {
-  outcome: RenameFactoryAgentOutcome
+export type RenameAgentResult = {
+  outcome: RenameAgentOutcome
   userId: string | null
   previousName: string | null
 }
 
 /**
- * Renames the delegatable agent's principal to {@link FACTORY_AGENT_DISPLAY_NAME} (SPEC-008).
+ * Renames the delegatable agent's principal to {@link DEVELOPER_AGENT_DISPLAY_NAME} (SPEC-008).
  *
  * Provisioning writes `auth.User.name` only on the branch that creates the user, so re-running
  * `seed-demo` against a database seeded before the rename looks like it worked and changes
@@ -42,11 +42,11 @@ export type RenameFactoryAgentResult = {
  * encryption, the audit entry and the CRUD side effects, and it touches no other column. Every
  * outcome other than `renamed` issues no command at all, which is what makes repeated runs safe.
  */
-export async function renameFactoryAgent(
+export async function renameAgentPrincipal(
   container: AwilixContainer,
   scope: TaskDelegationScope,
-): Promise<RenameFactoryAgentResult> {
-  const nothingToDo = (outcome: RenameFactoryAgentOutcome): RenameFactoryAgentResult =>
+): Promise<RenameAgentResult> {
+  const nothingToDo = (outcome: RenameAgentOutcome): RenameAgentResult =>
     ({ outcome, userId: null, previousName: null })
 
   const hasRegistration = (container as { hasRegistration?: (name: string) => boolean }).hasRegistration
@@ -54,9 +54,12 @@ export async function renameFactoryAgent(
     return nothingToDo('orchestrator-disabled')
   }
 
-  const principal = await container
-    .resolve<AgentPrincipalService>('agentPrincipalService')
-    .resolve(scope, FACTORY_AGENT_ID)
+  const service = container.resolve<AgentPrincipalService>('agentPrincipalService')
+  let principal: { userId: string } | null = null
+  for (const agentDefinitionId of DEVELOPER_AGENT_IDS) {
+    principal = await service.resolve(scope, agentDefinitionId)
+    if (principal) break
+  }
   if (!principal) return nothingToDo('not-provisioned')
 
   const em = (container.resolve('em') as EntityManager).fork()
@@ -74,12 +77,12 @@ export async function renameFactoryAgent(
   if (!user) return nothingToDo('not-provisioned')
 
   const previousName = user.name ?? null
-  if (previousName === FACTORY_AGENT_DISPLAY_NAME) {
+  if (previousName === DEVELOPER_AGENT_DISPLAY_NAME) {
     return { outcome: 'unchanged', userId: principal.userId, previousName }
   }
 
   await container.resolve<CommandBus>('commandBus').execute('auth.users.update', {
-    input: { id: principal.userId, name: FACTORY_AGENT_DISPLAY_NAME },
+    input: { id: principal.userId, name: DEVELOPER_AGENT_DISPLAY_NAME },
     ctx: systemContext(container, scope),
   })
 

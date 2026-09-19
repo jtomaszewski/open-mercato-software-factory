@@ -9,7 +9,7 @@ jest.mock('../../events', () => ({ emitTaskDelegationEvent: jest.fn(async () => 
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({
   findOneWithDecryption: async (_em: unknown, entity: unknown) => {
     if (entity === User) return { id: 'agent-user' }
-    if (entity === AgentPrincipal) return { agentDefinitionId: 'factory' }
+    if (entity === AgentPrincipal) return { agentDefinitionId: 'developer' }
     if (entity === ProcessDefinition) return { id: 'definition-id', triggers: [{ kind: 'manual' }] }
     return null
   },

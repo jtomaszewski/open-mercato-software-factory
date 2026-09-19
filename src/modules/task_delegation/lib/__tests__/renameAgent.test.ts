@@ -3,7 +3,7 @@ import { beforeEach, expect, it, jest } from '@jest/globals'
 const findOneWithDecryption = jest.fn<(...args: unknown[]) => Promise<unknown>>()
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({ findOneWithDecryption: (...args: unknown[]) => findOneWithDecryption(...args) }))
 
-import { renameFactoryAgent } from '../renameAgent'
+import { renameAgentPrincipal } from '../renameAgent'
 
 const scope = { tenantId: '00000000-0000-4000-8000-000000000001', organizationId: '00000000-0000-4000-8000-000000000002' }
 const execute = jest.fn<(id: string, args: { input: Record<string, unknown> }) => Promise<unknown>>()
@@ -28,9 +28,9 @@ beforeEach(() => {
 })
 
 it('renames the principal through the auth command, keeping its user id', async () => {
-  const result = await renameFactoryAgent(container(), scope)
+  const result = await renameAgentPrincipal(container(), scope)
 
-  expect(resolvePrincipal).toHaveBeenCalledWith(scope, 'factory')
+  expect(resolvePrincipal).toHaveBeenCalledWith(scope, 'developer')
   expect(execute).toHaveBeenCalledTimes(1)
   const [commandId, args] = execute.mock.calls[0]!
   expect(commandId).toBe('auth.users.update')
@@ -42,23 +42,32 @@ it('renames the principal through the auth command, keeping its user id', async 
 it('is a no-op on a second run, issuing no command', async () => {
   findOneWithDecryption.mockResolvedValue({ id: 'agent-user', kind: 'agent', name: 'Software Engineer' })
 
-  const result = await renameFactoryAgent(container(), scope)
+  const result = await renameAgentPrincipal(container(), scope)
 
   expect(execute).not.toHaveBeenCalled()
   expect(result).toEqual({ outcome: 'unchanged', userId: 'agent-user', previousName: 'Software Engineer' })
 })
 
+it('falls back to a principal still carrying the pre-rename id', async () => {
+  resolvePrincipal.mockImplementation(async (_scope, agentDefinitionId) => (agentDefinitionId === 'factory' ? { userId: 'agent-user' } : null))
+
+  const result = await renameAgentPrincipal(container(), scope)
+
+  expect(resolvePrincipal.mock.calls.map(([, id]) => id)).toEqual(['developer', 'factory'])
+  expect(result.outcome).toBe('renamed')
+})
+
 it('reports an organization that never provisioned the agent', async () => {
   resolvePrincipal.mockResolvedValue(null)
 
-  const result = await renameFactoryAgent(container(), scope)
+  const result = await renameAgentPrincipal(container(), scope)
 
   expect(execute).not.toHaveBeenCalled()
   expect(result).toEqual({ outcome: 'not-provisioned', userId: null, previousName: null })
 })
 
 it('pins the user lookup to the scope and to an agent, not just the principal id', async () => {
-  await renameFactoryAgent(container(), scope)
+  await renameAgentPrincipal(container(), scope)
 
   // `resolveAgentPrincipal` matches on organizationId alone, so repeating the scope here is what
   // stops a mistyped --tenant from reaching another tenant's row — and `kind` from reaching a person.
@@ -70,14 +79,14 @@ it('pins the user lookup to the scope and to an agent, not just the principal id
 it('reports a principal whose user row is gone rather than throwing', async () => {
   findOneWithDecryption.mockResolvedValue(null)
 
-  const result = await renameFactoryAgent(container(), scope)
+  const result = await renameAgentPrincipal(container(), scope)
 
   expect(execute).not.toHaveBeenCalled()
   expect(result).toEqual({ outcome: 'not-provisioned', userId: null, previousName: null })
 })
 
 it('reports a deployment without the orchestrator without resolving anything', async () => {
-  const result = await renameFactoryAgent(container({ orchestrator: false }), scope)
+  const result = await renameAgentPrincipal(container({ orchestrator: false }), scope)
 
   expect(resolvePrincipal).not.toHaveBeenCalled()
   expect(execute).not.toHaveBeenCalled()

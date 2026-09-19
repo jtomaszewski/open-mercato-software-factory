@@ -11,9 +11,11 @@
 Only the registry ships for now; the Developer agent's run is unchanged (OpenCode sidecar, host checkout, host-opened PR, in-app approve).
 
 - **Built:** GitHub App connect with OAuth consent (only repositories the user can push to), register / change base branch / disable / enable / remove, project links with one default (injected project tab).
-- **Factory:** the site repo and GitHub token for a task come from its project's default (or only) linked repository as a short-lived installation token scoped to that repository; without a link, `FACTORY_SITE_REPO` + `FACTORY_GITHUB_TOKEN` as before. A link that cannot be used fails the run rather than falling back.
-- **Deviation:** the GitHub App key lives in the app environment (`REPOSITORIES_GITHUB_APP_*`), not a broker. Accepted because the long-lived `FACTORY_GITHUB_TOKEN` already lived there and the agent still runs beside the app; revisit with the isolated execution runtime.
-- **Deferred:** profile kinds and qualification (REQ-002), repository choice frozen on the delegation (REQ-004), revocation of in-flight work (REQ-005), agent rename (REQ-006), the broker.
+- **Task runs:** the repo and GitHub token for a task come from its project's default (or only) linked repository as a short-lived installation token scoped to that repository; without a link, `CODE_CHANGES_REPO` + `CODE_CHANGES_GITHUB_TOKEN` (the pre-rename `FACTORY_*` names still read) as before. A link that cannot be used fails the run rather than falling back.
+- **Deviation:** the GitHub App key lives in the app environment (`REPOSITORIES_GITHUB_APP_*`), not a broker. Accepted because the long-lived fallback token already lived there and the agent still runs beside the app; revisit with the isolated execution runtime.
+- **Agent id (REQ-006, partial):** `FACTORY_AGENT_ID` → `DEVELOPER_AGENT_ID = 'developer'`; the roster, the delegate command and the start subscriber (renamed `start-delegated-run`) accept `factory` as a legacy id, and `seed-demo` reuses an existing legacy principal instead of provisioning a second one. Still open: the user-visible display name (today "Software Engineer", D-047 asks for "Developer") and disabling an idle legacy principal.
+- **Module split (2026-09-19):** the `factory` module became `code_changes` (delegated task → checkout → PR → review/approve) and `website_publishing` (the catalog/sales/chat intakes, the Developer and Researcher agents, and the `website_publishing.website_change` process).
+- **Deferred:** profile kinds and qualification (REQ-002), repository choice frozen on the delegation (REQ-004), revocation of in-flight work (REQ-005), the rest of REQ-006, the broker.
 
 ## TLDR
 

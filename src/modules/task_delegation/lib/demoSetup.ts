@@ -5,13 +5,13 @@ import type { QueryEngine } from '@open-mercato/shared/lib/query/types'
 import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { User } from '@open-mercato/core/modules/auth/data/entities'
 import { systemContext, type TaskDelegationScope } from './systemContext'
-import { FACTORY_AGENT_DISPLAY_NAME, FACTORY_AGENT_ID } from './agentIdentity'
+import { DEVELOPER_AGENT_DISPLAY_NAME, DEVELOPER_AGENT_ID, DEVELOPER_AGENT_IDS } from './agentIdentity'
 
 /** @deprecated Prefer `TaskDelegationScope`; kept as an alias so existing importers keep working. */
 export type TaskDelegationDemoScope = TaskDelegationScope
 
 // Re-exported for the importers that already reach for these here.
-export { FACTORY_AGENT_DISPLAY_NAME, FACTORY_AGENT_ID }
+export { DEVELOPER_AGENT_DISPLAY_NAME, DEVELOPER_AGENT_ID }
 
 export type TaskDelegationDemoResult = {
   customerId: string
@@ -24,6 +24,7 @@ export const DEMO_CUSTOMER_NAME = 'Internal'
 export const DEMO_PROJECT_CODE = 'DEMO'
 
 type AgentPrincipalService = {
+  resolve(scope: TaskDelegationDemoScope, agentDefinitionId: string): Promise<{ userId: string } | null>
   provision(scope: TaskDelegationDemoScope, input: { agentDefinitionId: string; displayName?: string; roleFeatures?: string[] }): Promise<{ userId: string }>
 }
 
@@ -45,7 +46,7 @@ async function resolveAdminUser(em: EntityManager, scope: TaskDelegationDemoScop
 
 /**
  * Seeds the delegation board (SPEC-002 Phase 1 step 1): an "Internal" customer company, a staff
- * member for the admin, a `DEMO` project on staff's default columns, and the `factory` agent
+ * member for the admin, a `DEMO` project on staff's default columns, and the `developer` agent
  * principal. Writes go through the owning modules' commands and services; every step is
  * find-or-create, so repeated runs change nothing and never overwrite operator edits.
  */
@@ -101,12 +102,24 @@ export async function seedTaskDelegationDemo(
   let agentUserId: string | null = null
   const hasRegistration = (container as { hasRegistration?: (name: string) => boolean }).hasRegistration
   if (typeof hasRegistration === 'function' && hasRegistration.call(container, 'agentPrincipalService')) {
-    const principal = await container.resolve<AgentPrincipalService>('agentPrincipalService').provision(scope, {
-      agentDefinitionId: FACTORY_AGENT_ID,
-      displayName: FACTORY_AGENT_DISPLAY_NAME,
-      roleFeatures: ['task_delegation.view', 'task_delegation.process'],
-    })
-    agentUserId = principal.userId
+    const service = container.resolve<AgentPrincipalService>('agentPrincipalService')
+    // A database seeded before the id was renamed already has this agent under its old id, with
+    // its delegation history; reuse it rather than provisioning a second one beside it.
+    for (const agentDefinitionId of DEVELOPER_AGENT_IDS) {
+      const existing = await service.resolve(scope, agentDefinitionId)
+      if (existing) {
+        agentUserId = existing.userId
+        break
+      }
+    }
+    if (!agentUserId) {
+      const principal = await service.provision(scope, {
+        agentDefinitionId: DEVELOPER_AGENT_ID,
+        displayName: DEVELOPER_AGENT_DISPLAY_NAME,
+        roleFeatures: ['task_delegation.view', 'task_delegation.process'],
+      })
+      agentUserId = principal.userId
+    }
   }
 
   return { customerId, staffMemberId, projectId, agentUserId }

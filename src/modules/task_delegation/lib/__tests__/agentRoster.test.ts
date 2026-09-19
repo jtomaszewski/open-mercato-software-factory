@@ -3,13 +3,15 @@ import { AGENT_ROSTER, findRosterEntry, rosterAgentDefinitionIds, rosterProcessN
 
 describe('agent roster', () => {
   it('names one delegatable role in v1: the Software Engineer running the website change process', () => {
-    expect(AGENT_ROSTER.map((entry) => [entry.agentDefinitionId, entry.processName])).toEqual([['factory', 'website_publishing.website_change']])
-    expect(rosterAgentDefinitionIds()).toEqual(['factory'])
+    expect(AGENT_ROSTER.map((entry) => [entry.agentDefinitionId, entry.processName])).toEqual([['developer', 'website_publishing.website_change']])
+    // Legacy ids are listed too, so principals provisioned before the rename are still found.
+    expect(rosterAgentDefinitionIds()).toEqual(['developer', 'factory'])
     expect(rosterProcessNames()).toEqual(['website_publishing.website_change'])
   })
 
-  it('resolves a row by its agent definition id and nothing else', () => {
-    expect(findRosterEntry('factory')?.labelKey).toBe('task_delegation.agents.softwareEngineer')
+  it('resolves a row by its agent definition id, or one of its legacy ids, and nothing else', () => {
+    expect(findRosterEntry('developer')?.labelKey).toBe('task_delegation.agents.softwareEngineer')
+    expect(findRosterEntry('factory')?.agentDefinitionId).toBe('developer')
     expect(findRosterEntry('researcher')).toBeNull()
     expect(findRosterEntry(null)).toBeNull()
     expect(findRosterEntry(undefined)).toBeNull()

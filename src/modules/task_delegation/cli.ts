@@ -1,8 +1,8 @@
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { seedTaskDelegationDemo } from './lib/demoSetup'
-import { FACTORY_AGENT_DISPLAY_NAME } from './lib/agentIdentity'
-import { renameFactoryAgent, type RenameFactoryAgentResult } from './lib/renameAgent'
+import { DEVELOPER_AGENT_DISPLAY_NAME } from './lib/agentIdentity'
+import { renameAgentPrincipal, type RenameAgentResult } from './lib/renameAgent'
 
 const USAGE = 'Usage: mercato task_delegation seed-demo --tenant <tenantId> --org <organizationId> [--admin <email>]'
 const RENAME_USAGE = 'Usage: mercato task_delegation rename-agent --tenant <tenantId> --org <organizationId>'
@@ -30,17 +30,17 @@ const seedDemo: ModuleCli = {
     console.log(
       `Task delegation demo (org=${organizationId}): project DEMO ${result.projectId}, ` +
         `staff member ${result.staffMemberId ?? 'skipped (no admin user)'}, ` +
-        `${FACTORY_AGENT_DISPLAY_NAME} agent ${result.agentUserId ?? 'skipped (orchestrator disabled)'}`,
+        `${DEVELOPER_AGENT_DISPLAY_NAME} agent ${result.agentUserId ?? 'skipped (orchestrator disabled)'}`,
     )
   },
 }
 
-function describe(result: RenameFactoryAgentResult): string {
+function describe(result: RenameAgentResult): string {
   switch (result.outcome) {
     case 'renamed':
-      return `renamed ${result.previousName ?? '(unnamed)'} → ${FACTORY_AGENT_DISPLAY_NAME} (user ${result.userId})`
+      return `renamed ${result.previousName ?? '(unnamed)'} → ${DEVELOPER_AGENT_DISPLAY_NAME} (user ${result.userId})`
     case 'unchanged':
-      return `nothing to do, already ${FACTORY_AGENT_DISPLAY_NAME} (user ${result.userId})`
+      return `nothing to do, already ${DEVELOPER_AGENT_DISPLAY_NAME} (user ${result.userId})`
     case 'not-provisioned':
       return 'nothing to do, no agent principal in this organization'
     case 'orchestrator-disabled':
@@ -51,7 +51,7 @@ function describe(result: RenameFactoryAgentResult): string {
 /**
  * Renames an already-provisioned agent principal (SPEC-008). `seed-demo` cannot do it: the
  * orchestrator writes the display name only when it creates the user, so a database seeded before
- * the rename keeps saying `Factory` however often setup is re-run.
+ * the rename keeps the old name however often setup is re-run.
  */
 const renameAgent: ModuleCli = {
   command: 'rename-agent',
@@ -63,7 +63,7 @@ const renameAgent: ModuleCli = {
       return
     }
     const container = await createRequestContainer()
-    const result = await renameFactoryAgent(container, { tenantId, organizationId })
+    const result = await renameAgentPrincipal(container, { tenantId, organizationId })
     console.log(`Task delegation agent (org=${organizationId}): ${describe(result)}`)
   },
 }

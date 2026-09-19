@@ -5,7 +5,8 @@ import { AgentPrincipal } from '@open-mercato/enterprise/modules/agent_orchestra
 import type { CommandBus } from '@open-mercato/shared/lib/commands'
 import type { QueryEngine } from '@open-mercato/shared/lib/query/types'
 import { isCrudHttpError } from '@open-mercato/shared/lib/crud/errors'
-import { DEMO_PROJECT_CODE, FACTORY_AGENT_ID } from '../../task_delegation/lib/demoSetup'
+import { DEMO_PROJECT_CODE } from '../../task_delegation/lib/demoSetup'
+import { DEVELOPER_AGENT_IDS } from '../../task_delegation/lib/agentIdentity'
 import { actingContext } from '../../code_changes/lib/run'
 import type { Scope } from './catalogRecord'
 
@@ -49,10 +50,14 @@ async function findSoftwareEngineerUserId(container: AwilixContainer, scope: Sco
   const hasRegistration = (container as { hasRegistration?: (name: string) => boolean }).hasRegistration
   if (typeof hasRegistration !== 'function' || !hasRegistration.call(container, 'AgentPrincipal')) return null
   const em = container.resolve<EntityManager>('em').fork()
-  const principal = await findOneWithDecryption(em, AgentPrincipal, {
-    ...scope, agentDefinitionId: FACTORY_AGENT_ID, enabled: true, deletedAt: null,
-  }, {}, scope)
-  return principal?.userId ?? null
+  // The current id first, then the ids this agent was provisioned under before the rename.
+  for (const agentDefinitionId of DEVELOPER_AGENT_IDS) {
+    const principal = await findOneWithDecryption(em, AgentPrincipal, {
+      ...scope, agentDefinitionId, enabled: true, deletedAt: null,
+    }, {}, scope)
+    if (principal?.userId) return principal.userId
+  }
+  return null
 }
 
 type BoardTask = {
@@ -64,7 +69,7 @@ type BoardTask = {
 
 /**
  * Puts a task on the DEMO board and delegates it to the Software Engineer, which starts
- * `website_publishing.website_change` (task_delegation's start-factory subscriber). Acts as the DEMO project owner,
+ * `website_publishing.website_change` (task_delegation's start-delegated-run subscriber). Acts as the DEMO project owner,
  * who becomes the accountable assignee. Idempotent per record: an existing task linking the
  * record is reused, and an active delegation is left alone.
  */

@@ -10,7 +10,7 @@ catalog.product.created ─▶ subscribers/product-created.ts (is it in „Od r�
 sales.orders.update ─▶ commands/interceptors.ts (status → fulfilled?) ─▶ website_publishing.order.fulfilled
   └─▶ subscribers/order-fulfilled.ts ─▶ lib/board.ts: task links the order
 catalog chat ─▶ website_publishing.request_change (ai-tools.ts) ─▶ task with the instructions (+ product link)
-  └─▶ task_delegation.task.delegate ─▶ start-factory ─▶ process + workflow website_publishing.website_change:
+  └─▶ task_delegation.task.delegate ─▶ start-delegated-run ─▶ process + workflow website_publishing.website_change:
         settle (10 s, the catalog form writes prices after the product)
         code_changes.prepare_checkout ─▶ In progress, the site cloned into the run sandbox
         website_publishing.load_task_records ─▶ the linked product (lib/catalogRecord.ts) or order (lib/orderRecord.ts)
