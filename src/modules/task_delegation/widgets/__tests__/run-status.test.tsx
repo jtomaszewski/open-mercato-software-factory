@@ -76,23 +76,21 @@ it('sits in the drawer header under the assignment picker', () => {
   ])
 })
 
-it('offers handing an undelegated task to the agent', async () => {
-  show(null)
-  expect(screen.getByTestId('task-run-status')).toHaveAttribute('data-run-state', 'none')
-  expect(screen.getByText('task_delegation.runBar.none.head')).toBeInTheDocument()
-  fireEvent.click(screen.getByTestId('task-run-status-delegate'))
-  await waitFor(() => expect(apiCall).toHaveBeenCalledWith('/api/task_delegation/assignments', expect.objectContaining({ method: 'POST' })))
-  expect(JSON.parse(String((apiCall.mock.calls[0]![1] as RequestInit).body))).toEqual({ taskId: TASK_ID, agentUserId: 'agent-user' })
-  // The UMES mutation guards see what is actually written, not a stripped-down stand-in.
-  expect(guardedPayloads).toEqual([{ taskId: TASK_ID, agentUserId: 'agent-user' }])
-  expect(refresh).toHaveBeenCalled()
+it('does not imply a human-owned task is idle or offer another delegation action', () => {
+  const { container } = show(null)
+  expect(container).toBeEmptyDOMElement()
+  expect(screen.queryByTestId('task-run-status-delegate')).not.toBeInTheDocument()
 })
 
-it('explains the missing permission instead of showing a control nobody may use', () => {
+it('hides the no-run panel after an agent was removed without an outcome', () => {
+  const { container } = show({ releasedAt: '2026-09-19T12:00:00.000Z', outcome: null })
+  expect(container).toBeEmptyDOMElement()
+})
+
+it('does not show a permission warning for an ordinary human-owned task', () => {
   grantedFeatures = ['task_delegation.view']
-  show(null)
-  expect(screen.getByText('task_delegation.runBar.none.noPermission')).toBeInTheDocument()
-  expect(screen.queryByTestId('task-run-status-delegate')).not.toBeInTheDocument()
+  const { container } = show(null)
+  expect(container).toBeEmptyDOMElement()
 })
 
 it('counts the minutes a run has been going', () => {
