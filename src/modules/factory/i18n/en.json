@@ -22,5 +22,5 @@
   "factory.review.checks.failing": "Checks failing",
   "factory.review.checks.pending": "Checks running",
   "factory.review.checks.none": "No checks yet",
-  "factory.review.technicalDetails": "Pull request and changed files"
-}
+"factory.review.technicalDetails": "Pull request and changed files",
+"factory.siteLink.label": "Website ↗"}

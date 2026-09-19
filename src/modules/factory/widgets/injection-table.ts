@@ -5,5 +5,7 @@ export const injectionTable: ModuleInjectionTable = {
   // highest priority first, so a number below the bar's 20 puts this after it. It used to sit in
   // the `:sidebar` spot, below staff's tags, which is not where anyone looked.
   'detail:staff:staff_time_task:header': { widgetId: 'factory.injection.task-approve', priority: 10 },
+  // External link to the published website, next to the topbar actions.
+  'menu:topbar:actions': { widgetId: 'factory.injection.site-link', priority: 50 },
 }
 export default injectionTable

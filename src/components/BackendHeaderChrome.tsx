@@ -6,7 +6,9 @@ import * as React from 'react'
 import { MoreHorizontal, PlugZap, Settings, Mail } from 'lucide-react'
 import { hasFeature } from '@open-mercato/shared/security/features'
 import { AuthSessionGuard } from '@open-mercato/ui/backend/AuthSessionGuard'
+import { Button } from '@open-mercato/ui/primitives/button'
 import { IconButton } from '@open-mercato/ui/primitives/icon-button'
+import { AiIcon } from '@open-mercato/ui/ai/AiIcon'
 import { Popover, PopoverContent, PopoverTrigger } from '@open-mercato/ui/primitives/popover'
 import { IntegrationsButton } from '@open-mercato/ui/backend/IntegrationsButton'
 import { ProfileDropdown } from '@open-mercato/ui/backend/ProfileDropdown'
@@ -15,10 +17,6 @@ import { useBackendChrome } from '@open-mercato/ui/backend/BackendChromeProvider
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { AiAssistantShellIntegration } from '@/components/AiAssistantShellIntegration'
 
-const LazyAiChatHeaderButton = dynamic(
-  () => import('@open-mercato/ai-assistant/frontend').then((module) => module.AiChatHeaderButton),
-  { ssr: false, loading: () => null },
-)
 const LazyTopbarSearchInline = dynamic(
   () => import('@open-mercato/search/modules/search/frontend').then((module) => module.TopbarSearchInline),
   { ssr: false, loading: () => null },
@@ -55,6 +53,44 @@ function hasVisibleRoute(groups: Array<{ items?: Array<{ href: string; hidden?: 
     }
   }
   return false
+}
+
+// Opens the legacy (OpenCode) assistant chat instead of AppShell's agent picker,
+// whose own trigger is hidden in globals.css. `om:open-ai-chat` is the event the
+// ai-assistant CommandPaletteProvider listens for; ⌘J is its native shortcut.
+function LegacyAiChatButton() {
+  const t = useT()
+  const label = t('ai_assistant.launcher.triggerAriaLabel', 'Open AI assistant')
+  const openChat = React.useCallback(() => {
+    window.dispatchEvent(new CustomEvent('om:open-ai-chat'))
+  }, [])
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={openChat}
+        className="hidden sm:inline-flex items-center gap-2 text-foreground [&_svg]:text-foreground"
+        aria-label={label}
+        title={label}
+      >
+        <AiIcon className="size-4 text-foreground" />
+        <span>{t('ai_assistant.launcher.triggerLabel', 'AI')}</span>
+        <span className="ml-2 rounded border px-1 text-xs text-muted-foreground">⌘J</span>
+      </Button>
+      <IconButton
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={openChat}
+        className="sm:hidden text-foreground [&_svg]:text-foreground"
+        aria-label={label}
+      >
+        <AiIcon className="size-4 text-foreground" />
+      </IconButton>
+    </>
+  )
 }
 
 type MobileMoreItem = {
@@ -166,7 +202,7 @@ export function BackendHeaderChrome({
       <AuthSessionGuard serverUserId={userId} />
       {isReady && showAiAssistant ? (
         <AiAssistantShellIntegration tenantId={tenantId} organizationId={organizationId}>
-          <LazyAiChatHeaderButton />
+          <LegacyAiChatButton />
         </AiAssistantShellIntegration>
       ) : null}
       {isReady && showSearch ? (
