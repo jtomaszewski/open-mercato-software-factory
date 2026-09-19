@@ -18,6 +18,10 @@ The backlog no longer has a second delegation shortcut. Its existing assignment 
 
 ## Progress
 
+PR: #50
+
 ### Phase 1: Correct the panel
-- [ ] 1.1 Add regression coverage and hide the no-run panel.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.1 Add regression coverage and hide the no-run panel.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+
+Validation: generate, typecheck, lint, ds:check, 296 tests, and build passed. Jest used --watchman=false because the local Watchman executable lacks libfmt.11. RED: 3 expected failures; GREEN: 14 component tests. Desktop completed-task view confirmed; independent review found no introduced blockers.
