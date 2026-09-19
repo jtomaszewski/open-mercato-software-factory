@@ -16,8 +16,26 @@ import { test, expect, type Page } from '@playwright/test'
  * The environment needs one staff task to open. A run without any (a bare ephemeral database)
  * skips with that reason — seed it with `yarn mercato task_delegation seed-demo`.
  */
-const EMAIL = process.env.OM_INIT_SUPERADMIN_EMAIL ?? 'superadmin@acme.com'
-const PASSWORD = process.env.OM_INIT_SUPERADMIN_PASSWORD ?? 'secret'
+/**
+ * The accounts `mercato init` seeds locally: the superadmin, and the `admin@<domain>` /
+ * `employee@<domain>` users it derives from the superadmin's domain. The ephemeral integration
+ * harness signs in as `admin@acme.com`, a bare `yarn initialize` as `superadmin@acme.com`, so the
+ * helper below tries each in turn instead of assuming one environment.
+ */
+const ACCOUNTS: { email: string; password: string }[] = [
+  { email: process.env.OM_INIT_SUPERADMIN_EMAIL ?? 'superadmin@acme.com', password: process.env.OM_INIT_SUPERADMIN_PASSWORD ?? 'secret' },
+  { email: process.env.OM_INIT_ADMIN_EMAIL ?? 'admin@acme.com', password: process.env.OM_INIT_ADMIN_PASSWORD ?? 'secret' },
+]
+
+async function signIn(page: Page): Promise<void> {
+  const answers: string[] = []
+  for (const account of ACCOUNTS) {
+    const response = await page.request.post('/api/auth/login', { form: account, maxRedirects: 0 })
+    if ([200, 204, 302, 303, 307].includes(response.status())) return
+    answers.push(`${account.email}: ${response.status()}`)
+  }
+  throw new Error(`no seeded account could sign in (${answers.join(', ')})`)
+}
 const SHOTS = process.env.PW_STATE_SHOTS === '1'
 const SHOT_DIR = path.join(process.cwd(), '.ai', 'qa', 'screenshots')
 
@@ -138,8 +156,7 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
 
   for (const state of STATES) {
     test(`says what is happening in the ${state.name} state`, async ({ page }) => {
-      const login = await page.request.post('/api/auth/login', { form: { email: EMAIL, password: PASSWORD }, maxRedirects: 0 })
-      expect([200, 204, 302, 303, 307].includes(login.status()), `login answered ${login.status()}`).toBe(true)
+      await signIn(page)
       await page.context().addCookies([{ name: 'locale', value: 'pl', url: 'http://localhost:3000' }])
 
       const tasks = await page.request.get('/api/staff/timesheets/tasks?page=1&pageSize=1')
@@ -169,8 +186,7 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
   }
 
   test('the board card says the state in one Polish phrase', async ({ page }) => {
-    const login = await page.request.post('/api/auth/login', { form: { email: EMAIL, password: PASSWORD }, maxRedirects: 0 })
-    expect([200, 204, 302, 303, 307].includes(login.status()), `login answered ${login.status()}`).toBe(true)
+    await signIn(page)
     await page.context().addCookies([{ name: 'locale', value: 'pl', url: 'http://localhost:3000' }])
 
     const tasks = await page.request.get('/api/staff/timesheets/tasks?page=1&pageSize=1')
