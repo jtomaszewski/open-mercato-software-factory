@@ -83,5 +83,25 @@ PR: #36
 
 ### Phase 5: Validation and evidence
 
-- [ ] 5.1 Run the full validation gate
-- [ ] 5.2 Capture a screenshot of every run state and attach them to the PR
+- [x] 5.1 Run the full validation gate — green after merging main (generate, typecheck, lint, ds:check, test, build)
+- [ ] 5.2 Capture a screenshot of every run state and attach them to the PR — **blocked**, see below
+
+## Blocker on step 5.2 (screenshots)
+
+The evidence itself is written and committed: `.ai/qa/tests/task_delegation/TC-TASK-DELEGATION-004.spec.ts`
+drives the real drawer through all ten states and writes
+`.ai/qa/screenshots/task-drawer-<state>.png` when run with `PW_STATE_SHOTS=1`. Running it needs a
+signed-in browser, and neither route is available to this run:
+
+1. **The worktree's own app** (`yarn dev`, `milan_v1` database) starts, but no login succeeds: the
+   dev server's own warm-up reports `Warmup login returned 401 — credentials invalid`, and the MCP
+   provisioner adds `the database was seeded under different secrets (LOOKUP_HASH_PEPPER)`. Repairing
+   that means re-initializing the worktree database, which this repository's `AGENTS.md` requires
+   asking about first.
+2. **The ephemeral harness** (`yarn test:integration:ephemeral`) builds and seeds its own throwaway
+   database correctly, then refuses to start the app: it runs in production mode, and `.env` carries
+   the published placeholder `JWT_SECRET`, which `auth.jwt` refuses in production. Supplying a real
+   secret — in `.env` or as an environment variable for the run — was blocked by the sandbox.
+
+Either a working set of local credentials, or permission to run `yarn initialize` against
+`milan_v1`, unblocks the whole step in one command.
