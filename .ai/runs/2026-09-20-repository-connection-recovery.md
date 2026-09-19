@@ -21,5 +21,10 @@ Changed labels and conditional UI may affect user expectations. Cover the releva
 PR: #55
 
 ### Phase 1: Correct the audited behavior
-- [ ] 1.1 Add regression coverage and implement the scoped correction.
+- [x] 1.1 Add regression coverage and implement the scoped correction.
 - [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+
+## Verification
+RED: two expected failures. GREEN: three component tests, including the existing in-flight callback regression. Generate, typecheck, lint, ds:check, all 297 tests and production build passed. Desktop QA verified the error layout and navigation back to the list; the link uses the framework-required Next Link component.
+
+Independent primary review is pending because runtime dispatch was blocked. Desktop evidence is attached to PR #55.

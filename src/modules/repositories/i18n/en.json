@@ -44,6 +44,7 @@
       }
     },
     "connect": {
+      "back": "Back to repositories",
       "title": "Connect GitHub repositories",
       "existingTitle": "Connect an existing GitHub installation",
       "existingInstallationHelp": "Find the installation ID in your GitHub App installations.",

@@ -32,3 +32,18 @@ test('OAuth URL cleanup does not discard the in-flight connection result', async
   expect(screen.getByText('Connected repository picker')).toBeTruthy()
   expect(mockComplete).toHaveBeenCalledTimes(1)
 })
+
+test('offers a local return path when callback parameters are missing', async () => {
+  mockQuery = new URLSearchParams()
+  render(<RepositoryConnect />)
+  expect(await screen.findByText('repositories.connect.invalidReturn')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'repositories.connect.back' })).toHaveAttribute('href', '/backend/repositories')
+})
+
+test('offers a local return path when connection completion fails', async () => {
+  mockQuery = new URLSearchParams('code=test-code&state=failed-state')
+  mockComplete.mockImplementationOnce(async () => { throw new Error('connection failed') })
+  render(<RepositoryConnect />)
+  expect(await screen.findByText('repositories.connect.completeError')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'repositories.connect.back' })).toHaveAttribute('href', '/backend/repositories')
+})
