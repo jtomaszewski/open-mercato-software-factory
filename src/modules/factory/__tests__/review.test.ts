@@ -25,3 +25,9 @@ it('reads nothing for a task without a PR on the configured repository', async (
   await expect(readTaskReview(ctx(null), 't', github as never)).resolves.toBeNull()
   expect(github.getPullRequest).not.toHaveBeenCalled()
 })
+
+it('keeps registered repository review in GitHub without loading legacy PAT credentials', async () => {
+  const legacyClient = jest.fn(() => { throw new Error('Legacy credential must not be used') })
+  await expect(readTaskReview(ctx({ repositoryId: 'repo-1', releasedAt: null, links: [{ kind: 'pr', url: `https://github.com/${REPO}/pull/3` }] }), 't', legacyClient)).resolves.toBeNull()
+  expect(legacyClient).not.toHaveBeenCalled()
+})

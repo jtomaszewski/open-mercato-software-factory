@@ -18,9 +18,13 @@ const productId = 'aaaaaaaa-0000-4000-8000-000000000003'
 const execute = jest.fn<(id: string, args: { input: Record<string, unknown>; ctx: { auth: { sub: string } } }) => Promise<unknown>>()
 let description: string | null
 
+const repository = { repositoryId: 'repo-1', projectId: 'project-1', fullName: 'owner/authorized', baseBranch: 'main', kind: 'pr_only' as const, profile: { commands: { install: 'corepack yarn install --immutable', build: 'corepack yarn build', test: 'corepack yarn test' } }, configEpoch: 3, profileDigest: 'a'.repeat(64), githubRepositoryId: '123', installationId: '456', brokerAuthorizationId: 'consent-1' }
+const resolveTarget = jest.fn<() => Promise<typeof repository>>()
+
 const container = {
   resolve: (name: string) => ({
     em: { fork: () => ({}) },
+    repositoryTargetResolver: { resolveDelegationTarget: resolveTarget },
     commandBus: { execute },
     queryEngine: { query: async () => ({ items: [{ id: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description }] }) },
   } as Record<string, unknown>)[name],
@@ -40,6 +44,7 @@ const identity = { taskId: 'task-1', delegationId: 'delegation-1', processInstan
 const calls = () => execute.mock.calls.map(([id, args]) => [id, args.input])
 
 beforeEach(() => {
+  resolveTarget.mockReset().mockResolvedValue(repository)
   description = productTaskDescription({ id: productId, sku: 'ZWM-1500', title: 'Zbiornik' })
   execute.mockReset().mockResolvedValue({ result: {} })
   resolveExecutionUser.mockReset().mockResolvedValue('principal-1')
@@ -60,10 +65,11 @@ it('prepare: moves the bound task to In progress and hands the agent the checkou
   expect(calls()).toEqual([['task_delegation.task.set_status', { ...identity, stepId: `${PREPARE_FUNCTION}:in_progress`, status: 'in_progress' }]])
   expect(execute.mock.calls[0]![1].ctx.auth.sub).toBe('principal-1')
   expect(deps.loadRecord).toHaveBeenCalledWith(expect.anything(), scope, productId)
-  expect(deps.prepareCheckout).toHaveBeenCalledWith('task-1')
+  expect(deps.prepareCheckout).toHaveBeenCalledWith('delegation-1', repository)
   expect(input).toEqual({
-    taskId: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description, record: { id: productId, sku: 'ZWM-1500' },
+    taskId: 'task-1', delegationId: 'delegation-1', title: 'Opublikuj stronę produktu ZWM-1500', description, record: { id: productId, sku: 'ZWM-1500' },
     workDir: '/home/opencode/work/factory/task-1', baseSha: 'base-sha',
+    repositoryFullName: 'owner/authorized', baseBranch: 'main', verificationCommands: repository.profile.commands,
   })
 })
 
@@ -81,16 +87,17 @@ it('prepare: a task without a product link gets no record, and a clone failure c
 
 it('deliver: commits the collected change with the agent summary, links the PR, moves the task to review and removes the checkout', async () => {
   const result = await deliver({ summary: 'Dodałem stronę.' }, context)
-  expect(deps.collectChanges).toHaveBeenCalledWith('task-1')
+  expect(deps.collectChanges).toHaveBeenCalledWith('delegation-1', repository)
   expect(deps.openPullRequest).toHaveBeenCalledWith(
     { id: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description },
     { baseSha: 'base-sha', files: [{ path: 'app/a.tsx', content: 'x' }], summary: 'Dodałem stronę.' },
+    'delegation-1', repository,
   )
   expect(calls()).toEqual([
     ['task_delegation.task.link', { ...identity, stepId: `${DELIVER_FUNCTION}:pr`, kind: 'pr', ref: 'PR #7 · ZWM-1500', url: 'https://github.com/o/r/pull/7' }],
     ['task_delegation.task.set_status', { ...identity, stepId: `${DELIVER_FUNCTION}:in_review`, status: 'in_review' }],
   ])
-  expect(deps.removeCheckout).toHaveBeenCalledWith('task-1')
+  expect(deps.removeCheckout).toHaveBeenCalledWith('delegation-1', repository)
   expect(result.prUrl).toBe('https://github.com/o/r/pull/7')
 })
 
@@ -118,4 +125,19 @@ it('refuses to act without an execution principal', async () => {
   resolveExecutionUser.mockResolvedValue(null)
   await expect(prepare({}, context)).rejects.toThrow('no execution principal')
   expect(execute).not.toHaveBeenCalled()
+})
+
+it('fails the task when its frozen repository is no longer usable before checkout', async () => {
+  resolveTarget.mockRejectedValue(new Error('repository_changed'))
+  await expect(prepare({}, context)).rejects.toThrow('repository_changed')
+  expect(deps.prepareCheckout).not.toHaveBeenCalled()
+  expect(calls()).toEqual([['task_delegation.task.set_status', { ...identity, stepId: `${PREPARE_FUNCTION}:failed`, status: 'failed', reason: 'repository_changed' }]])
+})
+
+it('fails and releases the task when access is revoked before PR creation', async () => {
+  resolveTarget.mockRejectedValue(new Error('repository_unavailable'))
+  await expect(deliver({}, context)).rejects.toThrow('repository_unavailable')
+  expect(deps.collectChanges).not.toHaveBeenCalled()
+  expect(deps.openPullRequest).not.toHaveBeenCalled()
+  expect(calls()).toEqual([['task_delegation.task.set_status', { ...identity, stepId: `${DELIVER_FUNCTION}:failed`, status: 'failed', reason: 'repository_unavailable' }]])
 })

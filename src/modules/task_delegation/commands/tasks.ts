@@ -43,6 +43,10 @@ const followupSchema = processIdentitySchema.extend({ parentId: UUID, title: z.s
 type StatusRow = { id: string; slug: string }
 type TeamMemberRow = { id: string; user_id: string | null }
 type DelegateUndoPayload = { taskId: string; delegationId: string }
+type RepositoryTarget = { repositoryId: string; configEpoch: number; profileDigest: string }
+type RepositoryTargetResolver = {
+  resolveForProject(input: { tenantId: string; organizationId: string; projectId: string; repositoryId?: string }): Promise<RepositoryTarget>
+}
 
 // Staff 0.8.0 commits each of its commands on its own, so a tasks command is a sequence of
 // separately committed writes ordered to be safe on failure: claim the delegation first, move the
@@ -176,6 +180,16 @@ const delegateTaskCommand: CommandHandler<DelegateTaskInput, DelegateTaskResult>
     }
     const existing = await em.findOne(TaskDelegation, { ...decryptScope, taskId: input.taskId, releasedAt: null })
     if (existing) throw await taskError(409, 'already_delegated', 'task_delegation.errors.alreadyDelegated', 'The task already has an active delegation.')
+    const hasRepositoryResolver = typeof (ctx.container as { hasRegistration?: (name: string) => boolean }).hasRegistration === 'function'
+      && ctx.container.hasRegistration('repositoryTargetResolver')
+    if (!hasRepositoryResolver) {
+      throw await taskError(503, 'repositories_unavailable', 'task_delegation.errors.repositoriesUnavailable', 'The repository registry is unavailable.')
+    }
+    const repositoryTarget = await ctx.container.resolve<RepositoryTargetResolver>('repositoryTargetResolver').resolveForProject({
+      ...decryptScope,
+      projectId: snapshot.timeProjectId,
+      ...(input.repositoryId ? { repositoryId: input.repositoryId } : {}),
+    })
 
     let assigneeUserId = snapshot.assigneeUserId
     if (!assigneeUserId || !snapshot.assigneeStaffMemberId) {
@@ -195,7 +209,11 @@ const delegateTaskCommand: CommandHandler<DelegateTaskInput, DelegateTaskResult>
     const delegation = em.create(TaskDelegation, {
       ...decryptScope, taskId: input.taskId,
       projectId: snapshot.timeProjectId, delegateUserId: input.agentUserId, delegatedBy: scope.userId,
-      assigneeUserId, links: [],
+      assigneeUserId,
+      repositoryId: repositoryTarget?.repositoryId ?? null,
+      repositoryConfigEpoch: repositoryTarget?.configEpoch ?? null,
+      repositoryProfileDigest: repositoryTarget?.profileDigest ?? null,
+      links: [],
     })
     em.persist(delegation)
     try { await em.flush() } catch (error) {
@@ -342,7 +360,7 @@ const assignTaskCommand: CommandHandler<AssignTaskInput, AssignTaskResult> = {
       const beforeDelegation = await readTaskSnapshot(queryEngine, scope, { taskId: snapshot.taskId })
       try {
         const delegated = await withExpectedVersion(ctx, beforeDelegation.updatedAt, async () => delegateTaskCommand.execute({
-          taskId: snapshot.taskId, agentUserId: input.agentUserId as string,
+          taskId: snapshot.taskId, agentUserId: input.agentUserId as string, ...(input.repositoryId ? { repositoryId: input.repositoryId } : {}),
         }, ctx))
         delegation = { id: delegated.delegationId }
       } catch (error) {

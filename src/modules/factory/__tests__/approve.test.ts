@@ -78,3 +78,11 @@ it('reads PR numbers only from the configured repository', () => {
   expect(pullRequestNumberFromUrl('https://github.com/other/repo/pull/8', REPO)).toBeNull()
   expect(pullRequestNumberFromUrl(`${PR_URL}/files`, REPO)).toBeNull()
 })
+
+it('refuses the legacy publish action for a registered repository before reading PAT credentials', async () => {
+  delegation!.repositoryId = 'repo-1'
+  const legacyClient = jest.fn(() => { throw new Error('Legacy credential must not be used') })
+  await expect(approveProductTask(ctx(), 'task-1', legacyClient)).rejects.toMatchObject({ status: 409, body: expect.objectContaining({ code: 'repository_review_external' }) })
+  expect(legacyClient).not.toHaveBeenCalled()
+  expect(mergePullRequest).not.toHaveBeenCalled()
+})

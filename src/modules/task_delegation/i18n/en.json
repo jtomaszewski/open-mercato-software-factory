@@ -69,5 +69,10 @@
   "task_delegation.errors.workflowPrincipalRequired": "The persisted workflow execution principal is required.",
   "task_delegation.workflow.setStatus": "Set delegated task status",
   "task_delegation.workflow.link": "Link a delegated task artifact",
-  "task_delegation.workflow.createFollowup": "Create a delegated task follow-up"
+  "task_delegation.workflow.createFollowup": "Create a delegated task follow-up",
+  "task_delegation.repository.label": "Repository",
+  "task_delegation.repository.loading": "Loading repositories...",
+  "task_delegation.repository.choose": "Choose a repository",
+  "task_delegation.repository.default": "default",
+  "task_delegation.repository.none": "No linked repository is available."
 }

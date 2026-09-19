@@ -11,7 +11,7 @@ export const metadata = { GET: { requireAuth: true, requireFeatures: ['task_dele
 export async function GET(request: Request, route: { params: Promise<{ taskId: string }> }) {
   return withTaskRoute(request, ['task_delegation.view'], async ({ commandContext }) => {
     const { taskId } = paramsSchema.parse(await route.params)
-    const review = await readTaskReview(commandContext, taskId, new GitHubClient(readGitHubConfigFromEnv()))
+    const review = await readTaskReview(commandContext, taskId, () => new GitHubClient(readGitHubConfigFromEnv()))
     return Response.json({ review })
   })
 }

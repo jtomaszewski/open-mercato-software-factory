@@ -3,19 +3,20 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandRuntimeContext } from '@open-mercato/shared/lib/commands'
 import { User } from '@open-mercato/core/modules/auth/data/entities'
 import { AgentPrincipal, ProcessDefinition } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
+import { TaskDelegation } from '../../data/entities'
 
-type Rows = { principals: Record<string, unknown>[]; definitions: Record<string, unknown>[]; users: Record<string, unknown>[] }
-const rows: Rows = { principals: [], definitions: [], users: [] }
+type Rows = { principals: Record<string, unknown>[]; definitions: Record<string, unknown>[]; users: Record<string, unknown>[]; delegations: Record<string, unknown>[] }
+const rows: Rows = { principals: [], definitions: [], users: [], delegations: [] }
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({
   findWithDecryption: async (_em: unknown, entity: unknown) => {
     if (entity === AgentPrincipal) return rows.principals
     if (entity === ProcessDefinition) return rows.definitions
     if (entity === User) return rows.users
+    if (entity === TaskDelegation) return rows.delegations
     return []
   },
 }))
 
-import { TaskDelegation } from '../../data/entities'
 import { createTaskDelegationService, deriveTaskRunState } from '../delegationService'
 
 const AGENT_USER = '33333333-3333-4333-8333-333333333333'
@@ -69,6 +70,26 @@ function peopleContext(access: { canManageAll: boolean; projectIds: string[] }, 
   } as unknown as CommandRuntimeContext
 }
 
+function delegationsContext(): CommandRuntimeContext {
+  return {
+    ...peopleContext({ canManageAll: true, projectIds: [] }),
+    container: {
+      hasRegistration: () => false,
+      resolve: (name: string) => {
+        if (name === 'rbacService') return { userHasAllFeatures: async () => true }
+        if (name === 'timeTrackingAccessResolver') return { resolveProjectAccess: async () => ({ canManageAll: true, projectIds: [] }) }
+        if (name === 'moduleConfigService') return { getRecord: async () => null }
+        if (name === 'queryEngine') return {
+          query: async (entity: string) => entity === 'staff:staff_time_task'
+            ? { items: [{ id: TASK_ID, time_project_id: 'project-id', updated_at: '2026-09-19T12:00:00.000Z', assignee_staff_member_id: null }] }
+            : { items: [] },
+        }
+        throw new Error(`unexpected ${name}`)
+      },
+    },
+  } as unknown as CommandRuntimeContext
+}
+
 function agentRows(options: { agentDefinitionId?: string; definitions?: Record<string, unknown>[] } = {}): void {
   rows.principals = [{ userId: AGENT_USER, agentDefinitionId: options.agentDefinitionId ?? 'factory' }]
   rows.definitions = options.definitions ?? [{ name: 'factory.deliver', triggers: [{ kind: 'manual' }] }]
@@ -87,6 +108,21 @@ describe('tasks delegation service', () => {
     expect(deriveTaskRunState(delegation('done'), null, new Date('2026-09-19T10:02:00Z'))).toBe('complete')
     expect(deriveTaskRunState(delegation('rejected'), null, new Date('2026-09-19T10:02:00Z'))).toBe('rejected')
     expect(deriveTaskRunState(delegation('failed'), null, new Date('2026-09-19T10:02:00Z'))).toBe('failed')
+  })
+
+  it('returns the frozen repository binding with a delegation', async () => {
+    const repositoryId = '44444444-4444-4444-8444-444444444444'
+    rows.delegations = [{
+      id: 'delegation-id', taskId: TASK_ID, delegateUserId: AGENT_USER,
+      repositoryId, processInstanceId: null, releasedAt: null, links: [], outcome: null, closeReason: null,
+      createdAt: new Date(), updatedAt: new Date('2026-09-19T12:00:00.000Z'),
+    }]
+    rows.users = [{ id: AGENT_USER, name: 'Software Engineer', email: 'factory@example.com' }]
+
+    const service = createTaskDelegationService({ em: {} as EntityManager })
+    const result = await service.getDelegations(delegationsContext(), [TASK_ID])
+
+    expect(result[0]?.delegation).toMatchObject({ repositoryId })
   })
 
   it('returns no agents when the optional orchestrator module is disabled', async () => {

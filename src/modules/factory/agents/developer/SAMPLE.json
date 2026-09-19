@@ -6,8 +6,25 @@
     "id": "00000000-0000-4000-8000-000000000002",
     "sku": "ZWM-1500",
     "title": "Zbiornik mobilny na wodę pitną 1500 l",
-    "categories": ["zbiorniki-na-wode-pitna", "od-reki"],
-    "prices": [{ "kind": "regular", "amount": 11900, "currency": "PLN" }]
+    "categories": [
+      "zbiorniki-na-wode-pitna",
+      "od-reki"
+    ],
+    "prices": [
+      {
+        "kind": "regular",
+        "amount": 11900,
+        "currency": "PLN"
+      }
+    ]
   },
-  "workDir": "/home/opencode/work/factory/00000000-0000-4000-8000-000000000001"
+  "workDir": "/workspace/repository",
+  "delegationId": "00000000-0000-4000-8000-000000000003",
+  "repositoryFullName": "example/project",
+  "baseBranch": "main",
+  "verificationCommands": {
+    "install": "corepack yarn install --immutable",
+    "build": "corepack yarn build",
+    "test": "corepack yarn test"
+  }
 }

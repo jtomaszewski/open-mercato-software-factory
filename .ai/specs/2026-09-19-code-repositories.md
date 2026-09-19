@@ -1,8 +1,8 @@
 # Code repositories and the Software Engineer agent
 
 **Date**: 2026-09-19
-**Status**: Phase 1 implemented and verified locally; Phases 2-4 remain Draft
-**Scope**: Specification only. Registry, project links and repository-bound delegation; execution and delivery remain in their companions.
+**Status**: Phase 1 verified; Phase 2 real-broker implementation authorized; Phases 3-4 pending
+**Scope**: Local implementation with a real GitHub App broker. Registry, project links and repository-bound delegation; execution and delivery remain in their companions.
 **Companions**: [Agent execution and verified previews](2026-09-19-agent-execution-and-preview.md), [Candidate approval and delivery](2026-09-19-instance-delivery-and-recovery.md)
 **Decisions**: D-043..D-047 in [accepted decisions](2026-09-19-instance-development-decisions.md)
 
@@ -69,7 +69,7 @@ A new app module `repositories` owns the registry: GitHub App connections, repos
 | Project link | Repository ↔ staff project; at most one `isDefault` per project | `repositories_project_link` | Setting a second default clears the first in the same transaction |
 | Frozen binding | `repositoryId` + `configEpoch` + profile digest stored on the delegation at delegate time | `task_delegations` | Changed epoch or unusable repository fails the run at its next broker operation, never silently retargets |
 
-Qualification checks (run by the broker, recorded as a report of named checks): App has the required repository permissions; base branch exists and is protected; every workflow reachable from `push`/`pull_request`/`pull_request_target`/`workflow_run` runs agent-authored code without secrets, writable tokens or privileged runners (execution spec "Before the first push"); declared commands are present in the profile. `static_site` adds the Vercel checks of D-042 and the execution spec (protection, disabled Git builds, prebuilt upload).
+Local qualification checks (run by the broker, recorded as a report of named checks): the authorized installation grants the repository; the App has the required repository permissions; the base branch resolves to an immutable commit; and the declared install/build/test commands actually succeed in the credential-free execution container. This local check does not certify branch protection or external GitHub Actions isolation. `static_site` adds the Vercel checks of D-042 and the execution spec (protection, disabled Git builds, prebuilt upload).
 
 ## Users, Permissions, and Scope
 
@@ -102,7 +102,7 @@ Trusted `tenantId`/`organizationId` come from the authenticated session (or, for
 ```text
 Admin ─► /backend/repositories ─► repositories.connection.start ─► GitHub install page (state nonce)
 GitHub ─► /backend/repositories/connect?installation_id&state ─► repositories.connection.complete
-                                   └─► broker GET /installations/{id} (verify account + granted repos)
+                                   └─► broker POST /installations/verify (verify OAuth consent + granted repos)
 Admin ─► register repos ─► repositories.repository.register ─► broker POST /qualifications ─► callback ─► qualification stored
 PM ─► project tab ─► repositories.project_link.set
 Delegator ─► task sidebar ─► task_delegation.task.delegate {agentUserId, repositoryId?}
@@ -123,10 +123,14 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 1. Administrator opens Settings → Code repositories and clicks **Connect GitHub**.
 2. OM stores a single-use state nonce (10 min, bound to user + org) and redirects to the GitHub App install page.
 3. On GitHub the administrator selects repositories and approves. The App has "Request user authorization (OAuth) during installation" enabled, so GitHub redirects back with `installation_id`, `setup_action`, `code` and `state`.
-4. OM validates the nonce and sends `installationId` + `code` to the broker. The broker exchanges the code for a user token, confirms the installation appears in that user's `GET /user/installations`, discards the user token, and returns the account and granted repositories. `installation_id` alone is never trusted: it is a forgeable query parameter. OM stores the connection and shows the granted repositories not yet registered.
+4. OM validates the nonce and sends `installationId` + `code` to the broker. The broker exchanges the code for a user token, confirms installation visibility, enumerates the user's installation repositories and retains only repositories with write or administrative permission that also belong to the App grant. It persists this immutable consent subset under a fresh `authorizationId`, discards the user token, and returns the account and authorized repositories. `installation_id` alone is never trusted: it is a forgeable query parameter. OM stores the connection and shows the granted repositories not yet registered.
 5. `setup_action=update` (repositories added/removed on an existing installation) refreshes the grant for the already-bound connection. `setup_action=request` (a non-owner asked their GitHub org owner to install) shows "Waiting for your GitHub organization owner to approve"; nothing is stored until an owner completes the flow.
 6. Administrator ticks repositories, picks kind and base branch per repository, and registers them. Qualification starts; rows show `Qualifying…`, then `Qualified` or `Failed` with the failing checks.
 7. Failures: expired/used nonce → "Connection link expired, start again"; installation already bound to another organization → 409 with no detail about that organization; broker unavailable → connection not stored, retry.
+
+### Existing installation connection
+
+An installation may already have been created by a repository owner on another computer. The local administrator must be able to connect it without reinstalling the App or borrowing the owner's OAuth callback. Provide an additional existing-installation action accepting the numeric installation ID from GitHub's installation settings URL. Start the normal GitHub user authorization flow with a fresh state nonce, storing the expected installation ID on that user/organization-bound state. The OAuth return contains code and state; complete it against the stored installation ID. Reject any supplied installation ID that disagrees with the stored value. Keep the original install flow unchanged. `REPOSITORIES_GITHUB_APP_CLIENT_ID` is public configuration, not a secret; the client secret and private key remain broker-only. Both flows require the same broker authorization checks and one-use state enforcement.
 
 ### Journey J-002 — Link to a project
 
@@ -200,6 +204,7 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 | `tenant_id` / `organization_id` | UUID | scope index | no | trusted context |
 | `provider` | varchar, `github` | — | no | immutable |
 | `installation_id` | varchar(32) | **global unique** (`provider`, `installation_id`) where not deleted | no | immutable |
+| `broker_authorization_id` | UUID | no public projection | server-only | immutable consent subset reference; new consent creates a new reference |
 | `account_login` | varchar(100) | — | no | snapshot from broker |
 | `status` | `active` \| `suspended` \| `removed` | — | no | from broker events |
 | `connected_by` | UUID | — | no | user ID |
@@ -207,7 +212,7 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 
 ### `repositories_connect_state`
 
-`id`, scope, `user_id`, `nonce_hash` (SHA-256 of a 32-byte random nonce, unique), `expires_at`, `used_at`. Single use; expired rows are purged lazily by `connection.start`/`complete` (the `scheduler` module is not enabled in this app).
+`id`, scope, `user_id`, `nonce_hash` (SHA-256 of a 32-byte random nonce, unique), `expires_at`, `used_at`, nullable `expected_installation_id` for the existing-installation flow. Single use; expired rows are purged lazily by `connection.start`/`complete`. The app enables the installed scheduler for durable registry recovery.
 
 ### `repositories_repository`
 
@@ -224,7 +229,9 @@ GitHub installation webhooks ─► broker ─► OM /api/repositories/internal/
 | `qualification_status` | `pending` \| `running` \| `passed` \| `failed` \| `stale` | — | no | — |
 | `qualification_epoch` | int, nullable | — | no | epoch the report belongs to |
 | `qualification_report` | jsonb, nullable | — | no | `{checks: [{id, status, message}]}` from broker |
-| `status` | `active` \| `disabled` \| `unavailable` | — | no | `unavailable` on revoke/suspend events; back to `active` on re-grant/unsuspend (qualification re-queued) |
+| `status` | `active` \| `disabled` | — | no | administrator intent; provider events never enable a disabled row |
+| `access_status` | `granted` \| `unavailable` | — | no | current provider grant; restoration requires an authoritative refresh |
+| `qualification_attempt_id` / `qualification_started_at` | UUID / timestamp, nullable | — | no | latest attempt fence and timeout basis |
 | `created_at` / `updated_at` / `deleted_at` | timestamps | optimistic lock on `updated_at` | no | soft delete |
 
 ### `repositories_project_link`
@@ -244,7 +251,7 @@ Migrations are generated with `yarn db:generate`, reviewed, and applied only aft
 | `POST` | `/api/repositories/connections/start` → `repositories.connection.start` | `repositories.manage` | — | `{ redirectUrl }` | 503 broker not configured | REQ-001 |
 | `POST` | `/api/repositories/connections/complete` → `repositories.connection.complete` | `repositories.manage`, nonce owner | `{ installationId, setupAction, code?, state }` | `{ connectionId, grantedRepositories[] }`; `repositories.connection.connected` | 400 bad/expired state, 409 bound elsewhere, 502 broker | REQ-001 |
 | `GET` | `/api/repositories` (`makeCrudRoute` list) | `repositories.view` | search, kind, status, page | `{ items, totalCount }` | — | REQ-002 |
-| `POST` | `/api/repositories` → `repositories.repository.register` | `repositories.manage` | `{ connectionId, githubRepositoryIds[], kind, baseBranch? }` | created rows; qualification queued; `repositories.repository.registered` | 422 not granted, 409 already registered | REQ-001 |
+| `POST` | `/api/repositories` → `repositories.repository.register` | `repositories.manage` | `{ connectionId, githubRepositoryIds[], kind, baseBranch?, profile }` | created rows; qualification queued; `repositories.repository.registered` | 422 not granted, 409 already registered | REQ-001 |
 | `PUT` | `/api/repositories/{id}` → `repositories.repository.update` | `repositories.manage` | `{ baseBranch?, kind?, profile?, updatedAt }` | epoch+1 if changed; qualification `stale`, re-queued | 409 version | REQ-002 |
 | `POST` | `/api/repositories/{id}/qualify` → `repositories.repository.qualify` | `repositories.manage` | `{ updatedAt }` | 202 | 409 already running | REQ-002 |
 | `POST` | `/api/repositories/{id}/disable` / `enable` | `repositories.manage` | `{ updatedAt }` | `repositories.repository.status_changed` | 409 | REQ-005 |
@@ -253,7 +260,7 @@ Migrations are generated with `yarn db:generate`, reviewed, and applied only aft
 | `GET` | `/api/repositories/for-project?projectId` | `task_delegation.delegate` + project access | projectId | `{ items: [{id, fullName, kind, isDefault, usable, reason?}] }` | 404 project | REQ-004 |
 | `GET/POST/DELETE` | `/api/repositories/project-links` → `repositories.project_link.set` / `.remove` | `repositories.link` + project access | `{ projectId, repositoryId, isDefault, updatedAt? }` (required when changing an existing link) | `repositories.project_link.changed` | 404; 409 stale version or concurrent default flip | REQ-003 |
 | command | `task_delegation.task.delegate` (extended) | `task_delegation.delegate` | `+ repositoryId?` | delegation with frozen binding | 422 `repository_required`, `repository_not_linked`, `repository_not_qualified`; 409 `repository_changed` | REQ-004 |
-| `POST` | `/api/repositories/internal/qualification-results` | broker service credential | `{ repositoryId, epoch, status, report }` | stored if epoch current, else ignored | 401 | REQ-002 |
+| `POST` | `/api/repositories/internal/qualification-results` | broker service credential | `{ installationId, repositoryId, epoch, attemptId, status, report }` | stored if epoch current, else ignored | 401 | REQ-002 |
 | `POST` | `/api/repositories/internal/installation-events` | broker service credential | `{ installationId, event, repositoryIds? }` | status updates | 401; unknown installation ignored | REQ-005 |
 | `GET` | `/api/repositories/internal/usability` | broker service credential | `delegationId, repositoryId, epoch, profileDigest` | `{ usable, reason? }` — false unless the repository is usable at that epoch/digest, the delegation is active with that frozen binding, and the repository is still linked to the delegation's project | 401 | REQ-005 |
 
@@ -263,19 +270,46 @@ All public routes declare per-method `metadata` and OpenAPI, zod validation, sco
 
 | Operation | Purpose |
 |---|---|
-| `POST /installations/verify` `{installationId, code}` | Exchange the OAuth code, require the installation in the user's `/user/installations`, then via App JWT return account login and granted repositories (ID, full name, default branch); discard the user token |
-| `GET /installations/{id}` | Refresh grant for an already-bound installation (App JWT) |
-| `GET /repositories/{githubId}/branches` | Branch picker source |
-| `POST /qualifications` `{repositoryId, githubRepositoryId, epoch, kind, profile}` | Run checks; post result to OM |
+| `POST /installations/verify` `{installationId, code}` | Exchange the OAuth code, verify the user's writable repository subset and intersect it with the App grant; persist immutable consent under a fresh `authorizationId`; return that reference, account and authorized repositories; discard the user token |
+| `GET /installations/{id}?authorizationId=...` | Refresh the App grant within the immutable consent subset; never widen it |
+| `GET /repositories/{githubId}/branches?installationId=...&authorizationId=...` | Branch picker source, restricted to current grant and consent |
+| `POST /qualifications` `{installationId, authorizationId, repositoryId, githubRepositoryId, baseBranch, epoch, attemptId, kind, profile}` | Run checks; post result to OM |
 | Before every push/PR/publication | Call OM `usability` with the run's delegation and frozen binding; refuse when not usable |
-| Before the first push of a run | Re-inspect workflows and branch protection at the run's base SHA; refuse if they no longer pass qualification (GitHub-side changes do not bump the epoch) |
+| Before the first push of a run | Revalidate the current installation grant and the frozen delegation binding; qualification covers local command execution, not external GitHub Actions isolation |
+
+### Phase 2 real-broker contract reconciliation (2026-09-19)
+
+- **Durable recovery:** commit each repository mutation and its qualification dispatch intent atomically. A lost broker response preserves the same callback-eligible attempt; the installed scheduler and a discovered scoped queue worker retry its immutable request. A committed mutation returns its stored result even if immediate dispatch fails. Record the pending dispatch state rather than making registration appear rolled back.
+- **Event delivery:** persist a bounded event intent in the same transaction as a domain change, then publish through the existing event bus from the recovery worker. Delivery is at least once; consumers must tolerate repeated event intent identities. A publish failure cannot erase the intent or roll back an already committed domain result.
+- **Callback recovery:** enforce the byte limit while streaming, before materializing JSON. Do not commit a replay claim independently of the associated durable transition or accepted event intent. Fence provider observations against the connection version and authorization binding; delayed refresh cannot overwrite newer revocation or consent. Re-grant invalidates qualification while preserving manual disablement.
+- **Undo:** apply enable/disable undo only against the version produced by that operation; a later edit causes a conflict rather than being overwritten.
+
+The maintainer authorized full implementation and explicitly rejected a fake broker on 2026-09-19. Build the real GitHub App broker and registry locally. Unit tests may isolate HTTP dependencies, but no fake runtime, synthetic qualification success or mock-only user flow is a deliverable. App installation and local credential configuration must be supplied through the normal provider setup. No deployment, paid inference or Core change is included.
+
+- **Authority:** D-043/D-044 take precedence over historical execution-spec enrollment and `self_instance` text. OM owns repository access; the broker owns credentials and independently enforces host safety caps. Phase 2 does not wire the current container runner to registry records.
+- **Profile version 1:** strict `{ version: 1, commands: { install: string, build: string, test: string, typecheck?: string, lint?: string } }` for `pr_only`. `static_site` adds `outputDirectory` (relative path without traversal) and `vercel: { accountId: string, projectId: string }`. Each command is nonblank, at most 2000 characters; identifiers are bounded nonblank strings. Commands are data in OM and execute only in the broker-owned isolated qualification environment. No secrets or arbitrary additional fields. Administrators supply commands explicitly; no host-app command defaults. Kind determines the strict schema. Registration accepts a required matching profile and validates current grant and branch through the broker for every repository. The selection UI may submit one registration per configured repository, with per-row results rather than a new bulk abstraction.
+- **Qualification fencing:** every qualification request creates a fresh UUID attempt ID and start timestamp, including same-epoch retries. A pending durable dispatch is keyed by attempt ID. Callback application atomically matches installation, repository, current epoch, current attempt and running status; stale/duplicate callbacks do not change the result. A 15-minute timeout allows a fresh attempt. Broker failures remain retryable and visible. Editing branch/kind/profile increments the epoch, invalidates the old report and queues a new attempt. Reports are bounded strict `{ checks: [{ id, status: 'passed'|'failed', message }] }`, with at most 100 checks and 2000 characters per message.
+- **Revocation:** `status` expresses administrator intent (`active`/`disabled`); `accessStatus` separately expresses `granted`/`unavailable`. Connection status participates in effective availability. Revoke/restore cannot undo manual disablement. Restore refreshes authoritative broker grants before setting granted and requalifying; no event-supplied repository ID alone grants access.
+- **Read contracts:** add scoped `GET /api/repositories/{id}` (all editable fields and `updatedAt`), `GET /api/repositories/connections/{id}/repositories` (current granted repositories), and `GET /api/repositories/connections/{id}/branches?githubRepositoryId` (current grant required). View/manage gates apply; foreign IDs return 404. Lists are paginated and capped at 100. Registration completion can be revisited by connection ID without reusing OAuth state.
+- **Consent results:** `setupAction=request` returns `{ status: 'waiting' }` without persisting a connection. Successful new/update binding requires verified OAuth code and atomic owner-bound nonce consumption, returning `{ status: 'connected', connectionId, grantedRepositories }`. Audit payloads must omit code, nonce and signatures. Failed broker verification does not create a connection. Retrying requires a fresh consent flow if the code has been consumed.
+- **Transport:** implement the signed HTTP contract and real GitHub App adapter. Broker runs as a separate local service with GitHub App private-key/OAuth configuration; OM holds only broker transport credentials. Missing provider configuration fails closed and is visibly reported as unavailable. No fake adapter or fallback. Replay claims survive separate requests. GitHub consent, grants and branches come from GitHub; qualification must execute real checks and report failure for unmet safety/capability requirements, never manufacture a pass. Bound URLs, timeouts and response schemas, disable redirects, and redact transport errors. Automated HTTP test doubles do not count as live-provider acceptance.
+- **Phase boundary:** Phase 2 usability always refuses without Phase 3 frozen delegation/project-link evidence. TEST-007 covers registry revocation now; its positive-to-negative delegation oracle and TEST-012 run in Phase 3. Phase 2 also covers TEST-006 scope/agent denial and TEST-011 timeouts/broker failure. No binding columns or project widget are introduced early.
+
+#### Phase 2 implementation slices and oracles
+
+1. Registered module, entities/validators, commands, ACL, event/DI surfaces and signed real-broker contract; unit RED/GREEN for profile schemas, nonce replay, signature/replay, attempt fencing, scope denial and disabled/revoke/restore behavior.
+2. Scoped list/detail/connection/registration/qualification/action routes through commands; generated module registry and additive migration/snapshot; self-contained API fixtures cover two scopes, stale versions, callback replay and cleanup.
+3. Framework-native list/connect/detail pages using `DataTable`, `CrudForm`, shared API helpers and EN/PL strings. Browser and integration tests cover connect/register/qualify/edit/requalify/disable/remove, light/dark, narrow width, errors and keyboard flow.
+4. Full configured gate, primary and security review, local evidence. Existing app data is not migrated; the CLI-owned disposable test environment may initialize the new schema for these authorized tests.
+
+Source patterns: `src/modules/example/data/entities.ts` and `data/validators.ts` (data, TEST-001/002); `commands/todos.ts` (commands, TEST-006/007); `api/todos/route.ts` (routes, TEST-001..004); `di.ts`, `acl.ts`, `setup.ts`, `events.ts` (emitted-example registration/authorization, TEST-006); `components/TodosTable.tsx` and `components/TodoForm.tsx` (emitted-example UI, TEST-009). Broker signing/HTTP transport is app-specific integration, not a copied example surface.
 
 ## Events, Jobs, Notifications, and Cross-Module Flows
 
 | Trigger | Producer | Consumer | Side effect | Retry / idempotency / audit behavior |
 |---|---|---|---|---|
 | `repositories.connection.connected` / `status_changed` | `repositories` | audit, list cache | — | — |
-| `repositories.repository.registered` / `updated` | `repositories` | outbox → broker | queue qualification | idempotent on (repositoryId, epoch) |
+| `repositories.repository.registered` / `updated` | `repositories` | outbox → broker | queue qualification | idempotent on qualification attempt ID |
 | `repositories.repository.qualified` (from qualification-results) | `repositories` | notifications | notify the connecting admin on failure | once per epoch |
 | `repositories.repository.status_changed` | `repositories` | `task_delegation` subscriber | comment on tasks with active delegations on that repository | idempotent per delegation + status |
 | `repositories.project_link.changed` | `repositories` (also emitted per link when a repository is removed) | cache | invalidate `for-project` | — |
@@ -289,13 +323,13 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 - **Tenant isolation:** an installation binds to one organization (global unique); all reads filtered by scope; foreign IDs 404; `for-project` validates project scope before listing.
 - **Sensitive data:** no tokens, keys or Vercel secrets stored; profile validators reject fields named like secrets; broker HMAC secret only in environment.
 - **Abuse and failure modes:** the state nonce stops CSRF and replays; the install-time OAuth `code` proves the returning GitHub user can access the installation, so a pasted foreign `installation_id` is refused (the redirect's `installation_id` is attacker-controllable); profile commands are untrusted and run only in the credential-free sandbox; host policy caps from the execution spec still apply on top of the profile.
-- **Residual trust:** anyone holding `repositories.manage` can point Software Engineer at any repository their GitHub installation grants. GitHub's install screen bounds that set.
+- **Residual trust:** anyone holding `repositories.manage` can point Software Engineer at repositories in the intersection of the App installation grant and the connecting user's writable consent subset. Reconnection is required to widen that subset.
 
 ## Integration Coverage
 
 | Test ID | Level | Setup / fixture | Actions | Assertions | Requirement IDs |
 |---|---|---|---|---|---|
-| TEST-001 | integration | admin, fake broker | start → complete → register | connection + repos stored; qualification queued | REQ-001 |
+| TEST-001 | integration | admin, configured real GitHub App broker | start → complete → register | connection + repos stored; qualification queued | REQ-001 |
 | TEST-002 | security | nonce from another user/org, expired, reused | complete | 400; nothing stored | REQ-001 |
 | TEST-003 | security | installation bound in org A; foreign installation ID with attacker's own valid state + code | complete in org B | 409 / 403 respectively; nothing stored; no org A data in response | REQ-001 |
 | TEST-004 | integration | registered repo | update profile | epoch+1, status stale; old-epoch result ignored | REQ-002 |
@@ -324,15 +358,15 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 
 ### Phase 2 — Registry and connect flow
 
-- **Depends on:** Phase 1; broker installation/qualification endpoints (execution spec EX-P1) or the fake broker adapter for local work
+- **Depends on:** Phase 1; broker installation/qualification endpoints (execution spec EX-P1) implemented in this local delivery
 - **Outcome:** administrators connect GitHub and register qualified repositories in the UI.
 - **Why this order / value delivered:** replaces supervisor config for targets.
-- **Deliverables:** `repositories` module (entities, migrations, commands, ACL, events, list/detail/connect pages, internal routes), DI `repositoryBroker` with fake + HTTP adapters, `pr_only` and `static_site` profile validators.
+- **Deliverables:** `repositories` module (entities, migrations, commands, ACL, events, list/detail/connect pages, internal routes), DI `repositoryBroker` with a real HTTP adapter and separate GitHub App broker, `pr_only` and `static_site` profile validators.
 - **Independent slices / estimated commits:** entities+commands; connect flow; pages; internal routes — 4–6
 - **Requirements closed:** REQ-001, REQ-002, REQ-005 (registry side)
 - **Tests:** TEST-001..004, TEST-007, TEST-008, TEST-009 (list/connect/detail)
 - **Validation:** `yarn db:generate` (review, ask before applying), `yarn generate`, typecheck, tests, integration
-- **Exit gate:** with the fake broker, a repository goes connect → register → qualified in the browser, light/dark and narrow widths.
+- **Exit gate:** with the real configured broker, a repository goes connect → register → qualified in the browser, light/dark and narrow widths.
 
 ### Phase 3 — Project links and repository-bound delegation
 
@@ -413,9 +447,9 @@ Additive tables and three nullable columns; no data backfill except Phase 4's id
 | Every workflow completes end to end without a catch-all integration phase | pass | J-001..J-004 across Phases 2–3 |
 | Platform-native reuse and extension points were chosen before custom code | pass | reuse map |
 | UI contracts identify references, canonical components, and theme/state coverage | pass | UI table |
-| Every phase has dependencies, bounded slices, tests, value, and an observable exit gate | fail | Phase 2–4 exit gates against a real GitHub App need broker endpoints owned by the execution spec (EX-P1); only fake-broker gates are achievable now |
+| Every phase has dependencies, bounded slices, tests, value, and an observable exit gate | pass (local Phase 2) | Phase 2–4 exit gates against a real GitHub App need broker endpoints owned by the execution spec (EX-P1); the user requires real GitHub App verification; credentials and actual qualification are explicit acceptance dependencies |
 
-Verdict: `Blocked — broker installation/qualification endpoints are specified here but owned by the execution spec (EX-P1); Phase 2 can proceed against the fake broker adapter.`
+Verdict: Ready for local Phase 2 implementation against the real GitHub App broker. Live GitHub qualification and Phase 3 delegation remain separate gates.
 
 ## Open Questions
 
@@ -445,7 +479,7 @@ The Phase 1 identity decision was explicitly revised on 2026-09-19 to match SPEC
 | Phase | State | Dependencies | Acceptance IDs | Focused validation | Exit gate |
 |---|---|---|---|---|---|
 | 1: Display name | verified | none | AC-006 | focused Jest, generation, types, lint, DS, full tests, build, isolated integration | new and existing principal names, identity and delegation preserved |
-| 2: Registry | pending | Phase 1; readiness audit and fake broker | AC-001, AC-002, AC-004, AC-005 | not run | connect/register/qualify |
+| 2: Registry | in_progress | Phase 1; real broker and GitHub App configuration | AC-001, AC-002, AC-004, AC-005 | not run | connect/register/qualify |
 | 3: Project links | pending | Phase 2 | AC-003, AC-005 | not run | frozen delegation |
 | 4: Live target | pending | Phase 3; qualified broker | AC-002 | not run | verified live binding |
 
@@ -470,3 +504,13 @@ The maintainer selected the existing admin form on 2026-09-19. No `rename-agent`
 The installed form uses `CrudForm`, the loaded user's `updatedAt`, and the guarded auth API. This is an explicit operator edit, not an automatic background migration. Re-running setup preserves the name and existing delegation identity. Source rollback does not revert a stored name; use the same admin form to restore it if required. The procedure was exercised against the local disposable test database only.
 
 Phase 1 passed the isolated TEST-010 and review gates. Local browser evidence covers the existing Users form and saved name; no new UI component was introduced. Provider inference and external broker execution were not exercised. Later phases remain pending.
+
+### Phase 2 progress
+
+- [x] Readiness audit and contract reconciliation: profile inputs, attempt fencing, disable/revoke semantics, scoped reads, real broker transport and phase-specific test boundaries.
+- [ ] IN FLIGHT: registry implementation; no runtime registry acceptance yet.
+
+
+## Local hackathon qualification amendment (2026-09-19)
+
+The user's explicit speed-first instruction supersedes the mandatory external-CI isolation proof and branch-protection prerequisites for local repository qualification. The local gate requires a current authorized repository grant, App permissions, a resolved immutable base commit and successful real profile commands. Dependency installation may use network access in a credential-free container; build/test run after network disconnection. This result does not certify external GitHub Actions or change remote protection settings. Secret isolation and tenant/permission checks remain mandatory. Vercel publishing requires its real provider integration and must not be reported as verified before that exists.

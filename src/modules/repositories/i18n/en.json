@@ -1,0 +1,180 @@
+{
+  "repositories": {
+    "nav": {
+      "title": "Code repositories"
+    },
+    "actions": {
+      "connect": "Connect GitHub",
+      "connectExisting": "Connect existing installation",
+      "configure": "Configure",
+      "register": "Register and qualify",
+      "edit": "Edit",
+      "save": "Save and re-qualify",
+      "qualify": "Re-qualify",
+      "disable": "Disable",
+      "enable": "Enable",
+      "remove": "Remove"
+    },
+    "kind": {
+      "pr_only": "PR only",
+      "static_site": "Static site"
+    },
+    "qualification": {
+      "pending": "Pending",
+      "running": "Qualifying",
+      "passed": "Qualified",
+      "failed": "Failed",
+      "stale": "Stale"
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "access": {
+      "unavailable": "GitHub access unavailable"
+    },
+    "check": {
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "list": {
+      "title": "Code repositories",
+      "search": "Search repositories...",
+      "loadError": "Repositories could not be loaded.",
+      "confirmRemove": "Remove this disabled repository?",
+      "columns": {
+        "repository": "Repository",
+        "kind": "Profile",
+        "branch": "Base branch",
+        "qualification": "Qualification",
+        "status": "Status"
+      },
+      "empty": {
+        "title": "No repositories yet",
+        "description": "Connect GitHub to choose and qualify repositories."
+      },
+      "success": {
+        "qualify": "Qualification started.",
+        "disable": "Repository disabled.",
+        "enable": "Repository enabled.",
+        "remove": "Repository removed."
+      },
+      "error": {
+        "qualify": "Qualification could not be started.",
+        "disable": "Repository could not be disabled.",
+        "enable": "Repository could not be enabled.",
+        "remove": "Repository could not be removed."
+      }
+    },
+    "connect": {
+      "title": "Connect GitHub repositories",
+      "existingTitle": "Connect an existing GitHub installation",
+      "existingInstallationHelp": "Find the installation ID in your GitHub App installations.",
+      "loading": "Verifying GitHub consent...",
+      "loadError": "The connected GitHub repositories could not be loaded.",
+      "invalidReturn": "The GitHub connection response is incomplete. Start the connection again.",
+      "startError": "The GitHub connection could not be started. Check the broker configuration.",
+      "completeError": "GitHub consent could not be verified. Start a new connection.",
+      "waitingTitle": "Waiting for approval",
+      "waitingDescription": "Your GitHub organization owner must approve the App installation before repositories can be registered.",
+      "emptyTitle": "No repositories granted",
+      "emptyDescription": "Update the GitHub App installation and grant at least one repository.",
+      "configureTitle": "Configure {repository}",
+      "registered": "Repository registered and qualification started."
+    },
+    "detail": {
+      "title": "Repository",
+      "loading": "Loading repository...",
+      "loadError": "Repository details could not be loaded.",
+      "notFound": "Repository not found.",
+      "saved": "Repository configuration saved and qualification started.",
+      "qualificationReport": "Qualification report",
+      "noQualificationReport": "No qualification report is available yet.",
+      "check": "Check",
+      "result": "Result",
+      "message": "Message"
+    },
+    "form": {
+      "fullName": "Repository",
+      "installationId": "GitHub installation ID",
+      "baseBranch": "Base branch",
+      "kind": "Profile kind",
+      "commands": {
+        "install": "Install command",
+        "build": "Build command",
+        "test": "Test command",
+        "typecheck": "Typecheck command (optional)",
+        "lint": "Lint command (optional)"
+      },
+      "outputDirectory": "Output directory",
+      "vercelAccountId": "Vercel account ID",
+      "vercelProjectId": "Vercel project ID"
+    },
+    "errors": {
+      "unauthorized": "Authentication required.",
+      "forbidden": "Permission denied.",
+      "scopeRequired": "Select a tenant and organization.",
+      "agentForbidden": "Agent principals cannot manage repositories.",
+      "validation": "Review the highlighted fields.",
+      "notFound": "Repository not found.",
+      "connectionNotFound": "Repository connection not found.",
+      "connectionStateExpired": "The connection link expired or was already used.",
+      "installationBound": "This installation is already connected.",
+      "installationMismatch": "GitHub returned a different installation than the one requested.",
+      "invalidReturn": "The GitHub connection response is incomplete or invalid.",
+      "repositoryNotGranted": "GitHub no longer grants access to this repository.",
+      "branchNotGranted": "The selected branch does not exist in the granted repository.",
+      "connectionUnavailable": "The GitHub connection is unavailable.",
+      "alreadyRegistered": "This repository is already registered.",
+      "qualificationRunning": "Qualification is already running.",
+      "repositoryUnavailable": "The repository is disabled or GitHub access is unavailable.",
+      "disableBeforeRemove": "Disable the repository before removing it.",
+      "broker": {
+        "not_configured": "The repository broker is not configured.",
+        "invalid_configuration": "The repository broker configuration is invalid.",
+        "unavailable": "The repository broker is unavailable.",
+        "invalid_response": "The repository broker returned an invalid response."
+      },
+      "projectNotFound": "Project not found.",
+      "projectForbidden": "Project access is required.",
+      "projectLinkChanged": "The project repository link changed. Reload and try again.",
+      "projectLinkNotFound": "Project repository link not found.",
+      "repository_required": "Choose a repository.",
+      "repository_not_linked": "The repository is not linked to this project.",
+      "repository_not_qualified": "No linked repository is currently qualified.",
+      "repository_changed": "The repository configuration changed.",
+      "binding_unavailable": "The delegation has no repository binding.",
+      "activeDelegations": "Disable and finish active delegations before removing this repository."
+    },
+    "audit": {
+      "connection": {
+        "start": "Start repository connection",
+        "complete": "Complete repository connection"
+      },
+      "repository": {
+        "register": "Register repository",
+        "update": "Update repository",
+        "qualify": "Qualify repository",
+        "active": "Enable repository",
+        "disabled": "Disable repository",
+        "remove": "Remove repository"
+      }
+    },
+    "validation": {
+      "outputDirectory": "Use a relative directory without parent traversal.",
+      "codeRequired": "The GitHub authorization code is required.",
+      "installationRequired": "The GitHub installation ID is required."
+    },
+    "projectLinks": {
+      "tab": "Repositories",
+      "loading": "Loading repositories...",
+      "error": "Could not load repositories.",
+      "choose": "Choose a repository",
+      "add": "Add repository",
+      "empty": "No repositories are linked to this project.",
+      "default": "Default",
+      "makeDefault": "Make default",
+      "remove": "Remove"
+    }
+  }
+}

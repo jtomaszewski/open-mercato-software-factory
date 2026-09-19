@@ -19,7 +19,7 @@ export type TaskReview = {
  * tasks delegation service, so the caller's task access applies; only the configured site repo's
  * PRs are read. Null when the task has no factory PR yet.
  */
-export async function readTaskReview(ctx: CommandRuntimeContext, taskId: string, github: GitHubClient): Promise<TaskReview | null> {
+export async function readTaskReview(ctx: CommandRuntimeContext, taskId: string, githubSource: GitHubClient | (() => GitHubClient)): Promise<TaskReview | null> {
   const service = ctx.container.resolve<TaskDelegationService>('taskDelegationService')
   const [item] = await service.getDelegations(ctx, [taskId])
   if (!item) {
@@ -27,6 +27,8 @@ export async function readTaskReview(ctx: CommandRuntimeContext, taskId: string,
     throw new CrudHttpError(404, { code: 'task_not_found', error: translate('factory.approve.errors.notFound', 'Task not found.') })
   }
   const delegation = item.delegation
+  if (!delegation || delegation.repositoryId) return null
+  const github = typeof githubSource === 'function' ? githubSource() : githubSource
   const link = delegation ? [...delegation.links].reverse().find((entry) => entry.kind === 'pr') : undefined
   const number = pullRequestNumberFromUrl(link?.url, github.repo)
   if (!delegation || !number) return null

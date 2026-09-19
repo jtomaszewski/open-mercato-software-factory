@@ -9,7 +9,7 @@ jest.mock('../delegation-loader', () => ({ loadTaskDelegation: jest.fn() }))
 const load = jest.mocked(loadTaskDelegation)
 
 function item(runState: 'starting' | 'running'): TaskDelegationReadItem {
-  return { taskId: 'task', taskUpdatedAt: 'version', assigneeStaffMemberId: null, assigneeName: null, delegation: { id: 'delegation', delegateUserId: 'agent', delegateName: 'Developer', releasedAt: null, updatedAt: 'version', processInstanceId: null, links: [], outcome: null, closeReason: null, runState } }
+  return { taskId: 'task', projectId: 'project', taskUpdatedAt: 'version', assigneeStaffMemberId: null, assigneeName: null, delegation: { id: 'delegation', delegateUserId: 'agent', delegateName: 'Developer', releasedAt: null, updatedAt: 'version', processInstanceId: null, links: [], outcome: null, closeReason: null, runState } }
 }
 beforeEach(() => { load.mockReset() })
 

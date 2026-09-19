@@ -1,56 +1,51 @@
-# factory
+# Software Engineer task execution
 
-The software factory's first slice (SPEC-001, SPEC-004 scene 3, SPEC-005): a catalog product
-created in the „Od ręki” category becomes a task on the DEMO board, delegated to the Factory
-agent. The factory run opens a pull request with the product page in the website repo, and
-Marek approves it from the task drawer.
+The `factory` principal keeps its stable ID and displays as Software Engineer. A delegated
+board task uses the qualified repository linked to its project. The task stores the repository
+ID, configuration epoch and profile digest when it is assigned; changing or disabling that
+configuration prevents a stale run from publishing.
 
-```
-catalog.product.created ─▶ subscribers/product-created.ts (is it in „Od ręki”?)
-  └─▶ lib/board.ts: DEMO task (description links the product) ─▶ task_delegation.task.delegate → Factory
-        └─▶ task_delegation start-factory ─▶ process factory.deliver ─▶ workflow factory.deliver_product
-              └─▶ lib/deliver.ts (as the workflow's own principal):
-                    factory.prepare_checkout ─▶ In progress, the site cloned into the run sandbox
-                    INVOKE_AGENT factory.developer ─▶ the orchestrator run (below)
-                    factory.deliver_product_pr ─▶ diff ─▶ PR ─▶ task link `pr` ─▶ In review
-                                                        (any error ─▶ Backlog, outcome failed)
-The run, agents/developer + lib/checkout.ts: the Developer file agent edits and builds the
-  checkout in the OpenCode sidecar (bash + edit inside the sandbox root), so the run, its tool
-  calls, trace and cost are the orchestrator's (Backend → Agents, Traces, the process page); the
-  host refuses protected paths/links, commits on the cloned base and opens one PR per task
-Task drawer ─▶ GET /api/factory/tasks/:id/review: the PR's diff, checks and preview
-Task drawer „Zatwierdź i opublikuj” ─▶ POST /api/factory/tasks/:id/approve (assignee only)
-  └─▶ lib/approve.ts: squash-merge at the checked head ─▶ task Done (delegation released, outcome done)
-```
+The workflow prepares the repository through the GitHub App broker, invokes `factory.developer`
+through the installed agent runtime, and sends the resulting text diff to the broker. The broker
+creates one branch and pull request per delegation. The task receives the PR link and moves to
+review. A `pr_only` repository is reviewed and merged in GitHub. The legacy website approval
+endpoint cannot merge repository-bound delegations.
 
-- `factory.deliver_product` is a DB-owned workflow definition (`workflowDefinitionAuthoring`)
-  with `grantedFeatures: task_delegation.view, task_delegation.process, agent_orchestrator.agents.run`,
-  so the run acts as its own least-privilege principal (the agent's OpenCode session submits its
-  outcome through MCP as that principal); the task_delegation process commands refuse human actors. Seeded by `setup.seedDefaults`, or
-  `mercato factory ensure-process` for an older tenant.
-- The run reads its process from the engine's workflow instance id and the product from the task
-  description, never from the payload. A task created by hand with a
-  `/backend/catalog/products/<id>` link works the same way.
-- The 0.8.0 engine emits no `workflows.instance.failed` when an async activity fails (the
-  orchestrator process then stays `running`). So the activity has one engine attempt, the
-  function retries transient GitHub errors itself, and it closes the task as failed on the
-  final error.
-- The agent follows the site repo's own AGENTS.md (file layout, the product mapping table); the
-  linked product's catalog record is in its prompt as the source of truth.
-- Env: `FACTORY_GITHUB_TOKEN` (contents + pull requests on the site repo), `FACTORY_SITE_REPO`
-  (default `jtomaszewski/hackaton-stal-zbiorniki-landing`), `FACTORY_SITE_BASE_BRANCH` (default
-  `main`), `FACTORY_GITHUB_API_URL` (default `https://api.github.com`), `APP_URL` (links in the task and PR).
-- The agent needs the OpenCode sidecar with the file and shell planes on and node + git in the
-  image (`docker/opencode/Dockerfile`; see the factory section of `.env.example`). Its checkout
-  lives at `$OM_OPENCODE_WORKSPACE_ROOT/factory/<taskId>`; `.git` stays outside the sandbox, so
-  nothing the agent writes can become a hook or config the host's git would run; build output is
-  never published.
-- Two 0.8.0 workarounds: `ai-agents.ts` registers the file agent from the app manifest (the
-  package's loader only reads its own copy), and `scripts/fix-file-agents-manifest.mjs` renders
-  the agent's file-plane frontmatter into `docker/opencode/agents-local/` (the CLI renders
-  `write/edit/bash: deny`), which docker-compose mounts over the generated file. After editing
-  `agents/developer`: `yarn generate`, then restart the sidecar.
-- Rehearsal: `yarn mercato factory publish-product --product <id> --tenant <t> --org <o>` puts
-  the product on the board like the intake does.
-  Approving merges into the site repo's `main`, which publishes the page: reset the site after a
-  rehearsal.
+The agent receives the task, optional linked catalog record, registered repository/base branch,
+and qualified verification commands. Its source checkout has no Git metadata or provider token.
+The host retains the baseline outside the agent workspace. Changes to protected paths, links,
+binary files or executable modes fail before publication. Existing executable files retain their
+mode when their text changes; new files use mode `100644`.
+
+## Local configuration
+
+1. Configure and run the [repository broker](../../../services/repository-broker/README.md).
+   Set matching `REPOSITORIES_BROKER_*` values on the app and broker, and configure the GitHub
+   App slug and client ID on the app. Private App credentials remain in the broker.
+2. In Repositories, connect the installed GitHub App, register the repository and base branch,
+   configure its install/build/test commands, and run qualification. Link the qualified
+   repository from the project's Repositories tab, then choose it when assigning a task.
+3. Build the isolated runner image using `docker/factory-runner/Dockerfile`, and set
+   `FACTORY_DEVELOPER_RUNNER_IMAGE` to that local image. Start the normal authenticated MCP
+   service. Give the host application `MCP_SERVER_API_KEY`, a host-reachable `OPENCODE_MCP_URL`
+   and `OPENROUTER_API_KEY`; do not place these in a source checkout or agent image.
+4. Set `FACTORY_DEVELOPER_MODEL=anthropic/claude-sonnet-4.5` and an explicit positive
+   `FACTORY_DEVELOPER_BUDGET_USD`. The default budget is zero, so missing configuration does
+   not start a paid run. The gateway reserves an upper cost bound for each request and does
+   not refund reservations. A run may therefore reach its limit below the actual billed cost.
+
+Each run has a scoped model credential and MCP relay. Only the run's minted session token can
+submit its outcome. The real provider key and broad MCP credential stay on the host. The
+runtime removes the run's container and verifies its absence before returning changes for
+publication. Non-factory agents retain the installed runtime behavior.
+
+For an existing tenant, `mercato factory ensure-process` registers the workflow; normal
+`setup.seedDefaults` handles new tenants. The display name of an existing principal can be
+changed in the standard Users administration form without changing `factory` or its roles.
+
+## Current delivery boundary
+
+The GitHub App path supports `pr_only`. The `static_site` profile schema is present, but
+qualification refuses to certify preview/publishing until a Vercel provider is configured.
+The legacy site-specific review/approval code remains for old unbound delegations; it is not
+used by repository-bound runs. This change does not deploy a service or merge generated PRs.

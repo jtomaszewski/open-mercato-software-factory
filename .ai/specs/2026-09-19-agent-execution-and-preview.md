@@ -6,6 +6,9 @@
 **Companion**: [Instance delivery and recovery](2026-09-19-instance-delivery-and-recovery.md)
 **Decisions and sources**: [Package map](2026-09-19-instance-development-infrastructure.md), [accepted decisions](2026-09-19-instance-development-decisions.md)
 
+
+**Repository authority reconciliation (2026-09-19):** D-043/D-044 supersede historical self-instance and external enrollment text below. The hosting OM instance is never an execution target. The repositories spec owns repository/project authorization and freezes repository ID, configuration epoch and profile digest on delegation. Software Engineer retains identity `factory`. The broker retains credentials and independent host safety caps; historical `targetId` enrollment is not a second registry. This note does not claim that Phase 3 resolver or registry-to-runner integration exists.
+
 ## TLDR
 
 An authorized user delegates an existing staff task to Open Mercato Developer for either the hosting instance or a registered external website repository. Agent Orchestrator coordinates a separate OpenCode coding environment, independent review, tests, a PR, and an authenticated preview. The OCI/self-instance profile below is extended by the explicit external static-site sections; shared scope, budget, journal and approval invariants apply to both. The result is a versioned, immutable candidate with evidence that the delivery capability can consume. This capability never merges or deploys the hosting instance.
@@ -484,3 +487,8 @@ No unresolved product question from the interview (D-001 through D-042). Named t
 | 2026-09-19 | D-043..047: self-instance target superseded (agent never edits OM); targets come from the OM repository registry and project links ([code repositories](2026-09-19-code-repositories.md)); `/api/tasks/targets` replaced by `/api/repositories/for-project`; enrollment replaced by OM features; agent renamed Developer. |
 | 2026-09-19 | EX-P0 demo slice accepted: disposable `node:22` + pinned OpenCode container per run for the registered website, host-side clone/publish, diff panel over the PR; gaps against EX-P1..P5 listed. |
 | 2026-09-19 | EX-P0: the Developer agent is the only effector; the deterministic product-page generator is removed. First real run: 144 s, USD 0.25, `site` green. |
+
+
+## Local hackathon qualification amendment (2026-09-19)
+
+The user's explicit speed-first instruction supersedes the mandatory external-CI isolation proof and branch-protection prerequisites for local repository qualification. The local gate requires a current authorized repository grant, App permissions, a resolved immutable base commit and successful real profile commands. Dependency installation may use network access in a credential-free container; build/test run after network disconnection. This result does not certify external GitHub Actions or change remote protection settings. Secret isolation and tenant/permission checks remain mandatory. Vercel publishing requires its real provider integration and must not be reported as verified before that exists.

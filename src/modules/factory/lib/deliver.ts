@@ -1,3 +1,5 @@
+import type { z } from 'zod'
+import { prOnlyProfileSchema } from '@/modules/repositories/data/validators'
 import type { AwilixContainer } from 'awilix'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandBus } from '@open-mercato/shared/lib/commands'
@@ -14,10 +16,12 @@ import type { ActivityContext } from '@open-mercato/core/modules/workflows/lib/a
 import { ProcessDefinition, ProcessInstance } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
 import type { CatalogRecordView, Scope } from './catalogRecord'
 import { actingContext, readProductIdFromTask } from './board'
-import { GitHubClient, readGitHubConfigFromEnv } from './github'
+import type { RepositoryBroker, RepositoryExecutionBinding } from '@/modules/repositories/lib/broker'
+import { REPOSITORY_TARGET_RESOLVER, type RepositoryTargetResolver, type ResolvedRepositoryTarget } from '@/modules/repositories/lib/target-resolver'
+import { prepareRepositoryCheckout, collectRepositoryChanges } from './repository-checkout'
 import { loadCatalogRecordView } from './catalogRecord'
-import { collectChanges, prepareCheckout, readCheckoutConfigFromEnv, removeCheckout, type CollectedChange, type PreparedCheckout } from './checkout'
-import { DEVELOPER_AGENT_ID, openDeveloperPullRequest, type DeliveredPr, type DeveloperChange, type DeveloperTask } from './developer'
+import { readCheckoutConfigFromEnv, removeCheckout, type CollectedChange, type PreparedCheckout } from './checkout'
+import { DEVELOPER_AGENT_ID, pullRequestSummary, type DeliveredPr, type DeveloperChange, type DeveloperTask } from './developer'
 
 const logger = createLogger('factory').child({ component: 'deliver' })
 
@@ -35,7 +39,11 @@ export const DELIVER_GRANTED_FEATURES = ['task_delegation.view', 'task_delegatio
 
 /** What `prepare_checkout` hands the agent step through the workflow context. */
 export type DeveloperInput = {
+  delegationId: string
   taskId: string
+  repositoryFullName: string
+  baseBranch: string
+  verificationCommands: z.infer<typeof prOnlyProfileSchema>['commands']
   title: string
   description: string
   record: CatalogRecordView | null
@@ -87,6 +95,10 @@ const deliverProduct = defineWorkflow({
           agentId: DEVELOPER_AGENT_ID,
           input: {
             taskId: `${PREPARED}.taskId}}`,
+            delegationId: `${PREPARED}.delegationId}}`,
+            repositoryFullName: `${PREPARED}.repositoryFullName}}`,
+            baseBranch: `${PREPARED}.baseBranch}}`,
+            verificationCommands: `${PREPARED}.verificationCommands}}`,
             title: `${PREPARED}.title}}`,
             description: `${PREPARED}.description}}`,
             record: `${PREPARED}.record}}`,
@@ -223,26 +235,50 @@ function record(value: unknown): Record<string, unknown> | null {
 export type DeliverDeps = {
   resolveContainer: () => Promise<AwilixContainer>
   loadRecord: (em: EntityManager, scope: Scope, productId: string) => Promise<CatalogRecordView | null>
-  prepareCheckout: (taskId: string) => Promise<PreparedCheckout>
-  collectChanges: (taskId: string) => Promise<CollectedChange>
-  removeCheckout: (taskId: string) => Promise<void>
-  openPullRequest: (task: DeveloperTask, change: DeveloperChange) => Promise<DeliveredPr>
+  prepareCheckout: (delegationId: string, repository: ResolvedRepositoryTarget) => Promise<PreparedCheckout>
+  collectChanges: (delegationId: string, repository: ResolvedRepositoryTarget) => Promise<CollectedChange>
+  removeCheckout: (delegationId: string, repository: ResolvedRepositoryTarget) => Promise<void>
+  openPullRequest: (task: DeveloperTask, change: DeveloperChange, delegationId: string, repository: ResolvedRepositoryTarget) => Promise<DeliveredPr>
 }
 
 const defaultDeps: DeliverDeps = {
   resolveContainer: () => createRequestContainer(),
   loadRecord: loadCatalogRecordView,
-  prepareCheckout: (taskId) => prepareCheckout(readCheckoutConfigFromEnv(), taskId),
-  collectChanges: (taskId) => collectChanges(readCheckoutConfigFromEnv(), taskId),
-  removeCheckout: (taskId) => removeCheckout(readCheckoutConfigFromEnv(), taskId),
-  openPullRequest: (task, change) => openDeveloperPullRequest({
-    github: new GitHubClient(readGitHubConfigFromEnv()),
-    agentLabel: 'agent Developer (OpenCode w sandboxie orkiestratora)',
-    appUrl: process.env.APP_URL ?? null,
-  }, task, change),
+  async prepareCheckout(delegationId, repository) {
+    const container = await createRequestContainer()
+    const source = await container.resolve<RepositoryBroker>('repositoryBroker').exportSource(executionBinding(delegationId, repository))
+    return prepareRepositoryCheckout(checkoutConfiguration(repository), delegationId, {
+      baseSha: source.baseSha,
+      files: source.files.map((file) => ({ path: file.path, content: file.contentBase64, executable: file.mode === '100755' })),
+    })
+  },
+  collectChanges: (delegationId, repository) => collectRepositoryChanges(checkoutConfiguration(repository), delegationId),
+  removeCheckout: (delegationId, repository) => removeCheckout(checkoutConfiguration(repository), delegationId),
+  async openPullRequest(task, change, delegationId, repository) {
+    const container = await createRequestContainer()
+    const result = await container.resolve<RepositoryBroker>('repositoryBroker').openPullRequest({
+      ...executionBinding(delegationId, repository),
+      baseSha: change.baseSha,
+      title: task.title.slice(0, 120),
+      body: pullRequestSummary(change.summary) || task.title,
+      files: change.files,
+    })
+    return { prNumber: result.number, prUrl: result.url, prLabel: `PR #${result.number}`, branch: result.branch }
+  },
+}
+
+function checkoutConfiguration(repository: ResolvedRepositoryTarget) {
+  return { ...readCheckoutConfigFromEnv({ ...process.env, FACTORY_SITE_REPO: repository.fullName, FACTORY_SITE_BASE_BRANCH: repository.baseBranch }), repo: repository.fullName, baseBranch: repository.baseBranch }
+}
+
+function executionBinding(delegationId: string, repository: ResolvedRepositoryTarget): RepositoryExecutionBinding {
+  return { delegationId, repositoryId: repository.repositoryId, epoch: repository.configEpoch, profileDigest: repository.profileDigest,
+    installationId: repository.installationId, authorizationId: repository.brokerAuthorizationId,
+    githubRepositoryId: repository.githubRepositoryId, baseBranch: repository.baseBranch }
 }
 
 type BoundRun = {
+  delegationId: string
   scope: Scope
   container: AwilixContainer
   em: EntityManager
@@ -285,7 +321,7 @@ async function bindRun(functionName: string, context: ActivityContext, deps: Del
   })
   const task = tasks.items[0]
   if (!task) throw new Error(`${functionName}: task ${taskId} is not visible in its organization`)
-  return { scope, container, em, task: { id: task.id, title: task.title, description: task.description }, run }
+  return { delegationId, scope, container, em, task: { id: task.id, title: task.title, description: task.description }, run }
 }
 
 /** The only release on failure: with one engine attempt per function, this is final. */
@@ -305,14 +341,19 @@ async function closeFailed(bound: BoundRun, functionName: string, error: unknown
 export function createPrepareFunction(deps: DeliverDeps = defaultDeps) {
   return async (_args: Record<string, unknown>, context: ActivityContext): Promise<DeveloperInput> => {
     const bound = await bindRun(PREPARE_FUNCTION, context, deps)
-    await bound.run('task_delegation.task.set_status', `${PREPARE_FUNCTION}:in_progress`, { status: 'in_progress' })
     try {
+      const repository = await bound.container.resolve<RepositoryTargetResolver>(REPOSITORY_TARGET_RESOLVER).resolveDelegationTarget({ ...bound.scope, delegationId: bound.delegationId })
+      await bound.run('task_delegation.task.set_status', `${PREPARE_FUNCTION}:in_progress`, { status: 'in_progress' })
       const productId = readProductIdFromTask(bound.task.description)
       const catalogRecord = productId ? await deps.loadRecord(bound.em, bound.scope, productId) : null
-      const checkout = await deps.prepareCheckout(bound.task.id)
+      const checkout = await deps.prepareCheckout(bound.delegationId, repository)
       logger.info('website checked out for the Developer agent', { taskId: bound.task.id, productId, baseSha: checkout.baseSha })
       return {
         taskId: bound.task.id,
+        delegationId: bound.delegationId,
+        repositoryFullName: repository.fullName,
+        baseBranch: repository.baseBranch,
+        verificationCommands: prOnlyProfileSchema.shape.commands.parse(repository.profile.commands),
         title: bound.task.title,
         description: bound.task.description ?? '',
         record: catalogRecord,
@@ -334,12 +375,13 @@ export function createDeliverFunction(deps: DeliverDeps = defaultDeps) {
   return async (args: Record<string, unknown>, context: ActivityContext): Promise<DeliveredPr> => {
     const bound = await bindRun(DELIVER_FUNCTION, context, deps)
     try {
-      const change = await deps.collectChanges(bound.task.id)
+      const repository = await bound.container.resolve<RepositoryTargetResolver>(REPOSITORY_TARGET_RESOLVER).resolveDelegationTarget({ ...bound.scope, delegationId: bound.delegationId })
+      const change = await deps.collectChanges(bound.delegationId, repository)
       const summary = typeof args.summary === 'string' && !args.summary.startsWith('{{') ? args.summary : ''
-      const result = await deps.openPullRequest(bound.task, { ...change, summary })
+      const result = await deps.openPullRequest(bound.task, { ...change, summary }, bound.delegationId, repository)
       await bound.run('task_delegation.task.link', `${DELIVER_FUNCTION}:pr`, { kind: 'pr', ref: result.prLabel, url: result.prUrl })
       await bound.run('task_delegation.task.set_status', `${DELIVER_FUNCTION}:in_review`, { status: 'in_review' })
-      await deps.removeCheckout(bound.task.id).catch((cleanupError: unknown) =>
+      await deps.removeCheckout(bound.delegationId, repository).catch((cleanupError: unknown) =>
         logger.warn('could not remove the checkout', { taskId: bound.task.id, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) }))
       logger.info('website PR on the task', { taskId: bound.task.id, prUrl: result.prUrl })
       return result

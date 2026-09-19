@@ -18,7 +18,7 @@ export async function POST(request: Request, route: { params: Promise<{ taskId: 
       input: { resourceKind: 'staff.timesheets.time_task', resourceId: taskId, operation: 'custom', mutationPayload: { taskId } },
     })
     if (!guards.ok) return guards.response
-    const result = await approveProductTask(commandContext, taskId, new GitHubClient(readGitHubConfigFromEnv()))
+    const result = await approveProductTask(commandContext, taskId, () => new GitHubClient(readGitHubConfigFromEnv()))
     await guards.runAfterSuccess()
     return Response.json(result)
   })

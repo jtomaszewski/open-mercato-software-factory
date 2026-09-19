@@ -1,0 +1,180 @@
+{
+  "repositories": {
+    "nav": {
+      "title": "Repozytoria kodu"
+    },
+    "actions": {
+      "connect": "Połącz GitHub",
+      "connectExisting": "Połącz istniejącą instalację",
+      "configure": "Skonfiguruj",
+      "register": "Zarejestruj i zakwalifikuj",
+      "edit": "Edytuj",
+      "save": "Zapisz i zakwalifikuj ponownie",
+      "qualify": "Zakwalifikuj ponownie",
+      "disable": "Wyłącz",
+      "enable": "Włącz",
+      "remove": "Usuń"
+    },
+    "kind": {
+      "pr_only": "Tylko PR",
+      "static_site": "Strona statyczna"
+    },
+    "qualification": {
+      "pending": "Oczekuje",
+      "running": "Trwa kwalifikacja",
+      "passed": "Zakwalifikowane",
+      "failed": "Niepowodzenie",
+      "stale": "Nieaktualne"
+    },
+    "status": {
+      "active": "Aktywne",
+      "disabled": "Wyłączone"
+    },
+    "access": {
+      "unavailable": "Brak dostępu przez GitHub"
+    },
+    "check": {
+      "passed": "Zaliczone",
+      "failed": "Niezaliczone"
+    },
+    "list": {
+      "title": "Repozytoria kodu",
+      "search": "Szukaj repozytoriów...",
+      "loadError": "Nie udało się wczytać repozytoriów.",
+      "confirmRemove": "Usunąć to wyłączone repozytorium?",
+      "columns": {
+        "repository": "Repozytorium",
+        "kind": "Profil",
+        "branch": "Gałąź bazowa",
+        "qualification": "Kwalifikacja",
+        "status": "Status"
+      },
+      "empty": {
+        "title": "Brak repozytoriów",
+        "description": "Połącz GitHub, aby wybrać i zakwalifikować repozytoria."
+      },
+      "success": {
+        "qualify": "Uruchomiono kwalifikację.",
+        "disable": "Repozytorium wyłączone.",
+        "enable": "Repozytorium włączone.",
+        "remove": "Repozytorium usunięte."
+      },
+      "error": {
+        "qualify": "Nie udało się uruchomić kwalifikacji.",
+        "disable": "Nie udało się wyłączyć repozytorium.",
+        "enable": "Nie udało się włączyć repozytorium.",
+        "remove": "Nie udało się usunąć repozytorium."
+      }
+    },
+    "connect": {
+      "title": "Połącz repozytoria GitHub",
+      "existingTitle": "Połącz istniejącą instalację GitHub",
+      "existingInstallationHelp": "Identyfikator instalacji znajdziesz w ustawieniach instalacji aplikacji GitHub.",
+      "loading": "Weryfikowanie zgody GitHub...",
+      "loadError": "Nie udało się wczytać repozytoriów z połączonej instalacji GitHub.",
+      "invalidReturn": "Odpowiedź połączenia GitHub jest niepełna. Rozpocznij połączenie ponownie.",
+      "startError": "Nie udało się rozpocząć połączenia z GitHub. Sprawdź konfigurację brokera.",
+      "completeError": "Nie udało się zweryfikować zgody GitHub. Rozpocznij nowe połączenie.",
+      "waitingTitle": "Oczekiwanie na zatwierdzenie",
+      "waitingDescription": "Właściciel organizacji GitHub musi zatwierdzić instalację aplikacji, zanim zarejestrujesz repozytoria.",
+      "emptyTitle": "Brak udostępnionych repozytoriów",
+      "emptyDescription": "Zmień instalację aplikacji GitHub i udostępnij co najmniej jedno repozytorium.",
+      "configureTitle": "Skonfiguruj {repository}",
+      "registered": "Repozytorium zarejestrowane. Uruchomiono kwalifikację."
+    },
+    "detail": {
+      "title": "Repozytorium",
+      "loading": "Wczytywanie repozytorium...",
+      "loadError": "Nie udało się wczytać danych repozytorium.",
+      "notFound": "Nie znaleziono repozytorium.",
+      "saved": "Zapisano konfigurację i uruchomiono kwalifikację.",
+      "qualificationReport": "Raport kwalifikacji",
+      "noQualificationReport": "Raport kwalifikacji nie jest jeszcze dostępny.",
+      "check": "Kontrola",
+      "result": "Wynik",
+      "message": "Komunikat"
+    },
+    "form": {
+      "fullName": "Repozytorium",
+      "installationId": "Identyfikator instalacji GitHub",
+      "baseBranch": "Gałąź bazowa",
+      "kind": "Rodzaj profilu",
+      "commands": {
+        "install": "Polecenie instalacji",
+        "build": "Polecenie budowania",
+        "test": "Polecenie testów",
+        "typecheck": "Polecenie kontroli typów (opcjonalne)",
+        "lint": "Polecenie lintowania (opcjonalne)"
+      },
+      "outputDirectory": "Katalog wynikowy",
+      "vercelAccountId": "Identyfikator konta Vercel",
+      "vercelProjectId": "Identyfikator projektu Vercel"
+    },
+    "errors": {
+      "unauthorized": "Wymagane jest uwierzytelnienie.",
+      "forbidden": "Brak uprawnień.",
+      "scopeRequired": "Wybierz tenant i organizację.",
+      "agentForbidden": "Konta agentów nie mogą zarządzać repozytoriami.",
+      "validation": "Sprawdź zaznaczone pola.",
+      "notFound": "Nie znaleziono repozytorium.",
+      "connectionNotFound": "Nie znaleziono połączenia repozytorium.",
+      "connectionStateExpired": "Łącze połączenia wygasło lub zostało już użyte.",
+      "installationBound": "Ta instalacja jest już połączona.",
+      "installationMismatch": "GitHub zwrócił inną instalację niż wskazana.",
+      "invalidReturn": "Odpowiedź połączenia GitHub jest niepełna lub nieprawidłowa.",
+      "repositoryNotGranted": "GitHub nie udostępnia już tego repozytorium.",
+      "branchNotGranted": "Wybrana gałąź nie istnieje w udostępnionym repozytorium.",
+      "connectionUnavailable": "Połączenie GitHub jest niedostępne.",
+      "alreadyRegistered": "To repozytorium jest już zarejestrowane.",
+      "qualificationRunning": "Kwalifikacja już trwa.",
+      "repositoryUnavailable": "Repozytorium jest wyłączone lub dostęp GitHub jest niedostępny.",
+      "disableBeforeRemove": "Wyłącz repozytorium przed usunięciem.",
+      "broker": {
+        "not_configured": "Broker repozytoriów nie jest skonfigurowany.",
+        "invalid_configuration": "Konfiguracja brokera repozytoriów jest nieprawidłowa.",
+        "unavailable": "Broker repozytoriów jest niedostępny.",
+        "invalid_response": "Broker repozytoriów zwrócił nieprawidłową odpowiedź."
+      },
+      "projectNotFound": "Nie znaleziono projektu.",
+      "projectForbidden": "Wymagany jest dostęp do projektu.",
+      "projectLinkChanged": "Powiązanie repozytorium z projektem uległo zmianie. Odśwież i spróbuj ponownie.",
+      "projectLinkNotFound": "Nie znaleziono powiązania repozytorium z projektem.",
+      "repository_required": "Wybierz repozytorium.",
+      "repository_not_linked": "Repozytorium nie jest połączone z tym projektem.",
+      "repository_not_qualified": "Żadne połączone repozytorium nie ma aktualnej kwalifikacji.",
+      "repository_changed": "Konfiguracja repozytorium uległa zmianie.",
+      "binding_unavailable": "Delegowanie nie ma powiązanego repozytorium.",
+      "activeDelegations": "Przed usunięciem repozytorium wyłącz je i zakończ aktywne delegowania."
+    },
+    "audit": {
+      "connection": {
+        "start": "Rozpoczęcie połączenia repozytorium",
+        "complete": "Zakończenie połączenia repozytorium"
+      },
+      "repository": {
+        "register": "Rejestracja repozytorium",
+        "update": "Aktualizacja repozytorium",
+        "qualify": "Kwalifikacja repozytorium",
+        "active": "Włączenie repozytorium",
+        "disabled": "Wyłączenie repozytorium",
+        "remove": "Usunięcie repozytorium"
+      }
+    },
+    "validation": {
+      "outputDirectory": "Podaj katalog względny bez przejścia do katalogu nadrzędnego.",
+      "codeRequired": "Kod autoryzacyjny GitHub jest wymagany.",
+      "installationRequired": "Identyfikator instalacji GitHub jest wymagany."
+    },
+    "projectLinks": {
+      "tab": "Repozytoria",
+      "loading": "Ładowanie repozytoriów...",
+      "error": "Nie udało się wczytać repozytoriów.",
+      "choose": "Wybierz repozytorium",
+      "add": "Dodaj repozytorium",
+      "empty": "Z tym projektem nie jest połączone żadne repozytorium.",
+      "default": "Domyślne",
+      "makeDefault": "Ustaw jako domyślne",
+      "remove": "Usuń"
+    }
+  }
+}

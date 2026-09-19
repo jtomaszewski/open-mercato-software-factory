@@ -23,7 +23,7 @@ async function refuse(status: number, code: string, key: string, fallback: strin
  * merge is pinned to the PR head the check saw; Done then goes through staff's status change,
  * which the tasks guard turns into a release with outcome `done`.
  */
-export async function approveProductTask(ctx: CommandRuntimeContext, taskId: string, github: GitHubClient): Promise<ApproveResult> {
+export async function approveProductTask(ctx: CommandRuntimeContext, taskId: string, githubSource: GitHubClient | (() => GitHubClient)): Promise<ApproveResult> {
   const scope = await requireTaskScope(ctx)
   const service = ctx.container.resolve<TaskDelegationService>('taskDelegationService')
   const [item] = await service.getDelegations(ctx, [taskId])
@@ -32,6 +32,8 @@ export async function approveProductTask(ctx: CommandRuntimeContext, taskId: str
   if (!delegation || delegation.releasedAt) {
     throw await refuse(409, 'not_delegated', 'factory.approve.errors.notDelegated', 'The task is not delegated to the factory.')
   }
+  if (delegation.repositoryId) throw await refuse(409, 'repository_review_external', 'factory.approve.errors.externalReview', 'Review and merge this repository pull request in GitHub.')
+  const github = typeof githubSource === 'function' ? githubSource() : githubSource
   const prLink = [...delegation.links].reverse().find((link) => link.kind === 'pr')
   const prNumber = pullRequestNumberFromUrl(prLink?.url, github.repo)
   if (!prLink?.url || !prNumber) throw await refuse(409, 'no_pull_request', 'factory.approve.errors.noPullRequest', 'The task has no website pull request yet.')

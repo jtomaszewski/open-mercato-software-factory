@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@open-mercato/ui/primit
 import { SearchInput } from '@open-mercato/ui/primitives/search-input'
 import { Skeleton } from '@open-mercato/ui/primitives/skeleton'
 import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@open-mercato/ui/primitives/select'
 import { ErrorMessage } from '@open-mercato/ui/backend/detail'
 import { apiCallOrThrow, readApiResultOrThrow, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/utils/apiCall'
 import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
@@ -26,8 +27,9 @@ export type AssignedToPickerProps = {
   keyboardShortcut?: boolean
 }
 
-type Draft = { assigneeStaffMemberId: string | null; agentUserId: string | null }
+type Draft = { assigneeStaffMemberId: string | null; agentUserId: string | null; repositoryId: string | null }
 type Option = { kind: 'person' | 'agent'; id: string; label: string; description?: string }
+type RepositoryOption = { id: string; fullName: string; isDefault: boolean; usable: boolean; reason?: string }
 
 function isTypingTarget(target: EventTarget | null): boolean {
   const element = target as HTMLElement | null
@@ -60,7 +62,8 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
   const [agents, setAgents] = React.useState<TaskDelegationAgentDto[] | null>(null)
   const [optionsError, setOptionsError] = React.useState(false)
   const [agentsError, setAgentsError] = React.useState(false)
-  const [draft, setDraft] = React.useState<Draft>({ assigneeStaffMemberId: null, agentUserId: null })
+  const [draft, setDraft] = React.useState<Draft>({ assigneeStaffMemberId: null, agentUserId: null, repositoryId: null })
+  const [repositories, setRepositories] = React.useState<RepositoryOption[] | null>(null)
   const [highlighted, setHighlighted] = React.useState(0)
   const [saving, setSaving] = React.useState(false)
   const [mutationError, setMutationError] = React.useState<string | null>(null)
@@ -72,7 +75,7 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
 
   React.useEffect(() => {
     if (!open) return
-    setDraft({ assigneeStaffMemberId: item?.assigneeStaffMemberId ?? null, agentUserId: activeDelegation?.delegateUserId ?? null })
+    setDraft({ assigneeStaffMemberId: item?.assigneeStaffMemberId ?? null, agentUserId: activeDelegation?.delegateUserId ?? null, repositoryId: null })
     setQuery('')
     setHighlighted(0)
     setMutationError(null)
@@ -92,6 +95,20 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
     }
     return () => { current = false }
   }, [open, taskId, canDelegate, activeDelegation, payload?.currentOrganization?.id])
+
+  React.useEffect(() => {
+    if (!open || !draft.agentUserId || !item?.projectId || activeDelegation) { setRepositories(null); return }
+    let current = true
+    void readApiResultOrThrow<{ items: RepositoryOption[] }>(`/api/repositories/for-project?projectId=${encodeURIComponent(item.projectId)}`)
+      .then(({ items }) => {
+        if (!current) return
+        setRepositories(items)
+        const usable = items.filter((repository) => repository.usable)
+        const automatic = usable.length === 1 ? usable[0] : usable.find((repository) => repository.isDefault)
+        if (automatic) setDraft((previous) => ({ ...previous, repositoryId: previous.repositoryId ?? automatic.id }))
+      }, () => { if (current) setRepositories([]) })
+    return () => { current = false }
+  }, [open, draft.agentUserId, item?.projectId, activeDelegation, payload?.currentOrganization?.id])
 
   React.useEffect(() => {
     if (!keyboardShortcut) return
@@ -141,6 +158,7 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
     const body: Record<string, unknown> = { taskId }
     if (draft.assigneeStaffMemberId !== (item.assigneeStaffMemberId ?? null)) body.assigneeStaffMemberId = draft.assigneeStaffMemberId
     if (draft.agentUserId && draft.agentUserId !== (activeDelegation?.delegateUserId ?? null)) body.agentUserId = draft.agentUserId
+    if (draft.agentUserId && draft.repositoryId) body.repositoryId = draft.repositoryId
     if (Object.keys(body).length === 1) { setOpen(false); return }
     setSaving(true)
     setMutationError(null)
@@ -292,6 +310,20 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
         </> : null}
       </div>
       <div className="space-y-2 border-t p-2">
+        {draft.agentUserId && !activeDelegation ? <div className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">{t('task_delegation.repository.label', 'Repository')}</span>
+          <Select value={draft.repositoryId ?? ''} onValueChange={(repositoryId) => setDraft((previous) => ({ ...previous, repositoryId }))}>
+            <SelectTrigger aria-label={t('task_delegation.repository.label', 'Repository')}>
+              <SelectValue placeholder={repositories === null ? t('task_delegation.repository.loading', 'Loading repositories...') : t('task_delegation.repository.choose', 'Choose a repository')} />
+            </SelectTrigger>
+            <SelectContent>
+              {(repositories ?? []).map((repository) => <SelectItem key={repository.id} value={repository.id} disabled={!repository.usable}>
+                {repository.fullName}{repository.isDefault ? ` (${t('task_delegation.repository.default', 'default')})` : ''}
+              </SelectItem>)}
+            </SelectContent>
+          </Select>
+          {repositories?.length === 0 ? <p className="text-xs text-muted-foreground">{t('task_delegation.repository.none', 'No linked repository is available.')}</p> : null}
+        </div> : null}
         {draftAgentWithoutHuman
           ? <p className="text-xs text-muted-foreground" data-testid="assigned-to-accountable">
             {t('task_delegation.assign.accountable', 'You will be recorded as the accountable owner.')}

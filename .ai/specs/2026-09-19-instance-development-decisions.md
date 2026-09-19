@@ -191,4 +191,4 @@ Add a generic `pr_only` profile kind: sandbox checks, one branch and PR, human m
 
 ## D-047
 
-The agent is named Developer (`developer`), replacing `factory` and "Open Mercato Developer".
+Superseded on 2026-09-19 by the maintainer's explicit selection of PR #24: the display name is Software Engineer and the stable identity remains `factory`. Existing principals, roles and delegations are retained.

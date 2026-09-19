@@ -23,6 +23,7 @@ export type TaskDelegationDto = {
   releasedAt: string | null
   updatedAt: string
   processInstanceId: string | null
+  repositoryId?: string | null
   links: TaskDelegationLink[]
   outcome: 'done' | 'rejected' | 'failed' | null
   closeReason: string | null
@@ -30,6 +31,7 @@ export type TaskDelegationDto = {
 }
 export type TaskDelegationReadItem = {
   taskId: string
+  projectId: string
   taskUpdatedAt: string
   assigneeStaffMemberId: string | null
   assigneeName: string | null
@@ -134,6 +136,7 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
         const delegation = latest.get(task.id) ?? null
         return {
           taskId: task.id,
+          projectId: task.time_project_id,
           taskUpdatedAt: new Date(task.updated_at).toISOString(),
           assigneeStaffMemberId: task.assignee_staff_member_id ?? null,
           assigneeName: task.assignee_staff_member_id ? memberNames.get(task.assignee_staff_member_id) ?? null : null,
@@ -144,6 +147,7 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
             releasedAt: delegation.releasedAt?.toISOString() ?? null,
             updatedAt: delegation.updatedAt.toISOString(),
             processInstanceId: delegation.processInstanceId ?? null,
+            repositoryId: delegation.repositoryId ?? null,
             links: delegation.links,
             outcome: delegation.outcome ?? null,
             closeReason: delegation.closeReason ?? null,

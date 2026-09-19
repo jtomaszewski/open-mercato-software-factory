@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const uuid = z.string().uuid()
-export const delegateSchema = z.object({ taskId: uuid, agentUserId: uuid })
+export const delegateSchema = z.object({ taskId: uuid, agentUserId: uuid, repositoryId: uuid.optional() })
 export const undelegateSchema = z.object({ taskId: uuid })
 /**
  * One assignment: a person, a person and an agent, or an agent alone. An omitted key leaves that
@@ -12,6 +12,7 @@ export const assignInputSchema = z.object({
   taskId: uuid,
   assigneeStaffMemberId: uuid.nullable().optional(),
   agentUserId: uuid.nullable().optional(),
+  repositoryId: uuid.optional(),
 })
 export const assignSchema = assignInputSchema.refine(
   (value) => value.assigneeStaffMemberId !== undefined || value.agentUserId !== undefined,

@@ -82,6 +82,7 @@ function harness(options: HarnessOptions = {}) {
         if (name === 'rbacService') return { userHasAllFeatures: async (_id: string, required: string[]) => required.every((feature) => granted.has(feature)) }
         if (name === 'moduleConfigService') return { getRecord: async () => null }
         if (name === 'timeTrackingAccessResolver') return { resolveProjectAccess: async () => ({ canManageAll: granted.has('staff.timesheets.projects.manage'), projectIds: ['project-id'] }) }
+        if (name === 'repositoryTargetResolver') return { resolveForProject: async () => ({ repositoryId: '55555555-5555-4555-8555-555555555555', configEpoch: 1, profileDigest: 'a'.repeat(64) }) }
         if (name === 'queryEngine') return { query: async (entity: string) => entity === 'staff:staff_team_member' ? { items: [{ id: 'actor-member', user_id: 'human-id' }] } : { items: columns } }
         if (name === 'commandBus') return { execute }
         throw new Error(`unexpected ${name}`)

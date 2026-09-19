@@ -33,6 +33,7 @@ let delegationId: string
 let processDefinitionId: string | undefined
 let workflowDefinitionId: string | undefined
 let processInstanceId: string | undefined
+let repositoryId: string
 
 async function seed() {
   await runFile(process.execPath, ['scripts/mercato-cli.mjs', 'task_delegation', 'seed-demo', '--tenant', tenantId, '--org', organizationId!], { env: process.env })
@@ -114,6 +115,22 @@ test.beforeAll(async ({ playwright, baseURL }) => {
   processDefinitionId = (await processResponse.json()).id
   const member = await withClient(async (database) => (await database.query<{ id: string }>('select id from staff_team_members where tenant_id = $1 and organization_id = $2 and user_id = $3 and deleted_at is null', [tenantId, organizationId, humanId])).rows[0]!)
   const project = await withClient(async (database) => (await database.query<{ id: string }>('select id from staff_time_projects where tenant_id = $1 and organization_id = $2 and deleted_at is null', [tenantId, organizationId])).rows[0]!)
+  repositoryId = randomUUID()
+  await withClient(async (database) => {
+    const connectionId = randomUUID()
+    await database.query(
+      'insert into repositories_connections (id, tenant_id, organization_id, provider, installation_id, broker_authorization_id, account_login, status, connected_by, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now())',
+      [connectionId, tenantId, organizationId, 'github', '9000000001', randomUUID(), 'integration-fixture', 'active', humanId],
+    )
+    await database.query(
+      'insert into repositories_repositories (id, tenant_id, organization_id, connection_id, github_repository_id, full_name, base_branch, kind, profile, config_epoch, qualification_status, qualification_epoch, status, access_status, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, 1, $10, 1, $11, $12, now(), now())',
+      [repositoryId, tenantId, organizationId, connectionId, '9000000002', 'integration/task-delegation', 'main', 'pr_only', JSON.stringify({ version: 1, commands: { install: 'true', build: 'true', test: 'true' } }), 'passed', 'active', 'granted'],
+    )
+    await database.query(
+      'insert into repositories_project_links (id, tenant_id, organization_id, project_id, repository_id, is_default, created_by, created_at, updated_at) values ($1, $2, $3, $4, $5, true, $6, now(), now())',
+      [randomUUID(), tenantId, organizationId, project.id, repositoryId, humanId],
+    )
+  })
   const response = await apiRequest(client, 'POST', '/api/staff/timesheets/tasks', {
     token, headers: { Cookie: `om_selected_org=${organizationId}` },
     data: { timeProjectId: project.id, title: 'Existing delegated task', assigneeStaffMemberId: member.id },
@@ -124,7 +141,7 @@ test.beforeAll(async ({ playwright, baseURL }) => {
 })
 
 test('Software Engineer keeps the factory identity, operator name and guarded admin update', async () => {
-  expect(await agents()).toEqual([{ userId: initialPrincipal.user_id, agentId: 'factory', name: 'Software Engineer' }])
+  expect(await agents()).toMatchObject([{ userId: initialPrincipal.user_id, agentId: 'factory', name: 'Software Engineer' }])
   const original = await readUser(initialPrincipal.user_id)
   expect(original.roleIds).toContain(initialPrincipal.role_id)
 
@@ -139,10 +156,10 @@ test('Software Engineer keeps the factory identity, operator name and guarded ad
   expect(stale.status()).toBe(409)
   expect(await stale.json()).toMatchObject({ code: 'optimistic_lock_conflict' })
   await seed()
-  expect(await agents()).toEqual([{ userId: original.id, agentId: 'factory', name: 'Software Engineer' }])
+  expect(await agents()).toMatchObject([{ userId: original.id, agentId: 'factory', name: 'Software Engineer' }])
   // Only START -> END runs in this fixture; no provider, GitHub or inference steps exist.
   const delegated = await apiRequest(client, 'POST', '/api/task_delegation/delegations', {
-    token, headers: { Cookie: `om_selected_org=${organizationId}` }, data: { taskId, agentUserId: original.id },
+    token, headers: { Cookie: `om_selected_org=${organizationId}` }, data: { taskId, agentUserId: original.id, repositoryId },
   })
   expect(delegated.status()).toBe(201)
   delegationId = (await delegated.json()).delegationId
@@ -157,7 +174,7 @@ test('Software Engineer keeps the factory identity, operator name and guarded ad
   const renamed = await readUser(original.id)
   expect((await rename(renamed, 'My engineering agent')).status()).toBe(200)
   await seed()
-  expect(await agents()).toEqual([{ userId: original.id, agentId: 'factory', name: 'My engineering agent' }])
+  expect(await agents()).toMatchObject([{ userId: original.id, agentId: 'factory', name: 'My engineering agent' }])
   expect(await principals()).toEqual([initialPrincipal])
   expect(await delegation()).toMatchObject({ id: delegationId, delegateUserId: original.id, delegateName: 'My engineering agent' })
   const custom = await readUser(original.id)
@@ -191,6 +208,9 @@ test.afterAll(async () => {
     if (processDefinitionId) await remove(`/api/agent_orchestrator/processes?id=${processDefinitionId}`, processDefinitionId)
     if (workflowDefinitionId) await remove(`/api/workflows/definitions/${workflowDefinitionId}`, workflowDefinitionId)
     await withClient(async (database) => {
+      await database.query('delete from repositories_project_links where tenant_id = $1 and organization_id = $2', [tenantId, organizationId])
+      await database.query('delete from repositories_repositories where tenant_id = $1 and organization_id = $2', [tenantId, organizationId])
+      await database.query('delete from repositories_connections where tenant_id = $1 and organization_id = $2', [tenantId, organizationId])
       await database.query('delete from task_delegations where tenant_id = $1 and organization_id = $2', [tenantId, organizationId])
       for (const [table, path] of [
         ['staff_time_tasks', '/api/staff/timesheets/tasks'],

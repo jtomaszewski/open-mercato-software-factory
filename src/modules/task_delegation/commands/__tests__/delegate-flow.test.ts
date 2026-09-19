@@ -21,12 +21,15 @@ import { emitTaskDelegationEvent } from '../../events'
 const TASK_ID = '11111111-1111-4111-8111-111111111111'
 const AGENT_ID = '22222222-2222-4222-8222-222222222222'
 
-function harness(options: { statusChange?: () => Promise<unknown>; statusSlug?: string; active?: Record<string, unknown> | null } = {}) {
+function harness(options: { statusChange?: () => Promise<unknown>; statusSlug?: string; active?: Record<string, unknown> | null; repositoryTarget?: { repositoryId: string; configEpoch: number; profileDigest: string }; repositoryResolverAvailable?: boolean; missingAssignee?: boolean } = {}) {
   const steps: string[] = []
   readTaskSnapshot.mockResolvedValue({
     taskId: TASK_ID, timeProjectId: 'project-id', tenantId: 'tenant-id', organizationId: 'org-id',
     parentTaskId: null, updatedAt: '2026-09-19T12:00:00.000Z', taskStatusId: 'status-id',
-    statusSlug: options.statusSlug ?? 'backlog', assigneeStaffMemberId: 'member-id', assigneeUserId: 'human-id', childTaskIds: [],
+    statusSlug: options.statusSlug ?? 'backlog',
+    assigneeStaffMemberId: options.missingAssignee ? null : 'member-id',
+    assigneeUserId: options.missingAssignee ? null : 'human-id',
+    childTaskIds: [],
   })
   const em = {
     findOne: jest.fn(async () => options.active ?? null),
@@ -45,12 +48,13 @@ function harness(options: { statusChange?: () => Promise<unknown>; statusSlug?: 
     auth: { sub: 'human-id', tenantId: 'tenant-id', orgId: 'org-id' },
     selectedOrganizationId: 'org-id', organizationIds: ['org-id'], organizationScope: null,
     container: {
-      hasRegistration: () => true,
+      hasRegistration: (name: string) => name !== 'repositoryTargetResolver' || options.repositoryResolverAvailable !== false,
       resolve: jest.fn((name: string) => {
         if (name === 'em') return { fork: () => em }
         if (name === 'rbacService') return { userHasAllFeatures: async () => true }
         if (name === 'moduleConfigService') return { getRecord: async () => null }
         if (name === 'timeTrackingAccessResolver') return { resolveProjectAccess: async () => ({ canManageAll: true, projectIds: [] }) }
+        if (name === 'repositoryTargetResolver') return { resolveForProject: async () => options.repositoryTarget }
         if (name === 'queryEngine') return { query: async (_entity: string, query: { filters: { slug?: string } }) => ({ items: columns.filter((column) => !query.filters.slug || column.slug === query.filters.slug) }) }
         if (name === 'commandBus') return { execute }
         throw new Error(`unexpected ${name}`)
@@ -78,6 +82,31 @@ describe('delegate without a shared transaction', () => {
     const { ctx, steps } = harness({ statusChange: async () => { throw failure } })
     await expect(delegateTaskCommand.execute({ taskId: TASK_ID, agentUserId: AGENT_ID }, ctx)).rejects.toBe(failure)
     expect(steps).toEqual(['claim', 'flush', 'staff.timesheets.tasks.status_change', 'unclaim'])
+    expect(emitTaskDelegationEvent).not.toHaveBeenCalled()
+  })
+
+  it('freezes the selected repository target on the delegation', async () => {
+    const repositoryTarget = { repositoryId: '33333333-3333-4333-8333-333333333333', configEpoch: 4, profileDigest: 'a'.repeat(64) }
+    const { ctx, em } = harness({ repositoryTarget })
+    await delegateTaskCommand.execute({ taskId: TASK_ID, agentUserId: AGENT_ID, repositoryId: repositoryTarget.repositoryId }, ctx)
+    expect(em.create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      repositoryId: repositoryTarget.repositoryId,
+      repositoryConfigEpoch: 4,
+      repositoryProfileDigest: 'a'.repeat(64),
+    }))
+  })
+
+  it('rejects a missing repository resolver before mutating the assignee, delegation, or task', async () => {
+    const { ctx, em, steps } = harness({ repositoryResolverAvailable: false, missingAssignee: true })
+
+    await expect(delegateTaskCommand.execute({ taskId: TASK_ID, agentUserId: AGENT_ID }, ctx))
+      .rejects.toMatchObject({ status: 503, body: { code: 'repositories_unavailable' } })
+
+    expect(em.create).not.toHaveBeenCalled()
+    expect(em.persist).not.toHaveBeenCalled()
+    expect(em.flush).not.toHaveBeenCalled()
+    expect(em.nativeDelete).not.toHaveBeenCalled()
+    expect(steps).toEqual([])
     expect(emitTaskDelegationEvent).not.toHaveBeenCalled()
   })
 })

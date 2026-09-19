@@ -19,7 +19,7 @@ export type TaskDelegationLink = {
   expression: 'create unique index "task_delegations_active_task_uq" on "task_delegations" ("organization_id", "task_id") where "released_at" is null',
 })
 export class TaskDelegation {
-  [OptionalProps]?: 'processInstanceId' | 'links' | 'outcome' | 'closeReason' | 'releasedAt' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'processInstanceId' | 'repositoryId' | 'repositoryConfigEpoch' | 'repositoryProfileDigest' | 'links' | 'outcome' | 'closeReason' | 'releasedAt' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' }) id!: string
   @Property({ name: 'tenant_id', type: 'uuid' }) tenantId!: string
@@ -30,6 +30,9 @@ export class TaskDelegation {
   @Property({ name: 'delegated_by', type: 'uuid' }) delegatedBy!: string
   @Property({ name: 'assignee_user_id', type: 'uuid' }) assigneeUserId!: string
   @Property({ name: 'process_instance_id', type: 'uuid', nullable: true }) processInstanceId?: string | null
+  @Property({ name: 'repository_id', type: 'uuid', nullable: true }) repositoryId?: string | null
+  @Property({ name: 'repository_config_epoch', type: 'integer', nullable: true }) repositoryConfigEpoch?: number | null
+  @Property({ name: 'repository_profile_digest', type: 'varchar', length: 64, nullable: true }) repositoryProfileDigest?: string | null
   @Property({ type: 'jsonb', default: '[]' }) links: TaskDelegationLink[] = []
   @Property({ type: 'varchar', length: 20, nullable: true }) outcome?: DelegationOutcome | null
   @Property({ name: 'close_reason', type: 'text', nullable: true }) closeReason?: string | null
