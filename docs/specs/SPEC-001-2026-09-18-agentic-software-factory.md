@@ -117,9 +117,10 @@ comments are the core `staff` module's (time tracking), enabled as shipped with 
 
 - A task is a `staff` task with a human **assignee** (accountable) and an optional agent
   **delegate** (the agent principal's `auth.User`, `kind='agent'`, provisioned once per org with
-  `agentPrincipalService.provision({ agentDefinitionId: 'factory' })` and shown as "Software Engineer"), held in the `tasks` module's delegation table. Tasks belong to a `staff` project whose
-  `code` is the `projectKey` and prefixes a frozen reference (`WEB-12`). The code can be renamed,
-  so configuration keys on the project id.
+  `agentPrincipalService.provision({ agentDefinitionId: 'factory' })` and shown as "Software
+  Engineer", SPEC-008), held in the `tasks` module's delegation table. Tasks belong to a `staff`
+  project whose `code` is the `projectKey` and prefixes a frozen reference (`WEB-12`). The code
+  can be renamed, so configuration keys on the project id.
 - Delegating emits `task_delegation.task.delegated { taskId, reference, delegationId, delegateUserId,
   agentId, assigneeUserId, delegatedBy, projectId, projectKey, source, title }`, persistent, with scope in
   the emit **options** as well as the payload. `agentId` is the agent definition id read from

@@ -161,6 +161,11 @@ Punkty wejścia: `yarn initialize` (z przykładami core, wystarcza do developmen
 instancji demo `yarn mercato init --no-examples`, a potem
 `yarn mercato demo_fixtures seed-stal-zbiorniki --tenant <id> --org <id>`.
 
+Baza zaseedowana przed SPEC-008 ma agenta o nazwie `Factory`: prowizjonowanie zapisuje nazwę
+wyłącznie przy tworzeniu principala, więc ponowny seed jej nie ruszy. Zmienia ją dopiero
+`yarn mercato task_delegation rename-agent --tenant <id> --org <id>` — idempotentne, do
+uruchomienia przed demem, nie w jego trakcie.
+
 ## Docelowa strona
 
 Publiczne repo `hackaton-stal-zbiorniki-landing` (SPEC-005): strona główna, „Od ręki”, strony

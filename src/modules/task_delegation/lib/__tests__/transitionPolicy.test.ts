@@ -4,8 +4,11 @@ import { evaluateHumanTaskMutation, hasReachedMilestone, mapProcessStatus } from
 describe('tasks transition policy', () => {
   it('maps workflow lifecycle statuses to staff columns', () => {
     expect(mapProcessStatus('open')).toBe('backlog')
-    expect(mapProcessStatus('in_design')).toBe('in-design')
-    expect(mapProcessStatus('failed')).toBe('closed')
+    expect(mapProcessStatus('queued')).toBe('in-progress')
+    expect(mapProcessStatus('in_design')).toBe('in-progress')
+    expect(mapProcessStatus('in_review')).toBe('in-review')
+    expect(mapProcessStatus('failed')).toBe('backlog')
+    expect(mapProcessStatus('rejected')).toBe('backlog')
   })
 
   it('keeps active delegated tasks process-owned except for assignee terminal review moves', () => {
@@ -19,6 +22,14 @@ describe('tasks transition policy', () => {
 
     expect(evaluateHumanTaskMutation({
       operation: 'status_change',
+      from: 'in-review',
+      to: 'backlog',
+      activeDelegation: true,
+      actorIsAssignee: true,
+    })).toEqual({ allowed: true, releaseOutcome: 'rejected' })
+
+    expect(evaluateHumanTaskMutation({
+      operation: 'status_change',
       from: 'in-progress',
       to: 'in-review',
       activeDelegation: true,
@@ -26,14 +37,14 @@ describe('tasks transition policy', () => {
     })).toEqual({ allowed: false, code: 'process_owned' })
   })
 
-  it('reserves process-only columns and guards updates, deletes, children and undo', () => {
+  it('leaves undelegated tasks free to move and guards updates, deletes, children and undo', () => {
     expect(evaluateHumanTaskMutation({
       operation: 'status_change',
       from: 'backlog',
-      to: 'queued',
+      to: 'in-progress',
       activeDelegation: false,
       actorIsAssignee: true,
-    })).toEqual({ allowed: false, code: 'process_only_column' })
+    })).toEqual({ allowed: true })
     expect(evaluateHumanTaskMutation({ operation: 'delete', activeDelegation: true })).toEqual({
       allowed: false,
       code: 'process_owned',

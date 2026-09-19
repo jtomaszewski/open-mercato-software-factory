@@ -10,6 +10,6 @@ export default function TaskDelegateBadge({ context }: { context?: { taskId?: st
   const delegation = item?.delegation
   // An undelegated task (released without an outcome) is back in human hands: no run badge.
   if (!delegation || (delegation.releasedAt && !delegation.outcome)) return null
-  const variant = delegation.runState === 'failed' ? 'error' : delegation.runState === 'complete' ? 'success' : 'neutral'
+  const variant = delegation.runState === 'failed' ? 'error' : delegation.runState === 'rejected' ? 'warning' : delegation.runState === 'complete' ? 'success' : 'neutral'
   return <span title={delegation.closeReason ?? undefined}><StatusBadge variant={variant}>{delegation.runState ? t(`task_delegation.runState.${delegation.runState}`) : t('task_delegation.delegate.assigned')}</StatusBadge></span>
 }
