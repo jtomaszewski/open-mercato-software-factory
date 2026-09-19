@@ -1,0 +1,15 @@
+{
+  "customer": {
+    "name": "Park of Poland (Suntago)",
+    "legalName": "Park of Poland Sp. z o.o.",
+    "brandName": "Suntago",
+    "websiteUrl": "https://parkofpoland.com/"
+  },
+  "order": {
+    "orderNumber": "SO-2026-0042",
+    "lines": [
+      { "sku": "ZPPOZ-20", "name": "Zbiornik przeciwpożarowy 20 m³", "quantity": 1 },
+      { "sku": "ZCH-3000", "name": "Zbiornik na kwasy 3000 l", "quantity": 2 }
+    ]
+  }
+}

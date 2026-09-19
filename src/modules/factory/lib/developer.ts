@@ -4,6 +4,9 @@ import type { GitHubClient } from './github'
 /** The orchestrator file agent (`agents/developer`) that changes the checkout inside the sidecar's sandbox. */
 export const DEVELOPER_AGENT_ID = 'factory.developer'
 
+/** The orchestrator file agent (`agents/researcher`) that reads a customer's website with `web_fetch` (SPEC-006). */
+export const RESEARCHER_AGENT_ID = 'factory.researcher'
+
 export type DeveloperTask = { id: string; title: string; description: string | null }
 
 export type DeliveredPr = { prNumber: number; prUrl: string; prLabel: string; branch: string }

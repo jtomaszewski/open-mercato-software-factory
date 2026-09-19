@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  checkoutPaths, collectChanges, isGenerated, parsePorcelain, prepareCheckout, protectedPaths, readCheckoutConfigFromEnv, type CheckoutConfig, type Exec,
+  checkoutPaths, collectChanges, isGenerated, parsePorcelain, prepareCheckout, protectedPaths, readCheckoutConfigFromEnv, toChangedFile, type CheckoutConfig, type Exec,
 } from '../lib/checkout'
 
 describe('checkout helpers', () => {
@@ -17,6 +17,12 @@ describe('checkout helpers', () => {
   it('flags protected and generated paths', () => {
     expect(protectedPaths(['app/x.tsx', '.github/workflows/site.yml', 'vercel.json', '.env.local'])).toEqual(['.github/workflows/site.yml', 'vercel.json', '.env.local'])
     expect(['node_modules/a.js', '.next/x', 'app/a.tsx'].map(isGenerated)).toEqual([true, true, false])
+  })
+
+  it('keeps text (SVG included) as UTF-8 and commits images as base64', () => {
+    expect(toChangedFile('public/logos/a.svg', Buffer.from('<svg>ż</svg>'))).toEqual({ path: 'public/logos/a.svg', content: '<svg>ż</svg>' })
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0xff])
+    expect(toChangedFile('public/logos/a.png', png)).toEqual({ path: 'public/logos/a.png', content: png.toString('base64'), encoding: 'base64' })
   })
 
   it('puts the checkout under the sandbox root and its git dir outside it', () => {

@@ -20,7 +20,8 @@ export type PullRequestFile = { filename: string; status: string; additions: num
 
 export type CheckRun = { name: string; status: string; conclusion: string | null; url: string | null }
 
-export type CommitFile = { path: string; content: string | null }
+/** `content: null` deletes the file; `encoding: 'base64'` marks binary content (images). */
+export type CommitFile = { path: string; content: string | null; encoding?: 'utf-8' | 'base64' }
 
 export class GitHubApiError extends Error {
   constructor(
@@ -97,12 +98,14 @@ export class GitHubClient {
   /** One commit with every file, on top of `parentSha`. Returns the new commit sha. */
   async createCommit(params: { parentSha: string; files: CommitFile[]; message: string }): Promise<string> {
     const baseTree = await this.getCommitTreeSha(params.parentSha)
-    const tree = await this.request<{ sha: string }>('POST', this.repoPath('/git/trees'), {
-      base_tree: baseTree,
-      tree: params.files.map((file) => file.content === null
-        ? { path: file.path, mode: '100644', type: 'blob', sha: null }
-        : { path: file.path, mode: '100644', type: 'blob', content: file.content }),
-    })
+    // Inline tree content is UTF-8 only, so binary files go up as blobs first.
+    const entries = await Promise.all(params.files.map(async (file) => {
+      if (file.content === null) return { path: file.path, mode: '100644', type: 'blob', sha: null }
+      if (file.encoding !== 'base64') return { path: file.path, mode: '100644', type: 'blob', content: file.content }
+      const blob = await this.request<{ sha: string }>('POST', this.repoPath('/git/blobs'), { content: file.content, encoding: 'base64' })
+      return { path: file.path, mode: '100644', type: 'blob', sha: blob!.sha }
+    }))
+    const tree = await this.request<{ sha: string }>('POST', this.repoPath('/git/trees'), { base_tree: baseTree, tree: entries })
     const commit = await this.request<{ sha: string }>('POST', this.repoPath('/git/commits'), {
       message: params.message,
       tree: tree!.sha,

@@ -24,7 +24,9 @@ systemu ewidencji dane z internetu, których tam nie było.
 - **Q1. Wartość statusu realizacji.** Rozstrzygnięte 2026-09-19: strona zamówienia w backendzie
   ma tylko select `status` (słownik `sales.order_status`: `confirmed`, `in_fulfillment`,
   `fulfilled`, …); `fulfillment_status` to wolny tekst ustawiany kodem, bez UI. Wyzwalaczem jest
-  `sales.order.updated` z przejściem `status` na `fulfilled`. Seedowane zamówienie ma
+  przejście `status` na `fulfilled`. `sales.orders.update` w 0.8.0 nie emituje
+  `sales.order.updated` (tylko `sales.order.confirmed`/`cancelled`), więc przejście łapie interceptor
+  komendy fabryki i emituje własne `factory.order.fulfilled`. Seedowane zamówienie ma
   `status: confirmed`, `fulfillment_status: pending`.
 - **Q2. Logo Suntago bez zgody.** Rozstrzygnięte 2026-09-19: akceptujemy na demo; strona
   `realizacje` dostaje `noindex`.
@@ -41,14 +43,16 @@ referencji trzeba logo (leży na stronie klienta), zgody (leży u klienta) i dan
 ## Proponowane rozwiązanie
 
 ```
-sales.order.updated (status → fulfilled)
-  └─ tasks subscriber → zadanie „Realizacja: Park of Poland — ZDP-5000 ×2”, delegowane
-        idempotencja: tasks_intake(source='sales.order', source_ref=orderId)
-      ↓ factory.deliver (SPEC-001), bez zmian w grafie
-INVOKE_AGENT researcher   web_fetch(customer.websiteUrl) → artefakt { logoUrl, title, description, sourceUrl }
-INVOKE_AGENT sizer        small
-INVOKE_AGENT slicer       1 slice [code] → runner: PR do repo strony (klasa content)
-           factory/catalog-match: karta realizacji zgodna z liniami zamówienia i nazwą klienta
+sales.orders.update (status → fulfilled)
+  └─ factory interceptor (before/after status) → factory.order.fulfilled (persistent)
+      └─ factory subscriber → zadanie DEMO „Realizacja: Park of Poland (Suntago) — SO-2026-0042”,
+            delegowane do Software Engineer; idempotencja: link do zamówienia w opisie zadania
+      ↓ factory.deliver (ten sam proces co scena 3)
+prepare_checkout          wczytuje zamówienie (klient, websiteUrl, linie z SKU) → context.order
+INVOKE_AGENT researcher   tylko gdy jest zamówienie (warunek przejścia): web_fetch(websiteUrl)
+                          → artefakt { summary, siteTitle, description, sourceUrl }
+INVOKE_AGENT developer    order + research: logo curl-em z nagłówka strony klienta (reguła),
+                          wpis w lib/realizations.ts → PR do repo strony (klasa content)
            → preview → Marek zatwierdza → merge → strona na żywo
 
 attachments.attachment.created (entity = zamówienie, mime image/*)
@@ -56,8 +60,11 @@ attachments.attachment.created (entity = zamówienie, mime image/*)
       → 1 slice [code] → runner: zdjęcia do public/realizacje/<slug>/ (max 1600 px, webp), galeria na karcie
 ```
 
-Proces `factory.deliver` bez zmian w grafie: to zwykłe zadanie `[code]`, inne jest tylko
-źródło (zamówienie zamiast produktu) i to, że researcher ma narzędzie do internetu.
+Proces `factory.deliver` dostaje jeden warunkowy krok: `checkout_ready → research` tylko gdy
+`prepare_checkout` znalazł zamówienie, inaczej jak dotąd `checkout_ready → develop`. `web_fetch`
+zwraca sam tekst strony (bez `<img src>`), więc researcher daje opis, a logo wybiera i pobiera
+Developer w sandboxie (`curl`, reguła z `AGENTS.md` strony). Pliki binarne (logo raster, zdjęcia)
+idą do PR-a jako bloby base64.
 
 Narzędzie już jest: orkiestrator wystawia `agent_orchestrator.web_fetch` i
 `agent_orchestrator.web_search` (`ENT/AGENTS.md` „Web Egress”; przykład
@@ -72,10 +79,10 @@ i planem awaryjnym, nie osobnym toolem.
 
 | Element | Gdzie | Uwagi |
 |---|---|---|
-| Subscriber `sales.order.updated` → intake, tylko przy przejściu `status` na `fulfilled` | `src/modules/task_delegation/subscribers/` | ten sam wzorzec co intake z `catalog.product.created` (scena 3) |
+| Interceptor `sales.orders.update` (status przed/po) → `factory.order.fulfilled`; subscriber → zadanie DEMO | `src/modules/factory/commands/interceptors.ts`, `subscribers/order-fulfilled.ts`, `lib/board.ts` | ten sam wzorzec co intake z `catalog.product.created` (scena 3). **Zrobione** |
 | Subscriber `attachments.attachment.created` → intake, tylko dla zamówienia i obrazów | j.w. | jedno zadanie na partię: `source_ref = orderId:{data}` |
-| Researcher z `web_fetch`: `tools: [agent_orchestrator.web_fetch]` w `AGENT.md`, reguła wyboru logo w prompcie (`og:image`, `<img>` z „logo” w ścieżce lub alt, SVG przed rastrem) | `src/modules/factory/agents/researcher/AGENT.md` + grant feature'ów `agent_orchestrator.web_search`/`web_fetch` w `setup.ts` | bez własnego toola; `OM_WEB_FETCH_MAX_BYTES` domyślne wystarcza na stronę główną |
-| Runner: pobranie logo z URL do `public/logos/<slug>.svg|png` | runner | SVG zostaje SVG, raster do PNG |
+| Researcher z `web_fetch` (`tools: [agent_orchestrator.web_fetch]`), grant `agent_orchestrator.web_search`/`web_fetch` w `DELIVER_GRANTED_FEATURES` | `src/modules/factory/agents/researcher/`, `lib/deliver.ts` | bez własnego toola. **Zrobione** |
+| Developer: logo z nagłówka strony klienta (`<img>` z „logo” w `src`/`alt`, SVG przed rastrem, wariant ciemny przed jasnym, potem `og:image`) do `public/logos/<slug>.svg|png`, wpis w rejestrze | `src/modules/factory/agents/developer/AGENT.md` | **Zrobione** |
 | Strona: rejestr `lib/realizations.ts`, `app/realizacje/<slug>/page.tsx`, pasek „Zaufali nam” na stronie głównej, galeria | repo `hackaton-stal-zbiorniki-landing` | SPEC-005 wyłączało logotypy klientów, ten spec je włącza |
 | Dane demo: klient Park of Poland (`websiteUrl`, kontakt Anna Kowalska) i zamówienie `SO-2026-0042`: 1 × ZPPOZ-20, 2 × ZCH-3000, 126 400 PLN netto, `confirmed`, opłacone | `src/modules/demo_fixtures/lib/stalZbiorniki.ts` (`seedStalZbiornikiDemo`) | zamówienie **nie** jest zrealizowane w seedzie, handlowiec zmienia status na `fulfilled` na scenie. Zrobione 2026-09-19, idempotentne po nazwie klienta i numerze zamówienia |
 | Zbuforowany wynik scrape'u `parkofpoland.com` | `src/modules/demo_fixtures/lib/suntago.json` | plan awaryjny, gdy Firecrawl nie odpowie |
@@ -160,16 +167,17 @@ drugie zadanie, PR z galerią.
 
 ### Faza 2: Intake i dane
 
-2. Subscriber `sales.order.updated` → intake przy `status → fulfilled`. *Test:* zmiana statusu
-   w UI tworzy jedno delegowane zadanie; ponowny zapis zamówienia nie tworzy drugiego.
+2. Interceptor + subscriber → intake przy `status → fulfilled`. *Test:* zmiana statusu tworzy
+   jedno delegowane zadanie; ponowny zapis zamówienia nie tworzy drugiego. **Zrobione.**
 3. Klient, kontakt i zamówienie w `demo_fixtures`; `suntago.json`. *Test:* seed idempotentny. **Zrobione.**
 
 ### Faza 3: Agenci i runner
 
 5. Researcher z `web_fetch` i grantem feature'ów; używa go, gdy klient ma `websiteUrl`. *Test:*
-   artefakt dla `parkofpoland.com` zawiera URL `logo_dark.svg`, opis i `sourceUrl`.
+   artefakt dla `parkofpoland.com` zawiera opis i `sourceUrl`. **Zrobione.**
 6. Runner: pobranie logo, PR z realizacją, `catalog-match`. *Test:* PR zielony, preview pokazuje
-   logo i kartę, `catalog-match` czerwony po podmianie SKU w PR.
+   logo i kartę, `catalog-match` czerwony po podmianie SKU w PR. **Zrobione poza `catalog-match`**
+   (build strony i tak pada na nieznanym SKU).
 
 ### Faza 4: Zdjęcia (jeśli zostanie czas)
 
@@ -190,3 +198,4 @@ drugie zadanie, PR z galerią.
 | 2026-09-19 | Własny tool Firecrawl zastąpiony wbudowanym `agent_orchestrator.web_fetch` (opt-in w `AGENT.md`, feature'y domyślnie wyłączone); Firecrawl zostaje źródłem fixture'a `suntago.json`. |
 | 2026-09-19 | Q1 rozstrzygnięte: wyzwalacz to `status → fulfilled` (jedyny status z UI). Zrobione: seed klienta i zamówienia w `demo_fixtures`, fixture `suntago.json`; Faza 1 strony zmergowana w repo landing (PR #5). |
 | 2026-09-19 | Wersja basic: krok zgody (pole, mail, drugi subscriber) wycięty z przepływu; pętla mailowa przez Communications Hub (IMAP/Gmail, `sendAsUser`, `message.received`) opisana jako usprawnienie w *Poza zakresem*. Q2 i Q3 rozstrzygnięte. |
+| 2026-09-19 | Fazy 2–3 zrobione: `sales.order.updated` nie jest emitowane przez 0.8.0, więc wyzwalacz to interceptor `sales.orders.update` → `factory.order.fulfilled`; researcher z `web_fetch` jako warunkowy krok `factory.deliver`; logo pobiera Developer (web_fetch zwraca sam tekst); binarne pliki w PR-ach. Próba: 21 s researcher, 150 s developer, PR #12 w repo landing z zielonym `site`. |

@@ -13,11 +13,12 @@ import { resolveWorkflowDefinitionExecutionUserId } from '@open-mercato/core/mod
 import type { ActivityContext } from '@open-mercato/core/modules/workflows/lib/activity-executor'
 import { ProcessDefinition, ProcessInstance } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
 import type { CatalogRecordView, Scope } from './catalogRecord'
-import { actingContext, readProductIdFromTask } from './board'
+import { actingContext, readOrderIdFromTask, readProductIdFromTask } from './board'
 import { GitHubClient, readGitHubConfigFromEnv } from './github'
 import { loadCatalogRecordView } from './catalogRecord'
+import { loadOrderRecordView, type OrderRecordView } from './orderRecord'
 import { collectChanges, prepareCheckout, readCheckoutConfigFromEnv, removeCheckout, type CollectedChange, type PreparedCheckout } from './checkout'
-import { DEVELOPER_AGENT_ID, openDeveloperPullRequest, type DeliveredPr, type DeveloperChange, type DeveloperTask } from './developer'
+import { DEVELOPER_AGENT_ID, RESEARCHER_AGENT_ID, openDeveloperPullRequest, type DeliveredPr, type DeveloperChange, type DeveloperTask } from './developer'
 
 const logger = createLogger('factory').child({ component: 'deliver' })
 
@@ -28,10 +29,17 @@ export const PREPARE_FUNCTION = 'factory.prepare_checkout'
 export const DELIVER_FUNCTION = 'factory.deliver_product_pr'
 export const PR_OPEN_MILESTONE = 'pr_open'
 /**
- * The run's own principal: it may read and drive delegated tasks and run the Developer agent
- * (the agent's OpenCode session submits its outcome through MCP as this principal), nothing else.
+ * The run's own principal: it may read and drive delegated tasks and run the factory agents
+ * (their OpenCode sessions call MCP tools and submit outcomes as this principal), nothing else.
+ * The Researcher's `web_fetch` needs both default-off web features (SPEC-006).
  */
-export const DELIVER_GRANTED_FEATURES = ['task_delegation.view', 'task_delegation.process', 'agent_orchestrator.agents.run'] as const
+export const DELIVER_GRANTED_FEATURES = [
+  'task_delegation.view',
+  'task_delegation.process',
+  'agent_orchestrator.agents.run',
+  'agent_orchestrator.web_search',
+  'agent_orchestrator.web_fetch',
+] as const
 
 /** What `prepare_checkout` hands the agent step through the workflow context. */
 export type DeveloperInput = {
@@ -39,12 +47,22 @@ export type DeveloperInput = {
   title: string
   description: string
   record: CatalogRecordView | null
+  /** The fulfilled order a realization task is about (SPEC-006), else null. */
+  order: OrderRecordView | null
   /** The checkout as the sidecar sees it. */
   workDir: string
   baseSha: string
 }
 
 const PREPARED = '{{context.prepare_checkout_result.result'
+
+/**
+ * The engine evaluates an inline `transition.condition` (business_rules ConditionExpression over
+ * the instance context); the shared builder's transition type lags behind it.
+ */
+const ONLY_WITH_ORDER: Record<string, unknown> = {
+  condition: { field: 'prepare_checkout_result.result.order', operator: 'IS_NOT_EMPTY', value: null },
+}
 
 /**
  * `factory.deliver_product`: a delegated DEMO task → the product's website PR (SPEC-004 scene 3).
@@ -73,6 +91,30 @@ const deliverProduct = defineWorkflow({
     },
     { stepId: 'checkout_ready', stepName: 'Website checked out', stepType: 'AUTOMATED', description: 'The site repo is cloned into the run sandbox.' },
     {
+      stepId: 'research',
+      stepName: 'Researcher reads the customer website',
+      stepType: 'AUTOMATED',
+      description: 'Realization tasks only (SPEC-006): the Researcher reads the customer’s public website with web_fetch and reports who they are, with the source.',
+      signalConfig: { signalName: 'agent_orchestrator.proposal.ready' },
+      activities: [{
+        activityId: 'research',
+        activityName: 'research',
+        activityType: 'INVOKE_AGENT' as ActivityType,
+        config: {
+          agentId: RESEARCHER_AGENT_ID,
+          input: {
+            customer: `${PREPARED}.order.customer}}`,
+            order: {
+              orderNumber: `${PREPARED}.order.orderNumber}}`,
+              lines: `${PREPARED}.order.lines}}`,
+            },
+          },
+          onResult: { autoApproveThreshold: 0 },
+          outputMapping: { research: 'data' },
+        },
+      }],
+    },
+    {
       stepId: 'develop',
       stepName: 'Developer agent works',
       stepType: 'AUTOMATED',
@@ -90,6 +132,8 @@ const deliverProduct = defineWorkflow({
             title: `${PREPARED}.title}}`,
             description: `${PREPARED}.description}}`,
             record: `${PREPARED}.record}}`,
+            order: `${PREPARED}.order}}`,
+            research: '{{context.research | default(null)}}',
             workDir: `${PREPARED}.workDir}}`,
           },
           // A research outcome is never a proposal, so no disposition applies; the schema needs a value.
@@ -121,7 +165,18 @@ const deliverProduct = defineWorkflow({
         retryPolicy: { maxAttempts: 1, initialIntervalMs: 5000, backoffCoefficient: 2, maxIntervalMs: 30000 },
       }],
     },
+    {
+      transitionId: 't_research',
+      transitionName: 'Research the customer',
+      fromStepId: 'checkout_ready',
+      toStepId: 'research',
+      trigger: 'auto',
+      // Tried before t_develop: only a realization task carries an order.
+      priority: 200,
+      ...ONLY_WITH_ORDER,
+    },
     { transitionId: 't_develop', transitionName: 'Develop', fromStepId: 'checkout_ready', toStepId: 'develop', trigger: 'auto', priority: 100 },
+    { transitionId: 't_research_develop', transitionName: 'Develop', fromStepId: 'research', toStepId: 'develop', trigger: 'auto', priority: 100 },
     {
       transitionId: 't_open_pr',
       transitionName: 'Open PR',
@@ -223,6 +278,7 @@ function record(value: unknown): Record<string, unknown> | null {
 export type DeliverDeps = {
   resolveContainer: () => Promise<AwilixContainer>
   loadRecord: (em: EntityManager, scope: Scope, productId: string) => Promise<CatalogRecordView | null>
+  loadOrder: (em: EntityManager, scope: Scope, orderId: string) => Promise<OrderRecordView | null>
   prepareCheckout: (taskId: string) => Promise<PreparedCheckout>
   collectChanges: (taskId: string) => Promise<CollectedChange>
   removeCheckout: (taskId: string) => Promise<void>
@@ -232,6 +288,7 @@ export type DeliverDeps = {
 const defaultDeps: DeliverDeps = {
   resolveContainer: () => createRequestContainer(),
   loadRecord: loadCatalogRecordView,
+  loadOrder: loadOrderRecordView,
   prepareCheckout: (taskId) => prepareCheckout(readCheckoutConfigFromEnv(), taskId),
   collectChanges: (taskId) => collectChanges(readCheckoutConfigFromEnv(), taskId),
   removeCheckout: (taskId) => removeCheckout(readCheckoutConfigFromEnv(), taskId),
@@ -309,13 +366,16 @@ export function createPrepareFunction(deps: DeliverDeps = defaultDeps) {
     try {
       const productId = readProductIdFromTask(bound.task.description)
       const catalogRecord = productId ? await deps.loadRecord(bound.em, bound.scope, productId) : null
+      const orderId = readOrderIdFromTask(bound.task.description)
+      const order = orderId ? await deps.loadOrder(bound.em, bound.scope, orderId) : null
       const checkout = await deps.prepareCheckout(bound.task.id)
-      logger.info('website checked out for the Developer agent', { taskId: bound.task.id, productId, baseSha: checkout.baseSha })
+      logger.info('website checked out for the Developer agent', { taskId: bound.task.id, productId, orderId, baseSha: checkout.baseSha })
       return {
         taskId: bound.task.id,
         title: bound.task.title,
         description: bound.task.description ?? '',
         record: catalogRecord,
+        order,
         workDir: checkout.workDir,
         baseSha: checkout.baseSha,
       }
