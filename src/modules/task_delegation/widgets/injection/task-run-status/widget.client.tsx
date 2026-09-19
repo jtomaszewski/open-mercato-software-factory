@@ -117,12 +117,18 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
     }))
   }
 
-  async function mutate(body: Record<string, unknown> | null, operation: () => Promise<unknown>) {
+  /**
+   * One write path for both actions. The guarded mutation hands `mutationPayload` to the UMES
+   * mutation guards, so it has to be what is actually sent — which is why the agent is resolved
+   * before the mutation runs, not inside its operation.
+   */
+  async function runWrite(prepare: () => Promise<{ payload: Record<string, unknown>; operation: () => Promise<unknown> }>) {
     if (!item || saving) return
     setSaving(true)
     setMutationError(null)
     try {
-      await runMutation({ context: { taskId, retryLastMutation }, mutationPayload: body ?? { taskId }, operation })
+      const { payload, operation } = await prepare()
+      await runMutation({ context: { taskId, retryLastMutation }, mutationPayload: payload, operation })
       refresh()
       announceTaskMoved()
     } catch (failure) {
@@ -136,25 +142,29 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
    * the agent that ran; a first delegation asks the agents endpoint which agent is on offer.
    */
   async function delegateToAgent() {
-    if (!item) return
-    const known = delegation?.delegateUserId
-    await mutate({ taskId }, async () => {
-      let agentUserId = known
+    await runWrite(async () => {
+      let agentUserId = delegation?.delegateUserId
       if (!agentUserId) {
         const agents = await readApiResultOrThrow<{ items: TaskDelegationAgentDto[] }>('/api/task_delegation/agents')
         agentUserId = agents.items[0]?.userId
       }
       if (!agentUserId) throw new Error(t('task_delegation.errors.noAgentAvailable', 'No agent is ready to take the task.'))
-      return withScopedApiRequestHeaders(buildOptimisticLockHeader(item!.taskUpdatedAt), () => apiCallOrThrow('/api/task_delegation/assignments', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId, agentUserId }),
-      }))
+      const payload = { taskId, agentUserId }
+      return {
+        payload,
+        operation: () => withScopedApiRequestHeaders(buildOptimisticLockHeader(item!.taskUpdatedAt), () => apiCallOrThrow('/api/task_delegation/assignments', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        })),
+      }
     })
   }
 
   async function takeOver() {
-    if (!item) return
-    await mutate({ taskId }, () => withScopedApiRequestHeaders(buildOptimisticLockHeader(item!.taskUpdatedAt),
-      () => apiCallOrThrow(`/api/task_delegation/delegations/${taskId}`, { method: 'DELETE' })))
+    await runWrite(async () => ({
+      payload: { taskId },
+      operation: () => withScopedApiRequestHeaders(buildOptimisticLockHeader(item!.taskUpdatedAt),
+        () => apiCallOrThrow(`/api/task_delegation/delegations/${taskId}`, { method: 'DELETE' })),
+    }))
   }
 
   const reason = delegation?.closeReason?.trim() || null

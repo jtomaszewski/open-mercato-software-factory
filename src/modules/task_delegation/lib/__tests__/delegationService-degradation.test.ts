@@ -41,5 +41,9 @@ it('keeps authorized delegation data when optional process reads fail', async ()
     selectedOrganizationId: 'org-id', organizationIds: ['org-id'], organizationScope: null,
   } as unknown as CommandRuntimeContext
   const result = await createTaskDelegationService({ em: {} as EntityManager }).getDelegations(ctx, ['task-id'])
-  expect(result[0]).toMatchObject({ taskId: 'task-id', delegation: { id: 'delegation-id', runState: null } })
+  expect(result[0]).toMatchObject({
+    taskId: 'task-id',
+    // `startedAt` is the delegation's creation time; the board chip counts "Pracuje · N min" from it.
+    delegation: { id: 'delegation-id', runState: null, startedAt: '2026-09-19T10:00:00.000Z' },
+  })
 })

@@ -10,6 +10,7 @@ const TASK_ID = '11111111-1111-4111-8111-111111111111'
 const apiCall = jest.fn<(path: string, init?: RequestInit) => Promise<unknown>>()
 const readApi = jest.fn<(path: string) => Promise<unknown>>()
 const refresh = jest.fn()
+const guardedPayloads: Record<string, unknown>[] = []
 let grantedFeatures: string[] = ['task_delegation.view', 'task_delegation.delegate']
 let current: TaskDelegationReadItem | null = null
 
@@ -25,7 +26,10 @@ jest.mock('@open-mercato/ui/backend/BackendChromeProvider', () => ({
 }))
 jest.mock('@open-mercato/ui/backend/injection/useGuardedMutation', () => ({
   useGuardedMutation: () => ({
-    runMutation: ({ operation }: { operation: () => Promise<unknown> }) => operation(),
+    runMutation: ({ operation, mutationPayload }: { operation: () => Promise<unknown>; mutationPayload: Record<string, unknown> }) => {
+      guardedPayloads.push(mutationPayload)
+      return operation()
+    },
     retryLastMutation: jest.fn(),
   }),
 }))
@@ -60,6 +64,7 @@ beforeEach(() => {
   apiCall.mockReset().mockResolvedValue({})
   readApi.mockReset().mockResolvedValue({ items: [{ userId: 'agent-user', agentId: 'factory', name: 'Software Engineer', label: 'Software Engineer', description: '' }] })
   refresh.mockReset()
+  guardedPayloads.length = 0
   grantedFeatures = ['task_delegation.view', 'task_delegation.delegate']
 })
 
@@ -78,6 +83,8 @@ it('offers handing an undelegated task to the agent', async () => {
   fireEvent.click(screen.getByTestId('task-run-status-delegate'))
   await waitFor(() => expect(apiCall).toHaveBeenCalledWith('/api/task_delegation/assignments', expect.objectContaining({ method: 'POST' })))
   expect(JSON.parse(String((apiCall.mock.calls[0]![1] as RequestInit).body))).toEqual({ taskId: TASK_ID, agentUserId: 'agent-user' })
+  // The UMES mutation guards see what is actually written, not a stripped-down stand-in.
+  expect(guardedPayloads).toEqual([{ taskId: TASK_ID, agentUserId: 'agent-user' }])
   expect(refresh).toHaveBeenCalled()
 })
 
