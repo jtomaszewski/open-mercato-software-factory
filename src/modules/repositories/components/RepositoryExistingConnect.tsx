@@ -18,15 +18,18 @@ export function RepositoryExistingConnect() {
     required: true,
     maxLength: 32,
     description: (
-      <a className="text-primary underline-offset-4 hover:underline" href="https://github.com/settings/installations" target="_blank" rel="noreferrer">
-        {t('repositories.connect.existingInstallationHelp')}
-      </a>
+      <>
+        {t('repositories.connect.existingInstallationHelp')}{' '}
+        <a className="text-primary underline" href="https://github.com/settings/installations" target="_blank" rel="noopener noreferrer">
+          {t('repositories.connect.installationSettings')}
+        </a>
+      </>
     ),
   }], [t])
 
   return (
     <Page>
-      <PageBody>
+      <PageBody className="max-w-4xl">
         <CrudForm<ExistingConnectionValues>
           title={t('repositories.connect.existingTitle')}
           titleHeadingLevel={1}
@@ -37,6 +40,7 @@ export function RepositoryExistingConnect() {
           submitLabel={t('repositories.actions.connectExisting')}
           cancelHref="/backend/repositories"
           disableOptimisticLock
+          hideFooterActions
           onSubmit={async (values) => {
             const call = await runMutation({
               context: { entityId: 'repositories:connection', operation: 'create' },

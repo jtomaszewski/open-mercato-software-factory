@@ -46,7 +46,8 @@
     "connect": {
       "title": "Połącz repozytoria GitHub",
       "existingTitle": "Połącz istniejącą instalację GitHub",
-      "existingInstallationHelp": "Identyfikator instalacji znajdziesz w ustawieniach instalacji aplikacji GitHub.",
+      "installationSettings": "Otwórz ustawienia instalacji GitHub",
+      "existingInstallationHelp": "W ustawieniach instalacji aplikacji GitHub wybierz Configure i skopiuj numer z końca adresu (np. /settings/installations/123456).",
       "loading": "Weryfikowanie zgody GitHub...",
       "loadError": "Nie udało się wczytać repozytoriów z połączonej instalacji GitHub.",
       "invalidReturn": "Odpowiedź połączenia GitHub jest niepełna. Rozpocznij połączenie ponownie.",
