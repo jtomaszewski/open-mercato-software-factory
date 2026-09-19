@@ -221,7 +221,16 @@ it('selects on the first Enter and submits on the next Enter', async () => {
   fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Enter' })
   expect(person).toHaveAttribute('aria-selected', 'true')
   expect(mockApi).not.toHaveBeenCalled()
-  expect(screen.getByText('Enter selects; press again to save. Esc closes.')).toBeInTheDocument()
+  expect(screen.getByText('Enter selects; on a selected option it saves. Esc closes.')).toBeInTheDocument()
   fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Enter' })
   await waitFor(() => expect(mockApi).toHaveBeenCalledTimes(1))
+})
+
+it('closes without writing when Enter is pressed on the current assignment', async () => {
+  mockAssignee = { id: MEMBER, name: 'Ola Nowak' }
+  openPicker()
+  expect(await screen.findByRole('option', { name: /Ola Nowak/ })).toHaveAttribute('aria-selected', 'true')
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Enter' })
+  await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument())
+  expect(mockApi).not.toHaveBeenCalled()
 })

@@ -307,9 +307,9 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
             {t('task_delegation.assign.reload', 'Reload the task')}
           </Button>
           : null}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">{t('task_delegation.assign.hint', 'Enter selects; press again to save. Esc closes.')}</span>
-          <Button size="sm" className="shrink-0" disabled={saving || loading} onClick={() => void apply()}>
+        <div className="flex flex-col items-start gap-2">
+          <span className="text-xs text-muted-foreground">{t('task_delegation.assign.hint', 'Enter selects; on a selected option it saves. Esc closes.')}</span>
+          <Button size="sm" className="self-end" disabled={saving || loading} onClick={() => void apply()}>
             {draft.agentUserId && !activeDelegation
               ? t('task_delegation.assign.applyAgent', 'Assign and start agent')
               : t('task_delegation.assign.apply', 'Assign')}

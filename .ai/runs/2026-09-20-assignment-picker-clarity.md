@@ -21,5 +21,10 @@ Changed labels and conditional UI may affect user expectations. Cover the releva
 PR: #51
 
 ### Phase 1: Correct the audited behavior
-- [ ] 1.1 Add regression coverage and implement the scoped correction.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.1 Add regression coverage and implement the scoped correction.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+
+## Verification
+RED: three expected failures. GREEN: 17 picker tests. Full generate, typecheck, lint, ds:check, 298-test suite and production build passed; the final hint correction has targeted coverage and a fresh successful build. Desktop checks covered selected versus highlighted rows, the launch warning, and Escape without saving.
+
+Independent primary review: no introduced blockers. Desktop evidence is attached to PR #51.

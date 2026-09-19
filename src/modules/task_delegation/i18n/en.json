@@ -19,7 +19,7 @@
   "task_delegation.assign.lockedDecision": "The task is waiting on the sizing decision in the Caseload.",
   "task_delegation.assign.caseload": "Open the Caseload",
   "task_delegation.assign.reload": "Reload the task",
-  "task_delegation.assign.hint": "Enter selects; press again to save. Esc closes.",
+  "task_delegation.assign.hint": "Enter selects; on a selected option it saves. Esc closes.",
   "task_delegation.errors.people": "Could not load people.",
   "task_delegation.agents.softwareEngineer": "Software Engineer",
   "task_delegation.agents.softwareEngineer.description": "Researches, plans and opens a PR",
