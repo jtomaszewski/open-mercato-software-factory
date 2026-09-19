@@ -104,5 +104,6 @@
   "task_delegation.runBar.technical.title": "Szczegóły techniczne",
   "task_delegation.runBar.technical.agent": "Agent",
   "task_delegation.runBar.technical.empty": "Brak szczegółów uruchomienia.",
-  "task_delegation.errors.noAgentAvailable": "Żaden agent nie jest gotowy do przyjęcia zadania."
+  "task_delegation.errors.noAgentAvailable": "Żaden agent nie jest gotowy do przyjęcia zadania.",
+  "staff.time_tracking.board.summary.logged": ""
 }

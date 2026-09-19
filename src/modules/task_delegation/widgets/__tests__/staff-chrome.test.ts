@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from '@jest/globals'
+import pl from '../../i18n/pl.json'
+import en from '../../i18n/en.json'
 import {
+  BLANKED_STAFF_KEYS,
   HIDE_OWNER_IRRELEVANT_CARD_CHROME,
   HIDE_OWNER_IRRELEVANT_DRAWER_CHROME,
   OWNER_IRRELEVANT_DRAWER_TESTIDS,
@@ -67,6 +70,28 @@ describe('the board-card chrome we hide', () => {
     // The move control is wrapped in a div, so a child-button rule cannot reach it.
     expect(card).toContain('<div className="relative">')
     expect(HIDE_OWNER_IRRELEVANT_CARD_CHROME).not.toContain('kanban-card-move')
+  })
+
+  it('hides the per-column logged total but keeps the task count', () => {
+    const column = read('KanbanColumn.tsx')
+    expect(column).toContain('data-testid={`kanban-hours-${status.id}`}')
+    expect(column).toContain('data-testid={`kanban-count-${status.id}`}')
+    expect(HIDE_OWNER_IRRELEVANT_CARD_CHROME).toContain('[data-testid^="kanban-hours-"]')
+    expect(HIDE_OWNER_IRRELEVANT_CARD_CHROME).not.toContain('kanban-count-')
+  })
+
+  it('blanks the logged segment of the board subtitle, which no selector can reach', () => {
+    const screen = read('TaskBoardScreen.tsx')
+    // `staff` joins the subtitle from parts and drops the empty ones — that is what makes an
+    // empty translation remove the segment instead of rendering a stray separator.
+    expect(screen).toContain("t('staff.time_tracking.board.summary.logged'")
+    expect(screen).toContain("part.length > 0")
+    for (const key of BLANKED_STAFF_KEYS) {
+      expect((pl as Record<string, string>)[key]).toBe('')
+      expect((en as Record<string, string>)[key]).toBe('')
+    }
+    // The task count shares the line and stays.
+    expect((pl as Record<string, string>)['staff.time_tracking.board.summary.tasks']).toBeUndefined()
   })
 
   it('is mounted once for the whole board rather than once per card', () => {

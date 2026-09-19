@@ -219,6 +219,10 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
     const chip = page.getByTestId('task-delegate-badge').first()
     await expect(chip).toBeVisible()
     await expect(chip).toContainText(/Pracuje · \d+ min/)
+
+    // Booked hours are not the company owner's business: neither per column nor in the subtitle.
+    await expect(page.locator('[data-testid^="kanban-hours-"]').first()).toBeHidden()
+    await expect(page.getByText(/zalogowane/)).toHaveCount(0)
     if (SHOTS) await page.screenshot({ path: path.join(SHOT_DIR, 'board-card-chip.png'), fullPage: false })
   })
 })

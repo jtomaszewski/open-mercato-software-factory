@@ -61,4 +61,17 @@ export const HIDE_OWNER_IRRELEVANT_CARD_CHROME = `
 /* Start/stop timer and "Add time". The "Move" button is wrapped in a div, so it survives and the
    card keeps a keyboard route between columns. */
 [data-testid^="kanban-card-actions-"] > button { display: none !important; }
+
+/* The logged-hours total in each column header. The task count beside it stays — how many tasks
+   sit in a column is the owner's business; how many hours were booked against them is not. */
+[data-testid^="kanban-hours-"] { display: none !important; }
 `
+
+/**
+ * The board's subtitle reads "<project> · 7 tasks · 656:30 logged" as ONE joined string, so no
+ * selector can reach the last third of it. `staff` builds it from parts and drops the empty ones,
+ * and an app module's dictionary is merged after core's — so blanking this key removes the segment
+ * and leaves the rest of the line intact. Same intent as the rules above, different seam, because
+ * this one is text rather than an element.
+ */
+export const BLANKED_STAFF_KEYS = ['staff.time_tracking.board.summary.logged'] as const

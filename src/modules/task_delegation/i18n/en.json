@@ -104,5 +104,6 @@
   "task_delegation.runBar.technical.title": "Technical details",
   "task_delegation.runBar.technical.agent": "Agent",
   "task_delegation.runBar.technical.empty": "No run details yet.",
-  "task_delegation.errors.noAgentAvailable": "No agent is ready to take the task."
+  "task_delegation.errors.noAgentAvailable": "No agent is ready to take the task.",
+  "staff.time_tracking.board.summary.logged": ""
 }
