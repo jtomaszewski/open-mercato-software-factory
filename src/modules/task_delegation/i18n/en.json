@@ -9,8 +9,8 @@
   "task_delegation.assign.title": "Assigned to",
   "task_delegation.assign.unassigned": "Unassigned",
   "task_delegation.assign.search": "Search people and agents",
-  "task_delegation.assign.people": "People",
-  "task_delegation.assign.agents": "Agents",
+  "task_delegation.assign.people": "Responsible person",
+  "task_delegation.assign.agents": "Executing agent",
   "task_delegation.assign.apply": "Assign",
   "task_delegation.assign.noMatch": "Nothing matches that search.",
   "task_delegation.assign.noDelegateFeature": "Delegating to an agent needs the delegate permission.",
@@ -19,7 +19,7 @@
   "task_delegation.assign.lockedDecision": "The task is waiting on the sizing decision in the Caseload.",
   "task_delegation.assign.caseload": "Open the Caseload",
   "task_delegation.assign.reload": "Reload the task",
-  "task_delegation.assign.hint": "Space selects, Enter assigns, Esc closes",
+  "task_delegation.assign.hint": "Enter selects; press again to save. Esc closes.",
   "task_delegation.errors.people": "Could not load people.",
   "task_delegation.agents.softwareEngineer": "Software Engineer",
   "task_delegation.agents.softwareEngineer.description": "Researches, plans and opens a PR",
@@ -105,5 +105,7 @@
   "task_delegation.runBar.technical.agent": "Agent",
   "task_delegation.runBar.technical.empty": "No run details yet.",
   "task_delegation.errors.noAgentAvailable": "No agent is ready to take the task.",
-  "staff.time_tracking.board.summary.logged": ""
+  "staff.time_tracking.board.summary.logged": "",
+  "task_delegation.assign.startsAgent": "Saving this assignment starts the selected agent.",
+  "task_delegation.assign.applyAgent": "Assign and start agent"
 }

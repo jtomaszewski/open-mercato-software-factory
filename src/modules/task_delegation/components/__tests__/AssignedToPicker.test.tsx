@@ -93,7 +93,7 @@ it('assigns a person and an agent through one command', async () => {
   openPicker()
   fireEvent.click(await screen.findByRole('option', { name: /Ola Nowak/ }))
   fireEvent.click(screen.getByRole('option', { name: /Software Engineer/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Assign' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Assign and start agent' }))
   await waitFor(() => expect(mockApi).toHaveBeenCalledTimes(1))
   expect(mockApi).toHaveBeenCalledWith('/api/task_delegation/assignments', expect.objectContaining({
     method: 'POST', body: JSON.stringify({ taskId: TASK_ID, assigneeStaffMemberId: MEMBER, agentUserId: AGENT_USER }),
@@ -191,4 +191,37 @@ it('reports a failed load instead of an empty picker', () => {
   render(<AssignedToPicker taskId={TASK_ID} />)
   expect(screen.getByText(/errors\s*load/i)).toBeInTheDocument()
   expect(screen.queryByTestId('assigned-to-trigger')).not.toBeInTheDocument()
+})
+
+it('marks the selected option separately from the highlighted option', async () => {
+  mockAssignee = { id: MEMBER, name: 'Ola Nowak' }
+  openPicker()
+  const person = await screen.findByRole('option', { name: /Ola Nowak/ })
+  const list = screen.getByRole('listbox')
+  fireEvent.keyDown(list, { key: 'ArrowDown' })
+  expect(person).toHaveAttribute('aria-selected', 'true')
+  expect(person).toContainElement(screen.getByTestId('assigned-to-selected'))
+  expect(person).not.toHaveAttribute('data-highlighted')
+  expect(screen.getByRole('option', { name: /Software Engineer/ })).toHaveAttribute('data-highlighted', 'true')
+})
+
+it('explains that submitting a newly selected agent starts work', async () => {
+  openPicker()
+  fireEvent.click(await screen.findByRole('option', { name: /Software Engineer/ }))
+  expect(screen.getByText('Saving this assignment starts the selected agent.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Assign and start agent' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('option', { name: /Software Engineer/ }))
+  expect(screen.queryByText('Saving this assignment starts the selected agent.')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Assign' })).toBeInTheDocument()
+})
+
+it('selects on the first Enter and submits on the next Enter', async () => {
+  openPicker()
+  const person = await screen.findByRole('option', { name: /Ola Nowak/ })
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Enter' })
+  expect(person).toHaveAttribute('aria-selected', 'true')
+  expect(mockApi).not.toHaveBeenCalled()
+  expect(screen.getByText('Enter selects; press again to save. Esc closes.')).toBeInTheDocument()
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Enter' })
+  await waitFor(() => expect(mockApi).toHaveBeenCalledTimes(1))
 })
