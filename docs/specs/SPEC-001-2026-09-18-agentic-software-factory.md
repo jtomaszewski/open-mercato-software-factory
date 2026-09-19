@@ -1,6 +1,6 @@
 # SPEC-001: Agentic Software Factory on the Open Mercato Agent Orchestrator
 
-**Status**: Draft
+**Status**: Partly implemented — the intake half ([SPEC-002](./SPEC-002-2026-09-18-tasks-module.md)) and one vertical slice (catalog product → website PR → approve) ship; the WSFF design gates, the agent roster and the coding-runner protocol below are still design-only
 **Owner**: HackOn team · **Date**: 2026-09-18 · **Tracker**: —
 
 ## TLDR
@@ -1034,3 +1034,4 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
 | 2026-09-18 | Demo storyline and company moved to SPEC-004 (Metal Zbiorniki, a steel-tank manufacturer); catalog-correction example now ZDP-5000. |
 | 2026-09-19 | Demo target site (SPEC-005): waiver merged by a second App via a ruleset bypass; `factory/catalog-match` status as a waiver condition; repo-hosted previews. |
 | 2026-09-19 | First slice built as the app module `factory` (SPEC-004 scene 3): a persistent subscriber on `catalog.product.created` starts the `Factory: publish product page` process (manual trigger only, idempotency `product:<id>`), whose code workflow opens the website PR through an `EXECUTE_FUNCTION` and declares the PR as the process outcome. Two 0.8.0 findings: a step never waits for its own async activities and keeps their output on the step instance, while transition activities park and merge `<activityId>_result`; the catalog create form writes prices after the product exists, so the effector waits 10 s. |
+| 2026-09-20 | Status `Draft` → `Partly implemented` after an evidence-based audit against `main`. Shipped: `task_delegation` (entities, the three workflow-safe commands with replay idempotency, the command-interceptor guard, ACL, events, the run-starting subscriber (now `start-delegated-run`), board and drawer widgets), the seeded delivery process (now `website_publishing.website_change`, seeded from `src/modules/website_publishing/`), and the catalog-product slice end to end. Not built: the sizer/slicer/reviewer agents and every other agent this spec names, the WSFF design `USER_TASK` gates, the standalone runner container with `POST /runs` and `WAIT_FOR_SIGNAL`, the Sentry and GitHub hook routes, `factory_send_task`, review routing by change class, the `factory.status` fallback process, and the eval assertions. The shipped graph runs settle → checkout → develop → PR with one milestone, not the graph described below. Since `4259a41` the code lives in `src/modules/code_changes/` + `src/modules/website_publishing/`, not `src/modules/factory/`. |

@@ -1,6 +1,6 @@
 # SPEC-004: Demo: Metal Zbiorniki, producent zbiorników stalowych prowadzi swoją stronę z Open Mercato
 
-**Status**: Draft
+**Status**: Sceny 3 i 3b gotowe end-to-end; w scenie 2 działa intake z czatu, ale poprawka rekordu nadal jedzie na planie awaryjnym (SPEC-003 nie ruszony). Brakuje nagrania zapasowego.
 **Właściciel**: zespół HackOn · **Data**: 2026-09-18 · **Tracker**: —
 **Rola dokumentu**: **jedyne źródło prawdy o niedzielnym pitchu.** Co mówimy, co klikamy, co jest
 na slajdzie i co zrobić, gdy coś padnie. Pozostałe specki opisują, jak zbudowane są części
@@ -248,6 +248,7 @@ realizacja to wpis w rejestrze i strona TSX, więc PR fabryki dodaje pliki, nie 
 | 2026-09-19 | Scena 4 (prawnik) wycięta, na jej miejsce scena 3b: zrealizowane zamówienie Park of Poland → logo i karta realizacji na stronie (SPEC-006). Ścieżka prawna przeniesiona na slajd „co dalej”. |
 | 2026-09-19 | Q1 rozstrzygnięte (Astro, Vercel, publiczne repo `hackaton-stal-zbiorniki-landing`); strona opisana w SPEC-005. |
 | 2026-09-19 | ZWM-1500 z kategorią „Zbiorniki na wodę pitną” i parametrami w podtytule; weryfikacja strony przez check `site` i status `factory/catalog-match` (SPEC-005). |
+| 2026-09-20 | Status z `Draft` na stan faktyczny po audycie kodu. Potwierdzone: `demo_fixtures` z 6 kategoriami, 7 produktami i celowym błędem w `ZDP-5000`, klient Park of Poland i zamówienie `SO-2026-0042`, tablica DEMO z delegowalnym agentem, cała scena 3 end-to-end (`catalog.product.created` → zadanie → delegacja → proces dostarczenia (dziś `website_publishing.website_change`) → agent w kontenerze → PR → recenzja w szufladzie → merge przez assignee), deck na `/pitch/index.html` ze slajdami zapasowymi B1–B4. Brakuje nadal: nagrania `public/pitch/video/run.mp4` oraz change setu `record` dla sceny 2 (SPEC-003 nie ruszony), więc sama poprawka rekordu jedzie na planie awaryjnym. Scena 3b jest już zrobiona (SPEC-006): interceptor na `sales.orders.update` → zadanie DEMO → researcher → PR #12 z logo, `site` i Vercel zielone. Intake z czatu też istnieje — `website_publishing.request_change`, narzędzie AI/MCP za zgodą, które zakłada zadanie na DEMO i deleguje je (`13e8c9a`). Dwie uwagi do runbooka: agent nazywa się na ekranie `Software Engineer`, nie `Factory` (SPEC-008), a moduły `code_changes` i `website_publishing` (po podziale `factory` w `4259a41`) wstają tylko z `OM_ENABLE_ENTERPRISE_MODULES` i `OM_ENABLE_ENTERPRISE_MODULES_AGENTS`. |
 | 2026-09-19 | Strona na Next ze static export zamiast Astro; produkt to strona TSX (SPEC-005). |
 | 2026-09-19 | Repo landing: PR #5 (infrastruktura realizacji) i #6 (stan demo: fikcyjny browar na `main`) zmergowane; PR #7 z Park of Poland otwarty jako fallback sceny 3b. |
 | 2026-09-19 | Dokument przepisany jako jedyne źródło prawdy o pitchu: „Stan na dziś”, decyzje zamknięte (polski, na żywo z uruchomieniami przed pitchem, merge po kliknięciu Norberta zamiast waivera), scenariusz z kolejnością kart i podziałem ról, Q&A o kliknięciu i o logo Suntago; plan wdrożenia na końcu ze stanem kroków. |

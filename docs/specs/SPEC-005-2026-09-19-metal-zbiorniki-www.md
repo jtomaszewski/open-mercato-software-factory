@@ -1,6 +1,6 @@
 # SPEC-005: Strona Metal Zbiorniki, docelowe repo fabryki na demo
 
-**Status**: Draft
+**Status**: Wdrożone poza krokiem 6 (ruleset na `main` + App do merge'a) i statusem `factory/catalog-match`
 **Właściciel**: zespół HackOn · **Data**: 2026-09-19 · **Tracker**: —
 **Nadrzędna**: [SPEC-004](./SPEC-004-2026-09-18-demo-metal-zbiorniki.md) (Q1 i sekcja „Docelowa
 strona”), korzysta z kontraktu runnera i kierowania recenzji ze
@@ -335,3 +335,4 @@ z krokiem 3 SPEC-001. Ich test: PR z celowo złą ceną dostaje `catalog-match: 
 | 2026-09-19 | Po recenzji: merge przez osobną App z bypassem (bot kodujący nie merguje), status `factory/catalog-match` jako warunek waivera, preview z GitHub deployment status zamiast stacku runnera, plik produktu nazwany po SKU, mapowanie odporne na produkt dodany w UI, kształt ilustracji, `id` w `categories.json`, test parsuje pliki sam, zakres zawężony do stron ze scen 3 i 4. |
 | 2026-09-19 | Astro i Markdown zastąpione przez Next ze static export: strona TSX na produkt i rejestr, typ `Product` zamiast schematu Zod, ograniczenia ESLint dla klasy `content`, test Playwright chodzi po zbudowanym `out/` i sitemapie. |
 | 2026-09-20 | Rebranding na Metal Zbiorniki (patrz SPEC-004): granat marki `#274086` na bieli zamiast granatu i pomarańczy, Open Sans zamiast Barlow, prawdziwe logo i 16 prawdziwych klientów w „Zaufali nam”. Strona główna ścięta do czterech sekcji (hero, produkty, realizacje, jednowierszowa stopka); sekcje marketingowe i `lib/content.ts` usunięte. Żadnych prawdziwych danych kontaktowych: `COMPANY` niesie tylko nazwę, hasło i adres `.example`. |
+| 2026-09-20 | Status z `Draft` na stan faktyczny po audycie: repo `jtomaszewski/hackaton-stal-zbiorniki-landing` jest publiczne i żyje — 7 stron produktowych zgodnych z seedem, `next.config.ts` ze static exportem, ograniczenia ESLint dla klasy `content`, test Playwright po `out/`, check `site` zielony na PR i preview Vercela per PR; fabryka w tym repo otwiera do niego prawdziwe PR-y. Otwarte zostają: krok 6 (ruleset na `main` z wymaganym `site` i bypassem dla App merge'ującej — `gh api .../rulesets` zwraca `[]`) oraz status `factory/catalog-match`, którego nikt nie publikuje (brak zapisu `/statuses/{sha}` w `src/modules/code_changes/lib/github.ts`). Bez nich waiver nie ma zabezpieczenia i merge robi człowiek — czyli ścieżka awaryjna ze SPEC-004. |

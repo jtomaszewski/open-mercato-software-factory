@@ -1,7 +1,7 @@
 # Agent execution and verified previews
 
 **Date**: 2026-09-19
-**Status**: Draft — self-instance scope superseded by D-043; see [code repositories](2026-09-19-code-repositories.md)
+**Status**: EX-P0 shipped; EX-P1..EX-P5 draft. Self-instance scope superseded by D-043 and target enrollment by D-044/D-045; see [code repositories](2026-09-19-code-repositories.md). The EX-P0 section below describes a disposable per-run `om-developer-runner` container that was built in `5ffb260` and removed in `67a838f` — execution now runs in the shared long-lived OpenCode sidecar, which reverses D-009 and leaves the `FACTORY_RUNNER_*` config non-existent. Rewrite pending.
 **Scope**: Specification only. Execution capability; delivery is a separate consumer.
 **Companion**: [Instance delivery and recovery](2026-09-19-instance-delivery-and-recovery.md)
 **Decisions and sources**: [Package map](2026-09-19-instance-development-infrastructure.md), [accepted decisions](2026-09-19-instance-development-decisions.md)

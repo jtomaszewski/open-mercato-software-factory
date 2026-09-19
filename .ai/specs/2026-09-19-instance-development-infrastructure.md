@@ -1,18 +1,18 @@
 # Instance development: specification map
 
 **Date**: 2026-09-19
-**Status**: Draft documentation package; no implementation authorized
+**Status**: Draft documentation package; no implementation authorized. Stale: written against D-001…D-042 and two linked specs, before D-043…D-047 and [code repositories](2026-09-19-code-repositories.md) narrowed the target scope, and before the EX-P0 demo slice shipped as code, now in `src/modules/code_changes/` + `src/modules/website_publishing/`, and before `cfc4908` added the `repositories` module.
 
 ## Outcome and document boundaries
 
 Software Factory is an installable module that lets an authorized human delegate a task to Open Mercato Developer, inspect the resulting PR diff and running preview inside Open Mercato, and approve deployment to that same instance. The initial installation is local, with a later single-VPS installation. Targets include the hosting instance's configured source repository and administrator-registered external websites, initially Metal Zbiorniki. A task selects one target; unregistered repositories are refused.
 
-Decision D-037 accepts two linked specifications:
+Decision D-037 accepts two linked specifications. D-043…D-047 later added a third, [Code repositories and the Developer agent](2026-09-19-code-repositories.md), which supersedes the self-instance scope of both documents below and takes over target/repository enrollment (D-044, D-045); read it first for anything about which repository a task targets.
 
 1. [Execution and verified candidates](2026-09-19-agent-execution-and-preview.md): isolated OpenCode work, budgets, human interaction, review, testing, PRs, and authenticated previews. Independently useful as a task-to-PR module without enabling deployment.
 2. [Candidate approval and instance delivery](2026-09-19-instance-delivery-and-recovery.md): consume the verified candidate contract, approve, merge, drain, deploy the exact tested image, verify, roll back, and reconcile Git. Can be installed after the execution capability; does not implement an agent loop.
 
-The [decision ledger](2026-09-19-instance-development-decisions.md) contains all 42 accepted product decisions. Technical defaults in the specifications are proposals derived from these decisions. Documentation does not authorize setup of accounts, paid inference, implementation, publication, or changes to an existing runtime.
+The [decision ledger](2026-09-19-instance-development-decisions.md) contains all 47 accepted product decisions (D-001…D-047). The decision-coverage table below stops at D-042 and does not cover D-043…D-047. Technical defaults in the specifications are proposals derived from these decisions. Documentation does not authorize setup of accounts, paid inference, implementation, publication, or changes to an existing runtime.
 
 ## Existing specifications and compatibility deltas
 

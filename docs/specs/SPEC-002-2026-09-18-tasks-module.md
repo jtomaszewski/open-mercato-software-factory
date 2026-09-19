@@ -1,6 +1,6 @@
 # SPEC-002: Task delegation module (`task_delegation`): agent delegation on the staff task board
 
-**Status**: In progress (approved local delegation slice; later delivery stages remain pending)
+**Status**: In progress (P0–P2 code complete; P2's integration exit gate and P3 remain open)
 **Owner**: HackOn team · **Date**: 2026-09-18 · **Tracker**: —
 **Parent**: [SPEC-001](./SPEC-001-2026-09-18-agentic-software-factory.md), which consumes this
 module's `task_delegation.task.delegated` event and its three workflow-safe commands.
@@ -14,23 +14,23 @@ The approved local slice reuses the staff board and adds delegation, permissions
 | Phase | State | Dependencies | Acceptance | Exit gate |
 |---|---|---|---|---|
 | P0: ordered writes on unpatched staff | done | none | Claim-then-move delegation with compensation; no framework patches | Unit coverage of write order and rollback; ephemeral browser run |
-| P1: delegation commands and process start | in_progress | P0 | Phase 1 cases below | Functional commands and restart/stale-write coverage |
-| P2: API and staff widgets | in_progress | P1 | Phase 2 cases below | Scoped API and board/drawer integration tests |
+| P1: delegation commands and process start | done | P0 | Phase 1 cases below | Functional commands and restart/stale-write coverage |
+| P2: API and staff widgets | code complete, exit gate open | P1 | Phase 2 cases below | Scoped API and board/drawer integration tests — the board/drawer cases are covered at unit level only |
 
 ### P0 progress
 
 - [x] Baseline application installation and generation: `corepack yarn install --immutable --mode=skip-build`, `corepack yarn generate`, and `corepack yarn typecheck` passed.
 - [x] Source verification: staff 0.8.0 ignores `transactionalEm` and commits each command on its own.
 - [x] Dropped the Core/shared Yarn patches (a local Core fork adding managed command transactions). The module runs on the published 0.8.0 packages; see [Write ordering without a shared transaction](#write-ordering-without-a-shared-transaction).
-- [ ] Application delegation commands, guards, APIs and widgets are being implemented. No production workflow run or runtime database migration has been performed.
+- [x] Application delegation commands, guards, APIs and widgets are implemented and unit-tested (`yarn jest src/modules/task_delegation`: 30 suites, 172 tests). No production workflow run or runtime database migration has been performed.
 
 ### Application verification in progress (2026-09-19)
 
 - Migration and snapshot generated with the installed CLI database generator restricted to the tasks module. The normal CLI iterates installed package modules too, so this scoped probe avoids writing shipped migrations.
 - `corepack yarn tsx scripts/verify-task-delegation-schema.mjs` verifies the generated DDL on a disposable loopback database with `TASK_DELEGATION_TEST_DATABASE_URL`. It checks active-delegation uniqueness, delegation history after release, receipt uniqueness, organization isolation and distinct executions. The entire test schema is rolled back. No migration has been applied to the developer runtime.
 - API/widget tests currently cover scoped admission, guarded-payload validation, batched reads and event refresh. Read-only AI tool tests cover scope, project access and bounded queries. Command composition, app integration and final review remain required.
-- The first application correctness/security review identified execution-principal binding, undo admission, stale-version checks, delayed start/cancellation, workflow registration and event privacy defects. Corrections and re-review are in progress; passing helper tests are not P1 acceptance.
-- Installed orchestrator limitation: `startExecution` persists a process before queue publication, while a retry deduplicates without re-enqueueing. A crash in that interval can leave a persisted execution unqueued. Automatic crash recovery is blocked pending a framework recovery contract/outbox; it is not covered by the approved Staff correction or by the `starting`/`stalled` presentation. This acceptance item must remain open. Durable cancellation before workflow creation and safe process-start claiming also require orchestrator changes. Workflow activity interpolation currently exposes the workflow instance id, while task commands require the separate process execution id; an orchestrator-owned context contract is still required. The factory process/principal seed, DEMO project seed, real command-transaction integration and full browser acceptance remain incomplete.
+- The first application correctness/security review identified execution-principal binding, undo admission, stale-version checks, delayed start/cancellation, workflow registration and event privacy defects. All six now have implementations with tests: `lib/processAuthority.ts`, the `beforeUndo` admission guard in `commands/interceptors.ts`, `commands/__tests__/optimistic-lock.test.ts`, `subscribers/cancel-on-undelegated.ts`, `workflows.ts`, and server-only event scoping in `events.ts` (only `task_delegation.task.changed` is `clientBroadcast`).
+- Installed orchestrator limitation: `startExecution` persists a process before queue publication, while a retry deduplicates without re-enqueueing. A crash in that interval can leave a persisted execution unqueued. Automatic crash recovery is blocked pending a framework recovery contract/outbox; it is not covered by the approved Staff correction or by the `starting`/`stalled` presentation. This acceptance item must remain open. Durable cancellation before workflow creation and safe process-start claiming also require orchestrator changes. Workflow activity interpolation currently exposes the workflow instance id, while task commands require the separate process execution id; an orchestrator-owned context contract is still required. The delivery process and agent-principal seed and the DEMO project seed now exist (`lib/demoSetup.ts`, and the process seeded from `src/modules/website_publishing/`); a real shared command transaction was dropped by design in favour of ordered writes with compensation, because `staff` 0.8.0 commits each command separately. Full browser acceptance remains incomplete.
 
 ### Write ordering without a shared transaction
 
@@ -529,3 +529,4 @@ test`; `yarn test:integration:ephemeral` after steps 7, 8 and 10.
 | 2026-09-19 | AI tools deduplicated with SPEC-007: `tasks_get` and `tasks_search` removed in favour of `task_tools.get_task` / `search_tasks`; chat intake reads through `task_tools.*`; the module keeps only `task_delegation.get_delegation`. |
 | 2026-09-19 | Module renamed `tasks` → `task_delegation`: it holds no tasks, only delegation on top of `staff`. Tables `task_delegations` / `task_delegation_process_writes`, ACL, event, command, API (`/api/task_delegation/*`) and CLI ids follow; the initial migration was regenerated. |
 | 2026-09-19 | Board simplified to `staff`'s four default columns: `queued`/`in_design` map to `In progress`, `rejected`/`failed` return the task to `Backlog` (badge shows `Failed`/`Rejected`); the assignee rejects a review by moving it to `Backlog`. `Queued`, `In design` and `Closed` columns and `ensureFactoryColumns` removed. |
+| 2026-09-20 | Phase states corrected against the code: P1 `in_progress` → `done` (every step 1–5 deliverable exists and is unit-tested) and P2 `in_progress` → `code complete, exit gate open` (steps 6–9 shipped; the board/drawer integration cases the exit gate names are covered at unit level only). The stale P0 checkbox and the "corrections in progress" note from the first security review were closed — all six of its defects now have implementations with tests. P3's end-to-end chain remains unstarted. |

@@ -1,6 +1,6 @@
 # SPEC-003: Task change set: what the factory proposes and does, on the task
 
-**Status**: Draft
+**Status**: Draft — none of this spec's own contracts exist (`tasks_change`, `tasks.apply_change_set`, `tasks.change.stage_message`, `tasks.change.record_run`: zero hits in `src/`). A narrower record covering only the `code` kind shipped instead in `140dfd8` under a different design: `code_changes_change_requests` (`src/modules/code_changes/data/entities.ts:27`), with start / record_pull_request / mark_failed / approve / reject commands and a Code section in the nav. The `record`, `message` and `artifact` kinds, the one effector, compare-and-set apply and revert are still unbuilt.
 **Owner**: HackOn team · **Date**: 2026-09-18 · **Tracker**: —
 **Parent**: [SPEC-001](./SPEC-001-2026-09-18-agentic-software-factory.md) (the process and the
 runner), built on [SPEC-002](./SPEC-002-2026-09-18-tasks-module.md) (delegation on the `staff`
@@ -565,3 +565,4 @@ test`; `yarn test:integration:ephemeral` after Phase 1 step 5 and at the end of 
 | 2026-09-18 | Fresh-context review applied: own effector loop instead of `executeProposal`; record grants in the seed; revert as a compared reverse change instead of platform undo (moved to Phase 2); edited-proposal, replay, stale-delegation and normalisation rules; send limited to conversation participants with `sendViaEmail`; run-scoped events; preview token stripped on entry. |
 | 2026-09-18 | Examples moved from the Oak table to the demo company's ZDP-5000 tank (SPEC-004). |
 | 2026-09-19 | Repo-hosted previews (GitHub deployment status) as an alternative to the compose label (SPEC-005). |
+| 2026-09-20 | Audyt kodu: spec pozostaje `Draft`, ale problem częściowo rozwiązano inaczej. `140dfd8` dowiózł *change requests* — jeden rekord na proponowaną zmianę repozytorium (`code_changes_change_requests`) z cyklem życia w komendach (start / record_pull_request / mark_failed autoryzowane przez proces, approve / reject jako osoba) i sekcją Code w nawigacji; przycisk zatwierdzenia w szufladzie zadania idzie już przez tę komendę. To pokrywa rodzaj `code` z tego specu, ale nie jego kontrakty: `tasks_change`, `tasks.apply_change_set`, `tasks.change.stage_message` i `tasks.change.record_run` nadal nie istnieją, podobnie jak rodzaje `record`/`message`/`artifact`, jeden efektor, compare-and-set i revert (commit sam zaznacza, że cofania opublikowanej zmiany nie ma). |
