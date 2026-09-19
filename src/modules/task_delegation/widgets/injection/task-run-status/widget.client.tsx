@@ -81,7 +81,7 @@ function useMinuteTick(active: boolean): number {
  * task (discovery prototype `.ai/prototypes/discovery/task-drawer/revision-001`, D-3).
  *
  * What it deliberately does not do: approve or reject the agent's plan inline (that stays a link to
- * the orchestrator's Caseload), and approve or preview the website change — the `factory` module
+ * the orchestrator's Caseload), and approve or preview the website change — the `code_changes` module
  * owns those and renders its own panel directly below this one.
  */
 export default function TaskRunStatus({ context }: { context?: { taskId?: string } }) {

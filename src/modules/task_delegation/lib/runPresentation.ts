@@ -39,13 +39,13 @@ export function isLiveOrClosedRun(delegation: TaskDelegationDto | null | undefin
  * reads and whether "Spróbuj ponownie" is offered, never whether a write is allowed.
  *
  * A run that never reached a process instance could not have been the agent's fault; beyond that,
- * the reasons raised before the agent does anything name their setting (`FACTORY_GITHUB_TOKEN`,
- * `FACTORY_SITE_REPO`, a clone that could not start) or say the orchestrator was unavailable.
+ * the reasons raised before the agent does anything name their setting (`CODE_CHANGES_GITHUB_TOKEN`,
+ * `CODE_CHANGES_REPO`, or `FACTORY_*` in reasons stored before the rename; a clone that could not start) or say the orchestrator was unavailable.
  * Those env-var names are internal and never reach the owner: the copy for this state talks about
  * the Software Engineer not being able to start, because that is the only name for the agent the
  * owner has ever been shown (SPEC-008).
  */
-const CONFIGURATION_REASON = /FACTORY_[A-Z_]+|orchestrator|orkiestrator|is not set|must be owner\/name|Cannot clone|unavailable|niedostępn/i
+const CONFIGURATION_REASON = /(?:CODE_CHANGES|FACTORY)_[A-Z_]+|orchestrator|orkiestrator|is not set|must be owner\/name|Cannot clone|unavailable|niedostępn/i
 
 export function isConfigurationFailure(delegation: TaskDelegationDto): boolean {
   if (!delegation.processInstanceId) return true
@@ -85,7 +85,7 @@ export function runBarActions(state: RunBarState): RunBarAction[] {
     case 'failedConfig': return ['takeOver']
     case 'failedAgent':
     case 'rejected': return ['retry', 'takeOver']
-    // `complete` and `published` are the factory panel's: it owns the preview and „Zatwierdź i
+    // `complete` and `published` are the `code_changes` panel's: it owns the preview and „Zatwierdź i
     // publikuj”, and it renders directly under this bar.
     default: return []
   }

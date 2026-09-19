@@ -44,12 +44,12 @@ describe('resolveRunBarState', () => {
     }))).toBe('published')
   })
 
-  it('splits a failure into the factory’s and the agent’s', () => {
+  it('splits a failure into the setup’s and the agent’s', () => {
     expect(resolveRunBarState(delegation({
       runState: 'failed', outcome: 'failed', processInstanceId: null, closeReason: null,
     }))).toBe('failedConfig')
     expect(resolveRunBarState(delegation({
-      runState: 'failed', outcome: 'failed', closeReason: 'FACTORY_GITHUB_TOKEN is not set; the factory cannot open pull requests.',
+      runState: 'failed', outcome: 'failed', closeReason: 'CODE_CHANGES_GITHUB_TOKEN is not set and the project has no linked repository; cannot open pull requests.',
     }))).toBe('failedConfig')
     expect(resolveRunBarState(delegation({
       runState: 'failed', outcome: 'failed', closeReason: 'Nie znalazłem pliku hero-2026.jpg w katalogu zdjęć.',
@@ -88,7 +88,7 @@ describe('runBarActions', () => {
     expect(runBarActions('rejected')).toEqual(['retry', 'takeOver'])
   })
 
-  it('leaves approving and previewing to the factory panel', () => {
+  it('leaves approving and previewing to the code_changes panel', () => {
     expect(runBarActions('complete')).toEqual([])
     expect(runBarActions('published')).toEqual([])
   })

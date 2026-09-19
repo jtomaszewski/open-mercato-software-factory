@@ -65,12 +65,12 @@ it('ignores an event whose agent id no roster row names', async () => {
 it('takes the principal and the process it starts from the roster row', async () => {
   await startFactory(payload, context() as never)
   expect(findOne).toHaveBeenCalledWith(AgentPrincipal, expect.objectContaining({ agentDefinitionId: 'factory' }))
-  expect(findOne).toHaveBeenCalledWith(ProcessDefinition, expect.objectContaining({ name: 'factory.deliver' }))
+  expect(findOne).toHaveBeenCalledWith(ProcessDefinition, expect.objectContaining({ name: 'website_publishing.website_change' }))
 })
 
 it('keeps the persistent event retryable when the required process is absent', async () => {
   findOne.mockImplementation(async (entity) => entity === TaskDelegation ? { id: payload.delegationId } : entity === AgentPrincipal ? { id: 'principal' } : null)
-  await expect(startFactory(payload, context() as never)).rejects.toThrow('factory.deliver is unavailable')
+  await expect(startFactory(payload, context() as never)).rejects.toThrow('website_publishing.website_change is unavailable')
 })
 
 it('fails retryably when the orchestrator is not installed', async () => {

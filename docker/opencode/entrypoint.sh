@@ -219,7 +219,7 @@ case "$(printf '%s' "${OM_OPENCODE_FILES_ENABLED:-false}" | tr '[:upper:]' '[:lo
   *) FILE_TOOL="false" ;;
 esac
 
-# Shell plane (factory Developer agent): OM_OPENCODE_BASH_ENABLED exposes the built-in `bash`
+# Shell plane (website Developer agent): OM_OPENCODE_BASH_ENABLED exposes the built-in `bash`
 # tool so a file-agent's frontmatter can allow it (`filesBash: true`); every other agent keeps
 # `bash: deny`. Default off => the historical global deny.
 case "$(printf '%s' "${OM_OPENCODE_BASH_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')" in

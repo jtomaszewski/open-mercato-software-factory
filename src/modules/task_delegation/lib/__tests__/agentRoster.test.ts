@@ -2,10 +2,10 @@ import { describe, expect, it } from '@jest/globals'
 import { AGENT_ROSTER, findRosterEntry, rosterAgentDefinitionIds, rosterProcessNames } from '../agentRoster'
 
 describe('agent roster', () => {
-  it('names one delegatable role in v1: the Software Engineer running factory.deliver', () => {
-    expect(AGENT_ROSTER.map((entry) => [entry.agentDefinitionId, entry.processName])).toEqual([['factory', 'factory.deliver']])
+  it('names one delegatable role in v1: the Software Engineer running the website change process', () => {
+    expect(AGENT_ROSTER.map((entry) => [entry.agentDefinitionId, entry.processName])).toEqual([['factory', 'website_publishing.website_change']])
     expect(rosterAgentDefinitionIds()).toEqual(['factory'])
-    expect(rosterProcessNames()).toEqual(['factory.deliver'])
+    expect(rosterProcessNames()).toEqual(['website_publishing.website_change'])
   })
 
   it('resolves a row by its agent definition id and nothing else', () => {

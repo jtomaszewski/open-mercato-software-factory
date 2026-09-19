@@ -14,7 +14,7 @@ services:
     profiles:
       - agents
     # Local build on the published base: docker/opencode/Dockerfile adds node + git for the
-    # factory's Developer agent (the project files below stay bind-mounted).
+    # website Developer agent (the project files below stay bind-mounted).
     #   docker compose --profile agents build opencode
     build:
       context: ./docker/opencode
@@ -56,7 +56,7 @@ services:
       - ./docker/opencode/agents:/home/opencode/.config/opencode/agents:ro
       # File-plane agents re-rendered by scripts/fix-file-agents-manifest.mjs (see there), mounted
       # over their generated files.
-      - ./docker/opencode/agents-local/factory_developer.md:/home/opencode/.config/opencode/agents/factory_developer.md:ro
+      - ./docker/opencode/agents-local/website_publishing_developer.md:/home/opencode/.config/opencode/agents/website_publishing_developer.md:ro
       - ./docker/opencode/skills:/home/opencode/.config/opencode/skills:ro
       # Corporate CA bundle; no-op when empty.
       - ./docker/opencode/certs:/run/om-certs:ro

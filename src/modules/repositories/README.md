@@ -10,7 +10,7 @@ GitHub repositories registered through a GitHub App and linked to staff projects
 - **Link**: the **Repositories** tab on a staff project links repositories; one can be the default.
 - **Use**: `repositoryAccess.forProject({ tenantId, organizationId, projectId })` (DI) returns the
   project's default (or only) repository with an installation token scoped to it (~1 h), or `null`
-  when the project has none. The factory uses it for the site checkout and PRs.
+  when the project has none. `code_changes` uses it for the task checkout and PRs.
 
 ## Setup
 

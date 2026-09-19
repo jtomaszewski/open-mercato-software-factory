@@ -5,7 +5,7 @@ import type { GrantedRepository, InstallationGrant } from '../data/validators'
 /**
  * The GitHub App calls the registry needs, made from the app process: consent verification when
  * an installation is connected, the installation's repositories and branches, and a short-lived
- * installation token limited to one repository for the factory. The App's private key and client
+ * installation token limited to one repository for a delegated code change. The App's private key and client
  * secret come from the environment; tokens are never persisted.
  */
 

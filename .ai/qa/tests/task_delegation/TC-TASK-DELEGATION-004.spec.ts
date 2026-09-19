@@ -104,7 +104,7 @@ async function stub(page: Page, taskId: string, value: Delegation, review: Recor
       }),
     })
   })
-  await page.route('**/api/factory/tasks/*/review', async (route) => {
+  await page.route('**/api/code_changes/tasks/*/review', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ review: review ? { ...review, taskId } : null }) })
   })
 }
@@ -145,7 +145,7 @@ const STATES: { name: string; delegation: Delegation; review: Record<string, unk
     name: 'failed-configuration',
     delegation: delegation({
       runState: 'failed', outcome: 'failed', releasedAt: new Date().toISOString(), processInstanceId: null,
-      closeReason: 'FACTORY_GITHUB_TOKEN is not set; the factory cannot open pull requests.',
+      closeReason: 'CODE_CHANGES_GITHUB_TOKEN is not set and the project has no linked repository; cannot open pull requests.',
     }),
     review: null,
     expect: /Software Engineer nie m\u00f3g\u0142 wystartowa\u0107/,
@@ -198,7 +198,7 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
 
       const drawer = page.getByTestId('task-drawer')
       // No raw i18n key reaches the owner, in any state.
-      await expect(drawer).not.toContainText(/task_delegation\.|factory\.[a-z]+\./)
+      await expect(drawer).not.toContainText(/task_delegation\.|code_changes\.[a-z]+\./)
       // Staff's time-tracking chrome is gone, and gone from the tab order with it.
       for (const hidden of ['task-drawer-quick-log', 'task-drawer-logged', 'task-drawer-entries']) {
         await expect(page.getByTestId(hidden)).toBeHidden()

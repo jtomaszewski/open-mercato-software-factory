@@ -25,7 +25,7 @@ export const AGENT_ROSTER: readonly AgentRosterEntry[] = [
     labelFallback: 'Software Engineer',
     descriptionKey: 'task_delegation.agents.softwareEngineer.description',
     descriptionFallback: 'Researches, plans and opens a PR',
-    processName: 'factory.deliver',
+    processName: 'website_publishing.website_change',
   },
 ]
 

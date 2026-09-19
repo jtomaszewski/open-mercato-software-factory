@@ -71,7 +71,7 @@ function peopleContext(access: { canManageAll: boolean; projectIds: string[] }, 
 
 function agentRows(options: { agentDefinitionId?: string; definitions?: Record<string, unknown>[] } = {}): void {
   rows.principals = [{ userId: AGENT_USER, agentDefinitionId: options.agentDefinitionId ?? 'factory' }]
-  rows.definitions = options.definitions ?? [{ name: 'factory.deliver', triggers: [{ kind: 'manual' }] }]
+  rows.definitions = options.definitions ?? [{ name: 'website_publishing.website_change', triggers: [{ kind: 'manual' }] }]
   rows.users = [{ id: AGENT_USER, name: 'Factory', email: 'factory@example.com' }]
 }
 
@@ -131,7 +131,7 @@ describe('tasks delegation service', () => {
     agentRows({ definitions: [] })
     const service = createTaskDelegationService({ em: {} as EntityManager })
     await expect(service.listAgents(listAgentsContext())).resolves.toEqual([])
-    agentRows({ definitions: [{ name: 'factory.deliver', triggers: [{ kind: 'event' }] }] })
+    agentRows({ definitions: [{ name: 'website_publishing.website_change', triggers: [{ kind: 'event' }] }] })
     await expect(service.listAgents(listAgentsContext())).resolves.toEqual([])
   })
 

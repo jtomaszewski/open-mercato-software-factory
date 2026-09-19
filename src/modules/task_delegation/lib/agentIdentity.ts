@@ -4,7 +4,7 @@
  */
 
 /**
- * The agent definition id. An identifier, frozen: the orchestrator's `factory.deliver` process
+ * The agent definition id. An identifier, frozen: the roster's process
  * binding, the `start-factory` subscriber, the generated agent email and the seeded rows all key
  * on it (SPEC-008, *Design* → out of scope).
  */

@@ -18,6 +18,7 @@ import { hasReachedMilestone, isAllowedProcessTransition, mapProcessStatus, type
 import { authorizeInternalTaskTransition, revokeInternalTaskTransition } from '../lib/columnContext'
 import { requireProcessAuthority } from '../lib/processAuthority'
 import { readTaskSnapshot } from '../lib/taskSnapshot'
+import { findRosterEntry } from '../lib/agentRoster'
 import type {
   AssignTaskInput,
   AssignTaskResult,
@@ -169,9 +170,12 @@ const delegateTaskCommand: CommandHandler<DelegateTaskInput, DelegateTaskResult>
     const user = await findOneWithDecryption(em, User, { id: input.agentUserId, ...decryptScope, kind: 'agent', deletedAt: null }, {}, decryptScope)
     const principal = await findOneWithDecryption(em, AgentPrincipal, { userId: input.agentUserId, ...decryptScope, enabled: true, deletedAt: null }, {}, decryptScope)
     if (!user || !principal) throw await taskError(422, 'invalid_agent', 'task_delegation.errors.invalidAgent', 'The selected user is not an enabled agent principal.')
-    const definition = await findOneWithDecryption(em, ProcessDefinition, { name: 'factory.deliver', ...decryptScope, enabled: true, deletedAt: null }, {}, decryptScope)
+    const roster = findRosterEntry(principal.agentDefinitionId)
+    const definition = roster
+      ? await findOneWithDecryption(em, ProcessDefinition, { name: roster.processName, ...decryptScope, enabled: true, deletedAt: null }, {}, decryptScope)
+      : null
     const manual = definition?.triggers?.some((trigger) => trigger.kind === 'manual') ?? false
-    if (!definition || !manual || principal.agentDefinitionId !== 'factory') {
+    if (!definition || !manual) {
       throw await taskError(503, 'orchestrator_unavailable', 'task_delegation.errors.orchestratorUnavailable', 'The agent orchestrator is unavailable.')
     }
     const existing = await em.findOne(TaskDelegation, { ...decryptScope, taskId: input.taskId, releasedAt: null })
