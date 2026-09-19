@@ -1,6 +1,6 @@
 # SPEC-007: Task management AI tools over MCP
 
-**Status**: Draft
+**Status**: Implemented (PR #13)
 **Owner**: HackOn team · **Date**: 2026-09-19 · **Tracker**: —
 
 ## TLDR
@@ -66,6 +66,7 @@ pattern core's own tools use), so route ACL, validation and `staff` events apply
 | Lives in its own app module `task_tools` | No shared files with other modules; testable against core `staff` | Tools inside another app module | Couples unrelated work |
 | Dot-namespaced names | Core convention; the MCP server passes names through verbatim (verified 0.8.0) | Underscore names | Would break the convention |
 | ACL = `staff` features | The board already gates tasks; no new roles | Own feature set | Duplicates the board's ACL |
+| A tool's `requiredFeatures` = the union of the features of every `staff` route it calls | `createAiApiOperationRunner` refuses a route whose `requireFeatures` the tool does not declare (verified 0.8.0) | Only the write feature on writes | The runner rejects the call |
 | `project` required, no default | A wrong default silently files tasks in the wrong project | Env var default | Hidden behaviour |
 | `assigneeId` optional, passed to `staff` | `staff` already validates it and defaults to the caller's staff member | Always the caller | Cannot file for a colleague |
 
@@ -86,7 +87,9 @@ pattern core's own tools use), so route ACL, validation and `staff` events apply
 | MCP client, read-only key | read tasks and projects | same | `staff.timesheets.tasks.view`, `staff.timesheets.projects.view` |
 
 `tenantId` and `organizationId` come only from `McpToolContext` (the API key); both must be present
-or the handler throws before any read (`requireToolScope`). No input carries scope; there is no
+or the handler throws before any read (`requireToolScope`). Keys from `mcp:ensure-api-key` carry no
+organization, and a superadmin key sees an empty organization in `staff`, so neither works: use a
+key created in Settings → API Keys with an organization selected. No input carries scope; there is no
 system-scope operation.
 
 ## Reuse and Ownership Map
@@ -109,6 +112,10 @@ MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (AC
 - **Extension points:** module-root `ai-tools.ts`; no ACL, setup, widget, interceptor or subscriber.
 - **Alternatives considered:** a Code Mode script instead of five tools — rejected: typed,
   individually gated tools are what an MCP client lists and a user approves one by one.
+- **Platform workaround:** the standalone MCP server (`mcp:serve-http`, also run by `yarn dev`) loads
+  `staff` route modules with a native `import()`; the `time-projects` and `tasks/{id}/comments`
+  routes import `next/server`, which Node ESM cannot resolve outside Next. `lib/next-server-resolve-shim.ts`
+  maps that one specifier to `next/server.js`. Remove it once 0.8.x resolves route modules itself.
 - **Compatibility:** no installed contract changes. Tool names and inputs become a contract for MCP
   clients once shipped (`BACKWARD_COMPATIBILITY.md` applies to renames).
 
@@ -116,8 +123,8 @@ MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (AC
 
 ### Journey J-001 — Create, find and comment from Claude Code
 
-1. A developer creates an API key (Settings → API Keys, or `mcp:ensure-api-key`) for a user whose
-   role holds the task-manager features above.
+1. A developer creates an API key in Settings → API Keys, with an organization selected, for a
+   user whose role holds the task-manager features above.
 2. Claude Code is configured with
    `{"mcpServers":{"open-mercato":{"type":"http","url":"http://localhost:3001/mcp","headers":{"x-api-key":"omk_…"}}}}`.
 3. "File a task: ZDP-5000 holds 5 200 l, not 5 000, dimensions missing." The client calls
@@ -132,9 +139,9 @@ MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (AC
 
 ## UI and Interaction Contracts
 
-N/A — no new page or widget. `href` in results is the project board
-(`/backend/staff/time-tracking/projects/{projectId}/board`) with the `staff` drawer deep link
-(Q-001). Tool descriptions are English; errors are machine-readable codes.
+N/A — no new page or widget. `href` in results is the project board with the task drawer open,
+`/backend/staff/time-tracking/projects/{projectId}/board?task={taskId}` (Q-001), absolute when the
+app URL is known. Tool descriptions are English; errors are machine-readable codes.
 
 ## Data Models
 
@@ -146,11 +153,11 @@ No new HTTP route or command. Handlers re-parse `unknown` input with the declare
 
 | Tool | Gate | Input | Success result | Errors | REQ |
 |---|---|---|---|---|---|
-| `task_tools.create_task` (`isMutation`) | `staff.timesheets.tasks.manage` | `{ project: string (id or code), title: 1..255, description?: ≤ 8 000 md, assigneeId?: uuid (staff member) }` | `{ taskId, reference, projectId, statusSlug, assigneeId, href }` | `project_not_found` (also another organisation's code); `staff` 422 on invalid assignee or validation | 001 |
+| `task_tools.create_task` (`isMutation`) | `staff.timesheets.tasks.manage`, `staff.timesheets.tasks.view`, `staff.timesheets.projects.view` | `{ project: string (id or code), title: 1..255, description?: ≤ 8 000 md, assigneeId?: uuid (staff member) }` | `{ taskId, reference, projectId, statusSlug, assigneeId, href }` | `project_not_found` (also another organisation's code); `staff` 422 on invalid assignee or validation | 001 |
 | `task_tools.get_task` | `staff.timesheets.tasks.view` | `{ reference?: string, taskId?: uuid }` (one required) | `{ found: true, task: { id, reference, title, description, statusSlug, projectId, projectCode, assignee, parent?, updatedAt }, comments: [{ id, authorName, body, createdAt }] ≤ 50 }` | not found or not visible → `{ found: false }` | 002 |
-| `task_tools.search_tasks` | `staff.timesheets.tasks.view` | `{ query?: string, project?: string, status?: slug, limit?: 1..50 = 20 }` | `{ items: [{ id, reference, title, statusSlug, projectCode }], totalCount }` | none beyond ACL | 002 |
+| `task_tools.search_tasks` | `staff.timesheets.tasks.view`, `staff.timesheets.projects.view` | `{ query?: string, project?: string, status?: slug, limit?: 1..50 = 20 }` | `{ items: [{ id, reference, title, statusSlug, projectCode }], totalCount }` | none beyond ACL | 002 |
 | `task_tools.list_projects` | `staff.timesheets.projects.view` | `{}` | `{ items: [{ id, code, name, isMember }] }` | none | 001, 002 |
-| `task_tools.comment_task` (`isMutation`) | `staff.timesheets.tasks.manage` | `{ task: reference or id, body: 1..5000 }` | `{ commentId, taskId, reference }` | not visible → `task_not_found` | 003 |
+| `task_tools.comment_task` (`isMutation`) | `staff.timesheets.tasks.manage`, `staff.timesheets.tasks.view` | `{ task: reference or id, body: 1..5000 }` | `{ commentId, taskId, reference }` | not visible → `task_not_found` | 003 |
 
 Installed routes consumed (unchanged): `POST/GET /api/staff/timesheets/tasks` (`q`, `reference`,
 `id`, `timeProjectId`, `taskStatusId`, `pageSize` ≤ 100; body `assigneeStaffMemberId`),
@@ -166,8 +173,9 @@ None of our own; `staff` emits its usual task and comment events for our writes.
 
 ## Security, Privacy, and Compliance
 
-- **Authorization:** `requiredFeatures` checked by the MCP server in ListTools and CallTool; each
-  write also passes the `staff` route's `requireFeatures`. No role-name checks.
+- **Authorization:** the HTTP MCP server (`mcp:serve-http`) lists every tool to every key and checks
+  `requiredFeatures` on CallTool; only the stdio server filters ListTools. Each call also passes
+  the `staff` route's `requireFeatures`. No role-name checks.
 - **Tenant isolation:** scope from context only; `requireToolScope` fails closed; `staff` list
   routes narrow to project membership.
 - **Sensitive data:** stored only where `staff` stores tasks; API keys never echoed (README uses a
@@ -189,7 +197,7 @@ Tests seed their own tenant, a user with a staff member, and a project `WEB` wit
 | TEST-005 | security | tenants A and B each with project `WEB` | B: `create_task { project: 'WEB' }`, `search_tasks`; A's project id as `project` | only B's project and tasks; `project_not_found` | REQ-001, REQ-002 |
 | TEST-006 | integration | task `WEB-1` | `comment_task` | comment row authored by the caller, body verbatim | REQ-003 |
 | TEST-007 | contract | generated registries | `mcp:list-tools` | five `task_tools.` names; `create_task` and `comment_task` are `isMutation` | REQ-004 |
-| TEST-008 | integration (MCP) | HTTP MCP server, API key with only the task features | `tools/list`; `tools/call` create → search → get → comment | five tools listed, no `catalog.*` mutation tool; the task and comment exist | REQ-001…004 |
+| TEST-008 | integration (MCP) | HTTP MCP server, API key with only the task features | `tools/list`; `tools/call` create → search → get → comment | five tools listed; a `catalog.*` mutation call is denied; the task and comment exist | REQ-001…004 |
 | TEST-009 | manual | Claude Code with a task-manager key | J-001 | task and comment visible on the board | REQ-001…004 |
 
 ## Implementation Phases
@@ -205,8 +213,8 @@ Tests seed their own tenant, a user with a staff member, and a project `WEB` wit
 - **Requirements / tests:** REQ-001…004; TEST-001…009.
 - **Validation:** `yarn generate && yarn typecheck && yarn lint && yarn test src/modules/task_tools`;
   `yarn mercato ai_assistant mcp:list-tools | grep task_tools.`.
-- **Exit gate:** J-001 from Claude Code; a key without `staff.timesheets.tasks.manage` does not see
-  the write tools.
+- **Exit gate:** J-001 from Claude Code; a key without `staff.timesheets.tasks.manage` is denied the
+  write tools on call.
 
 ## Requirement Traceability
 
@@ -223,7 +231,8 @@ module metadata (`src/modules/example/index.ts`) and AI tool pack
 
 ## Rollout, Migration, and Rollback
 
-- **Migration:** none; `yarn db:generate` reports no change.
+- **Migration:** none of our own; `yarn db:migrate` applies the core `planner`, `resources` and
+  `staff` migrations once those modules are enabled.
 - **Enable:** add `{ id: 'staff' }`, `{ id: 'planner' }`, `{ id: 'resources' }` and
   `{ id: 'task_tools', from: '@app' }` to `src/modules.ts`; `yarn generate`; restart the MCP process.
 - **Rollback:** remove the entry and re-run `yarn generate`; created tasks remain ordinary `staff`
@@ -239,15 +248,18 @@ module metadata (`src/modules/example/index.ts`) and AI tool pack
 
 ## Acceptance Criteria
 
-- [ ] **AC-001** — A key with `staff.timesheets.tasks.manage` creates a task with a `staff`
+- [x] **AC-001** — A key with `staff.timesheets.tasks.manage` creates a task with a `staff`
   reference, default status and the chosen or default assignee; the result links it.
-- [ ] **AC-002** — `get_task`/`search_tasks` return only tasks the caller can open on the board;
+- [x] **AC-002** — `get_task`/`search_tasks` return only tasks the caller can open on the board;
   invisible and missing tasks are indistinguishable.
-- [ ] **AC-003** — A comment posted through `comment_task` appears in the drawer under the key
+- [x] **AC-003** — A comment posted through `comment_task` appears in the drawer under the key
   user's name.
-- [ ] **AC-004** — `mcp:list-tools` lists the five tools; a task-only key cannot list any
+- [ ] **AC-004** — `mcp:list-tools` lists the five tools; a task-only key cannot call any
   `catalog.*` mutation tool.
-- [ ] TEST-001…008 pass; J-001 rehearsed by hand (TEST-009); the validation gate passes.
+- [x] The validation gate passes; unit tests cover the tool contracts, scope guard and `staff` client.
+- [ ] TEST-001…008 as integration tests; TEST-005 (cross-tenant); J-001 rehearsed from Claude Code
+  (TEST-009). AC-001…004 were checked by a smoke test against a real HTTP MCP server and a local
+  database (PR #13), not by these tests; the `catalog.*` denial in AC-004 is unchecked.
 
 ## Final Compliance Report
 
@@ -258,16 +270,17 @@ module metadata (`src/modules/example/index.ts`) and AI tool pack
 | Platform reuse before custom code | pass | `staff`, `ai_assistant`; no entity, route or widget |
 | Phase has dependencies, slices, tests, exit gate | pass | Phase 1 |
 
-Verdict: `Blocked — user approval of the spec`.
+Verdict: `Implemented` (PR #13); integration tests open (Acceptance Criteria).
 
 ## Open Questions
 
 | ID | Question | Owner | Blocking? | Resolution |
 |---|---|---|---|---|
-| Q-001 | Exact deep-link parameter of the `staff` board drawer for `href` | implementer | no | read from the installed board page in Phase 1 |
+| Q-001 | Exact deep-link parameter of the `staff` board drawer for `href` | implementer | no | Resolved: `?task={taskId}`, read by the board page |
 
 ## Changelog
 
 | Date | Change |
 |---|---|
 | 2026-09-19 | Initial draft: module `task_tools` with five `defineAiTool` tools over the Open Mercato MCP server for `staff` tasks; ACL reuses `staff` features; project required; optional assignee. |
+| 2026-09-19 | Synced with the implementation (PR #13): features per tool are the union of the routes' features; the HTTP MCP server checks features on call, not in ListTools; keys need an organization (`mcp:ensure-api-key` keys do not work); `next/server` shim; Q-001 resolved; status Implemented. |
