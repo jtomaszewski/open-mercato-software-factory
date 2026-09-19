@@ -22,5 +22,6 @@
   "factory.review.checks.failing": "Checks failing",
   "factory.review.checks.pending": "Checks running",
   "factory.review.checks.none": "No checks yet",
-  "factory.approve.errors.externalReview": "Review and merge this repository pull request in GitHub."
+  "factory.approve.errors.externalReview": "Review and merge this repository pull request in GitHub.",
+  "factory.siteLink.label": "Website ↗"
 }

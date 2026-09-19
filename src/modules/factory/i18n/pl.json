@@ -21,5 +21,6 @@
   "factory.review.checks.passing": "Checki zielone",
   "factory.review.checks.failing": "Checki czerwone",
   "factory.review.checks.pending": "Checki w toku",
-  "factory.review.checks.none": "Brak checków"
+  "factory.review.checks.none": "Brak checków",
+  "factory.siteLink.label": "Strona www ↗"
 }
