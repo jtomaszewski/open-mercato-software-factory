@@ -71,7 +71,7 @@ function LegacyAiChatButton() {
         variant="ghost"
         size="sm"
         onClick={openChat}
-        className="hidden sm:inline-flex items-center gap-2 text-foreground [&_svg]:text-foreground"
+        className="hidden sm:inline-flex items-center gap-2 text-foreground"
         aria-label={label}
         title={label}
       >
@@ -84,7 +84,7 @@ function LegacyAiChatButton() {
         variant="ghost"
         size="sm"
         onClick={openChat}
-        className="sm:hidden text-foreground [&_svg]:text-foreground"
+        className="sm:hidden text-foreground"
         aria-label={label}
       >
         <AiIcon className="size-4 text-foreground" />

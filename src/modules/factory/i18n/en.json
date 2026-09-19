@@ -5,7 +5,7 @@
   "factory.approve.working": "Publishing...",
   "factory.approve.errors.generic": "Approval failed.",
   "factory.approve.errors.notFound": "Task not found.",
-  "factory.approve.errors.notDelegated": "The task is not delegated to the factory.",
+  "factory.approve.errors.notDelegated": "The task is not delegated to the Software Engineer agent.",
   "factory.approve.errors.noPullRequest": "The task has no website pull request yet.",
   "factory.approve.errors.notInReview": "Only a task in review can be approved.",
   "factory.approve.errors.assigneeOnly": "Only the task assignee can approve the pull request.",
@@ -22,5 +22,5 @@
   "factory.review.checks.failing": "Checks failing",
   "factory.review.checks.pending": "Checks running",
   "factory.review.checks.none": "No checks yet",
-  "factory.siteLink.label": "Website ↗"
-}
+"factory.review.technicalDetails": "Pull request and changed files",
+"factory.siteLink.label": "Website ↗"}

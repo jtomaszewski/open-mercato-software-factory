@@ -22,6 +22,8 @@ export type TaskDelegationDto = {
   delegateName: string
   releasedAt: string | null
   updatedAt: string
+  /** When the delegation was created — what "Pracuje · 12 min" counts from. Additive field. */
+  startedAt: string
   processInstanceId: string | null
   links: TaskDelegationLink[]
   outcome: 'done' | 'rejected' | 'failed' | null
@@ -143,6 +145,7 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
             delegateName: userById.get(delegation.delegateUserId)?.name ?? userById.get(delegation.delegateUserId)?.email ?? translate('task_delegation.delegate.missingAgent', 'Unavailable agent'),
             releasedAt: delegation.releasedAt?.toISOString() ?? null,
             updatedAt: delegation.updatedAt.toISOString(),
+            startedAt: delegation.createdAt.toISOString(),
             processInstanceId: delegation.processInstanceId ?? null,
             links: delegation.links,
             outcome: delegation.outcome ?? null,

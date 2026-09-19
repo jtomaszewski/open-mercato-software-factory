@@ -38,9 +38,15 @@ function FilePatch({ file }: { file: ReviewFile }) {
 }
 
 /**
- * The website change of a delegated task (execution spec EX-P0): the Developer agent's PR as a
- * diff, its checks and preview, and „Zatwierdź i opublikuj”. The server re-checks everything
- * before merging, so this only decides what to show.
+ * The website change of a delegated task (execution spec EX-P0): the Developer agent's preview,
+ * its checks and „Zatwierdź i opublikuj”. The server re-checks everything before merging, so this
+ * only decides what to show.
+ *
+ * It renders in the drawer header, right under `task_delegation`'s run-status bar: the bar says the
+ * change is ready, this is where the owner looks at it and publishes it. The pull request and the
+ * per-file diff stay folded away, because the business owner this drawer is for reads a preview,
+ * not a patch — under their own heading rather than a second „Szczegóły techniczne”, which would
+ * put two identically named collapsibles in one drawer.
  */
 export default function TaskApprove({ context }: { context?: { taskId?: string } }) {
   const t = useT()
@@ -102,8 +108,7 @@ export default function TaskApprove({ context }: { context?: { taskId?: string }
   return <section className="space-y-2" aria-label={t('factory.approve.title')} data-testid="factory-task-approve">
     <h3 className="text-sm font-medium">{t('factory.approve.title')}</h3>
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <a className="text-primary underline" href={review.pr.url} target="_blank" rel="noopener noreferrer">{t('factory.review.pr', 'PR #{number}').replace('{number}', String(review.pr.number))}</a>
-      {review.previewUrl ? <a className="text-primary underline" href={review.previewUrl} target="_blank" rel="noopener noreferrer">{t('factory.review.preview')}</a> : null}
+      {review.previewUrl ? <a className="text-primary underline" href={review.previewUrl} target="_blank" rel="noopener noreferrer" data-testid="factory-review-preview">{t('factory.review.preview')}</a> : null}
       <StatusBadge variant={checksVariant}>{checksLabel}</StatusBadge>
       {review.pr.merged ? <StatusBadge variant="success">{t('factory.review.merged')}</StatusBadge> : null}
     </div>
@@ -111,11 +116,17 @@ export default function TaskApprove({ context }: { context?: { taskId?: string }
       {t('factory.review.summary', 'Changed files: {files} · +{additions} −{deletions}')
         .replace('{files}', String(review.files.length)).replace('{additions}', String(additions)).replace('{deletions}', String(deletions))}
     </p>
-    <div className="space-y-1">{review.files.map((file) => <FilePatch key={file.filename} file={file} />)}</div>
     {review.delegationActive && !review.pr.merged && review.pr.state === 'open' ? <>
       <p className="text-sm text-muted-foreground">{t('factory.approve.hint')}</p>
       <Button size="sm" disabled={saving} onClick={() => void approve()}>{saving ? t('factory.approve.working') : t('factory.approve.action')}</Button>
     </> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+    <details className="rounded-md border border-border px-3 py-2" data-testid="factory-review-technical">
+      <summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t('factory.review.technicalDetails', 'Pull request and changed files')}</summary>
+      <div className="mt-2 space-y-1">
+        <a className="text-sm text-primary underline" href={review.pr.url} target="_blank" rel="noopener noreferrer">{t('factory.review.pr', 'PR #{number}').replace('{number}', String(review.pr.number))}</a>
+        {review.files.map((file) => <FilePatch key={file.filename} file={file} />)}
+      </div>
+    </details>
   </section>
 }
