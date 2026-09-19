@@ -1,0 +1,23 @@
+{
+  "url": "https://parkofpoland.com/",
+  "scrapedAt": "2026-09-19",
+  "source": "firecrawl /v1/scrape, formats=[markdown], onlyMainContent=false",
+  "title": "Indoor Water Park | Suntago",
+  "description": "Welcome to Suntago Water World - the largest indoor water park in Europe. Discover the enchanting world of water attractions surrounded by real palm trees. Only 30 min from Warsaw.",
+  "language": "en",
+  "ogImage": "http://parkofpoland.com/build/images/suntago_fb_en.jpg",
+  "logoCandidates": [
+    "https://parkofpoland.com/build/images/logos/new/logo_dark.svg",
+    "https://parkofpoland.com/build/images/logos/new/logo_light.svg",
+    "https://parkofpoland.com/build/images/logos/crocodile-island.png",
+    "https://parkofpoland.com/build/images/logos/jamango.svg",
+    "https://parkofpoland.com/build/images/logos/relax.svg",
+    "https://parkofpoland.com/build/images/logos/saunaria.svg",
+    "https://parkofpoland.com/build/images/logos/wellness.svg",
+    "https://parkofpoland.com/build/images/logos/suntago-village.svg",
+    "https://parkofpoland.com/build/images/logos/suntago.svg",
+    "https://parkofpoland.com/build/images/logos/bisons.svg"
+  ],
+  "recommendedLogo": "https://parkofpoland.com/build/images/logos/new/logo_dark.svg",
+  "markdownExcerpt": "[Skip to menu](https://parkofpoland.com/en/#mainMenu) [Skip to main content](https://parkofpoland.com/en/#mainContent) [Skip to footer](https://parkofpoland.com/en/#footerMenu) [Sitemap](https://parkofpoland.com/en/sitemap)\n\n[![](https://parkofpoland.com/build/images/logos/new/logo_dark.svg)![](https://parkofpoland.com/build/images/logos/new/logo_light.svg)](https://parkofpoland.com/en/)\n\n[Give a gift voucher to Suntago!](https://parkofpoland.com/en/vouchers)\n\n[Manage tickets](https://parkofpoland.com/en/manage-order)\n\nListen to Suntago song\n\nLanguage selectionen\n\n- PL\n- EN\n- UK\n\nBuy now\n\n[![](https://parkofpoland.com/build/images/icons/new/tickets-light-32.svg)\\\\\n\\\\\n**Plan your visit** \\\\\n\\\\\nDiscover the world of our water attractions\\\\\n\\\\\n![](https://parkofpoland.com/build/images/icons/new/rounded-arrow-blue.svg)![](https://parkofpoland.com/build/images/decors/new/creatorSelector/palm-green.svg)](https://parkofpoland.com/en/creator)\n\n[![](https://parkofpoland.com/build/images/icons/new/tippi-light-32.svg)\\\\\n\\\\\n**Book accommodation** \\\\\n\\\\\nStay in modern bungalows located near the park\\\\\n\\\\\n![](https://parkofpoland.com/build/images/icons/new/rounded-arrow-blue.svg)![](https://parkofpoland.com/build/images/decors/new/creatorSelector/palm-blue.svg)](https://parkofpoland.com/en/creator-accommodation)\n\n[**All-year card** \\\\\n\\\\\nfrom 729 PLN per year\\\\\n\\\\\n![](https://parkofpoland.com/build/images/icons/new/rounded-arrow-blue.svg)![](https://parkofpoland.com/build/images/decors/new/creatorSelector/palm-magenta.svg)](https://parkofpoland.com/en/unlimited-card)\n\n[**Vouchers**![](https://parkofpoland.com/build/images/icons/new/rounded-arrow-blue.svg)![](https://parkofpoland.com/build/images/decors/new/creatorSelector/palm-purple.svg)](https://parkofpoland.com/en/vouchers-creator)\n\n![Open menu](https://parkofpoland.com/build/images/icons/hamburger-light.svg)![Open menu](https://parkofpoland.com/build/images/icons/hamburger-dark.svg)\n\n[Opening hours](https://parkofpoland.com/en/information#opening-hours)\n\nReal-time traffic\n\n- [![](https://parkofpoland.com/build/images/icons/new/my-account-light.svg)My \\\\\n\\\\\naccount](https://parkofpoland.com/en/account/profile)\n- [![](https://parkofpoland.com/build/images/icons/new/ticket-managment-light.svg)Manage \\\\\n\\\\\ntickets](https://parkofpoland.com/en/manage-order)\n\nLanguage selectionen\n\n- PL\n- EN\n- UK\n\n[![Park of Poland](https://parkofpoland.com/build/images/logos/new/logo_dark.svg)](https://parkofpoland.com/en/)![Close menu](h"
+}

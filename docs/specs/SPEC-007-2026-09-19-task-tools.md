@@ -1,4 +1,4 @@
-# SPEC-006: Task management AI tools over MCP
+# SPEC-007: Task management AI tools over MCP
 
 **Status**: Draft
 **Owner**: HackOn team · **Date**: 2026-09-19 · **Tracker**: —

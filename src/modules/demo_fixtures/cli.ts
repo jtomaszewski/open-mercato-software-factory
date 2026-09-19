@@ -1,7 +1,7 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
-import { seedStalZbiorniki } from './lib/stalZbiorniki'
+import { seedStalZbiornikiDemo } from './lib/stalZbiorniki'
 
 const USAGE = 'Usage: mercato demo_fixtures seed-stal-zbiorniki --tenant <tenantId> --org <organizationId>'
 
@@ -15,8 +15,9 @@ function readFlag(args: string[], ...names: string[]): string | undefined {
 }
 
 // For a demo instance initialised with `--no-examples`: seeds only the Stal-Zbiorniki
-// catalog, without core's furniture examples.
-const seedCatalog: ModuleCli = {
+// demo data (catalog, the Park of Poland customer and its order), without core's furniture
+// examples.
+const seedDemo: ModuleCli = {
   command: 'seed-stal-zbiorniki',
   async run(rest) {
     const tenantId = readFlag(rest, 'tenant', 'tenantId')
@@ -27,9 +28,13 @@ const seedCatalog: ModuleCli = {
     }
     const container = await createRequestContainer()
     const em = container.resolve('em') as EntityManager
-    const created = await seedStalZbiorniki(em, { tenantId, organizationId })
-    console.log(`Stal-Zbiorniki: ${created} products created for org=${organizationId}, tenant=${tenantId}`)
+    const result = await seedStalZbiornikiDemo(em, container, { tenantId, organizationId })
+    const created = (flag: boolean) => (flag ? 'created' : 'already present')
+    console.log(
+      `Stal-Zbiorniki (org=${organizationId}, tenant=${tenantId}): ${result.products} products created, ` +
+        `customer Park of Poland ${created(result.customer)}, order SO-2026-0042 ${created(result.order)}`,
+    )
   },
 }
 
-export default [seedCatalog]
+export default [seedDemo]

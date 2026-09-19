@@ -1,0 +1,126 @@
+{
+  "baseVersion": "0.8.0",
+  "sourceCommit": "d04c6520253e382986ac4a1d5aa0938e4aa601e5",
+  "files": [
+    {
+      "package": "@open-mercato/core",
+      "path": "src/modules/audit_logs/services/actionLogService.ts",
+      "sha256": "dcb01bb6fe36017031d3b48f6feb799c58ae8ed87b71c60d2eb63d2d9395de19"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "dist/modules/audit_logs/services/actionLogService.js",
+      "sha256": "c88f68b94f668d93c2c1a735f584c5e885e45c034212db9257a5716aab0a377f"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "src/modules/staff/commands/task-side-effects.ts",
+      "sha256": "ed10e2bf3f478e4f78a247065448a7b3661db87cb6bb2552ba6af16915086f8a"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "dist/modules/staff/commands/task-side-effects.js",
+      "sha256": "7c4e38ff7a9afccdc00c97f850db8c199b813b5b4ec451ac560ab079d03cfbe5"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "src/modules/staff/commands/timesheets-task-statuses.ts",
+      "sha256": "46a07f14ca6ed05a7573f7fddd8110d94b54bf641e967fef116dbb9907464763"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "dist/modules/staff/commands/timesheets-task-statuses.js",
+      "sha256": "ea469d8199e66c349774aa5472c6d852c986e5566b8faee1ce0841ff54edffc9"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "src/modules/staff/commands/timesheets-tasks.ts",
+      "sha256": "5d4bbca5917c570acbca989e053f8930feb2462ce2afedbf4e26859309fa947d"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "dist/modules/staff/commands/timesheets-tasks.js",
+      "sha256": "97b8829b5314f6b07a92c2a6a120ad0409da791b6bda5a2b2731eb6f0f7a52e8"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "src/modules/staff/di.ts",
+      "sha256": "9d2ad165bda5e0f91e3319a110d47b530bbe41b8811d4436175d213f6e74acd5"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "dist/modules/staff/di.js",
+      "sha256": "e0c4509eae0f5fe40bafab6b3529075baa4193bddcf2a79b9de9ad28fb5d4186"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "src/modules/staff/services/timeTaskMutationService.ts",
+      "sha256": "cea90bf2be6b8e98117cea66ce16f8191f153a603c791b518a23f75ea78edc24"
+    },
+    {
+      "package": "@open-mercato/core",
+      "path": "dist/modules/staff/services/timeTaskMutationService.js",
+      "sha256": "8eef8668c48b87fd15c3a8b02c12decf6075033054298268fed58be21b5fa6a1"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "src/lib/commands/command-bus.ts",
+      "sha256": "706fe897601401aa0182b578504dac73da44b19577f7297d71a32fd5bdfe4962"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "dist/lib/commands/command-bus.js",
+      "sha256": "b120b6a3a9428117854737bcde1b43cc5cb87e3e854197b984a9f6388cf87024"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "src/lib/commands/command-interceptor-runner.ts",
+      "sha256": "3eac4aaca15141f05f6271ca47a734fdce7cbef9c876c439abea671c204431ee"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "dist/lib/commands/command-interceptor-runner.js",
+      "sha256": "b7f4efdea86499b0ad107e8b366991c2c609f9f1b2140e4ea463f98a4dcfaff4"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "src/lib/commands/command-interceptor.ts",
+      "sha256": "da2aa5cc0e1f12bd1120933e1a8f457bd7570764673ef795876ff3d15a6ea4ba"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "dist/lib/commands/command-interceptor.js",
+      "sha256": "eb7a08bc2f7751912f222ba6f161fe0f49e998bcf7ba3c13675c48c10516b6b2"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "src/lib/commands/index.ts",
+      "sha256": "13cc87716a2ba6758994a5c35a0debe8ec32c3022e6a3dc499195682902c8ef6"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "dist/lib/commands/index.js",
+      "sha256": "4ed6bc87de7c87445f7dd68365e2e9dbdd6f88f890a03bbaf899e7807c4a3501"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "src/lib/commands/transaction.ts",
+      "sha256": "cd20db1d10921ed6f21ebb4a6d03f0a5cee614521d7ceffaad86015505b62911"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "dist/lib/commands/transaction.js",
+      "sha256": "363c01b620f7107eb26a7f43fc7c0f24813a5c8063023e9ede6747166d00cbbe"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "src/lib/commands/types.ts",
+      "sha256": "524fa846b7bc8aec926834cc4ce6b3a4fd48854e597f431228a1a435b0c21996"
+    },
+    {
+      "package": "@open-mercato/shared",
+      "path": "dist/lib/commands/types.js",
+      "sha256": "297f5e69f5ef08024126d6152bd6ed9f3272b70f4f7ff24f093838fe4a91ead8"
+    }
+  ]
+}

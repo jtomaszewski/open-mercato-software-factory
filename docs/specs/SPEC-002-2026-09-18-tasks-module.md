@@ -1,9 +1,41 @@
 # SPEC-002: Tasks module: agent delegation on the staff task board
 
-**Status**: Draft
+**Status**: In progress (approved local delegation slice; later delivery stages remain pending)
 **Owner**: HackOn team · **Date**: 2026-09-18 · **Tracker**: —
 **Parent**: [SPEC-001](./SPEC-001-2026-09-18-agentic-software-factory.md), which consumes this
 module's `tasks.task.delegated` event and its three workflow-safe commands.
+
+## Implementation Status
+
+Source doc: `docs/specs/SPEC-002-2026-09-18-tasks-module.md`.
+
+The approved local slice reuses the staff board and adds delegation, permissions, run state, and retry/stale-write protection. Publishing, provider configuration, catalog price writes, paid inference, VPS deployment and self-deployment are outside this slice.
+
+| Phase | State | Dependencies | Acceptance | Exit gate |
+|---|---|---|---|---|
+| P0: staff transaction prerequisite | verified locally | none | Atomic task/delegation/audit changes; locked admission; no effects on rollback | Core tests, PostgreSQL rollback/concurrency evidence and review |
+| P1: delegation commands and process start | in_progress | P0 | Phase 1 cases below | Functional commands and restart/stale-write coverage |
+| P2: API and staff widgets | in_progress | P1 | Phase 2 cases below | Scoped API and board/drawer integration tests |
+
+### P0 progress
+
+- [x] Baseline application installation and generation: `corepack yarn install --immutable --mode=skip-build`, `corepack yarn generate`, and `corepack yarn typecheck` passed.
+- [x] Source verification: staff 0.8.0 ignores `transactionalEm`; a no-connection MikroORM 7.2.0 probe confirmed a bare fork drops transaction context.
+- [x] Framework prerequisite: Core commit `d04c65202`, 19 isolated PostgreSQL cases, 181 shared tests, 88 selected Core tests, builds/typechecks and independent correctness/security re-review passed.
+- [x] Reproducible local package consumption: committed-format Yarn patches for Core/shared 0.8.0; immutable install, generation, baseline typecheck and installed runtime/hash verifier passed. See `docs/development/staff-transaction-patches.md`.
+- [ ] Application delegation commands, guards, APIs and widgets are being implemented. No production workflow run or runtime database migration has been performed.
+
+### Application verification in progress (2026-09-19)
+
+- Migration and snapshot generated with the installed CLI database generator restricted to the tasks module. The normal CLI iterates installed package modules too, so this scoped probe avoids writing shipped migrations.
+- `corepack yarn tsx scripts/verify-task-delegation-schema.mjs` verifies the generated DDL on a disposable loopback database with `TASKS_TEST_DATABASE_URL`. It checks active-delegation uniqueness, delegation history after release, receipt uniqueness, organization isolation and distinct executions. The entire test schema is rolled back. No migration has been applied to the developer runtime.
+- API/widget tests currently cover scoped admission, guarded-payload validation, batched reads and event refresh. Read-only AI tool tests cover scope, project access and bounded queries. Command composition, app integration and final review remain required.
+- The first application correctness/security review identified execution-principal binding, undo admission, stale-version checks, delayed start/cancellation, workflow registration and event privacy defects. Corrections and re-review are in progress; passing helper tests are not P1 acceptance.
+- Installed orchestrator limitation: `startExecution` persists a process before queue publication, while a retry deduplicates without re-enqueueing. A crash in that interval can leave a persisted execution unqueued. Automatic crash recovery is blocked pending a framework recovery contract/outbox; it is not covered by the approved Staff correction or by the `starting`/`stalled` presentation. This acceptance item must remain open. Durable cancellation before workflow creation and safe process-start claiming also require orchestrator changes. Workflow activity interpolation currently exposes the workflow instance id, while task commands require the separate process execution id; an orchestrator-owned context contract is still required. The factory process/principal seed, DEMO project seed, real command-transaction integration and full browser acceptance remain incomplete.
+
+### Approved prerequisite (2026-09-19)
+
+The user selected a framework-owned correction before implementing delegation. App interceptors alone cannot make independent staff commits atomic. Staff must support managed transaction composition and publish a scoped mutation service; application code must not import private staff entities or proxy its entity manager. Coupled delegation release must use a fatal transaction hook, rather than the current best-effort `afterExecute`. The implementation of the existing lifecycle below is conditional on this prerequisite. No request-body flag may bypass task guards.
 
 ## TLDR
 
@@ -172,8 +204,7 @@ needs it. A renamed column keeps its slug and keeps working.
    factory columns, moves the task to `queued` through `staff`'s `status_change` command, and
    emits `tasks.task.delegated` after commit.
 3. SPEC-001's `start-factory` subscriber starts `factory.deliver` with the idempotency key
-   `task:{taskId}:{delegationId}`, passing `delegationId` in the instance input. The process
-   calls `tasks.task.link` with the instance. SPEC-001's first `set_status → queued` is a
+   `task:{taskId}:{delegationId}`, passing `delegationId` in the instance input. The start subscriber binds the returned process execution id to the exact delegation; process commands validate that persisted binding. SPEC-001's first `set_status → queued` is a
    no-op, because a transition to the current status is accepted and changes nothing.
 4. **Un-delegating** is allowed until the linked instance reaches SPEC-001's `sized`
    milestone. Before an instance is linked, it is always allowed. It releases the delegation,
@@ -215,9 +246,9 @@ applies the people column; it lets through any actor holding `tasks.process`.
 A refused move returns `409 process_owned` (active delegation) or `409 process_only_column`
 (`queued`, `in-design`). Deleting a task with an active delegation returns `409 process_owned`.
 The interceptor's `beforeUndo` refuses undoing a status change on a task with an active
-delegation for anyone without `tasks.process`, since undo would bypass the guard. The assignee's
+delegation for all callers, since human undo must not bypass process ownership. Internal process writes use separately validated, single-use transition admission. The assignee's
 `in-review` → `done`/`closed` move exists because the MVP has no PR-merged hook; its
-`afterExecute` releases the delegation (outcome `done` or `rejected`).
+`beforeCommit` releases the delegation (outcome `done` or `rejected`) in the managed staff transaction. Failure aborts both changes; no request-body flag bypasses the guard.
 
 **The run state on the card** is derived at read time, never stored. The card-badge widget reads
 it from `GET /api/tasks/delegations?taskIds=…`. The injection context carries only ids, so every
@@ -324,7 +355,7 @@ Task and project ids reference `staff` records by id only, with no ORM relation.
 | `delegate_user_id` | uuid | an agent principal's `auth.User` (`kind='agent'`) |
 | `delegated_by` | uuid | the initiator; SPEC-001's `triggeredBy` |
 | `assignee_user_id` | uuid | the accountable human's `auth.User` at delegation |
-| `process_instance_id` | uuid, nullable | set by `tasks.task.link` |
+| `process_instance_id` | uuid, nullable | bound after process start; checked by workflow-safe commands |
 | `links` | jsonb | `[{ kind: 'pr' \| 'caseload' \| 'artifact' \| 'instance' \| 'run', ref, url, addedAt }]`; `run` scopes SPEC-003's runner events |
 | `outcome` | enum, nullable | `done \| rejected \| failed`, set on release |
 | `close_reason` | text, nullable | required for `rejected` and `failed` |
@@ -379,12 +410,10 @@ net under *Delegation*.
 Events (after commit; scope in the emit options as well as the payload, per SPEC-001
 constraint 4):
 
-- `tasks.task.delegated { taskId, reference, delegationId, delegateUserId, agentId,
-  assigneeUserId, delegatedBy, projectId, projectKey, source, title }`: persistent and
-  `clientBroadcast`. `agentId` is the agent definition id resolved from the principal.
-  `projectKey` is the project's current `code`; `staff` lets it be renamed, so configuration
-  keys on `projectId`. `source` is `manual` in the MVP.
-- `tasks.task.undelegated { taskId, delegationId, processInstanceId? }`: `clientBroadcast`.
+- `tasks.task.delegated { taskId, delegationId, delegateUserId, agentId, delegatedBy }`: persistent, server-only. The process reads authorized task details through `tasks_get`; task titles, references and actor identities are not sent on the browser event stream.
+- `tasks.task.undelegated { taskId, delegationId, processInstanceId? }`: persistent, server-only, consumed for cancellation.
+- `tasks.task.linked { taskId, delegationId, processInstanceId }`: server-only.
+- `tasks.task.changed { taskId }`: browser invalidation, scoped to tenant and organization. Widgets re-read the API, which enforces project access before returning task details.
 
 Task creation, edits, moves and comments emit `staff`'s own events
 (`staff.timesheets.time_task.*`, `staff.timesheets.time_task_comment.*`).

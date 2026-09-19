@@ -276,7 +276,8 @@ obrazka, a strona nie używa cudzych zdjęć.
 
 ## Poza zakresem
 
-- Strony kategorii, logotypy klientów, wersja angielska.
+- Strony kategorii, wersja angielska. Logotypy klientów i strona „Realizacje” doszły
+  w [SPEC-006](./SPEC-006-2026-09-19-realizacja-klienta.md).
 - WordPress (slajd z roadmapą w SPEC-004).
 - Formularz zapytania z backendem i InboxOps (roadmapa).
 - Synchronizacja katalog → strona inna niż przez PR fabryki, w tym `catalog.product.updated`.

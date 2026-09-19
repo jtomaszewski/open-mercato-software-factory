@@ -13,7 +13,7 @@ Design: [`docs/specs/SPEC-001-2026-09-18-agentic-software-factory.md`](docs/spec
 | Path | What |
 |---|---|
 | `/` | Standalone Open Mercato 0.8 app ([`create-mercato-app`](https://docs.openmercato.com/customization/standalone-app), empty preset) with the enterprise `agent_orchestrator` module enabled |
-| `src/modules/` | Our modules: `tasks` (the task board, the factory's intake), `factory` (agents, process definitions, webhooks), `demo_fixtures` (the demo company's catalog, [SPEC-004](docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md)) |
+| `src/modules/` | Our modules: `tasks` (the task board, the factory's intake), `factory` (agents, process definitions, webhooks), `demo_fixtures` (the demo company's catalog, [SPEC-004](docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md)), `task_tools` (MCP tools for the `staff` task board) |
 | `docs/agent-orchestrator.md` | How the upstream Agent Orchestrator works (architecture brief) |
 | `docs/specs/` | Specs |
 | `AGENTS.md` | Agent rules (Open Mercato's standalone-app harness); `CLAUDE.md` points to it |
@@ -38,6 +38,40 @@ Ports clash with another Open Mercato stack? Set `POSTGRES_PORT`, `REDIS_PORT`,
 
 Useful pages: **Agent Orchestrator → Playground** (`/backend/playground`), **Caseload**
 (`/backend/caseload`), **Processes** (`/backend/processes`), **Workflows**.
+
+## Connect an MCP client
+
+The `task_tools` module (SPEC-007) lets Claude
+Code or any MCP client work with the `staff` task board: `task_tools.list_projects`,
+`search_tasks`, `get_task`, `create_task` and `comment_task`. `yarn dev` serves them at
+`http://localhost:3001/mcp` (standalone: `yarn mercato ai_assistant mcp:serve-http --port 3001`).
+
+1. **Role.** Use a role holding `staff.timesheets.tasks.view`, `staff.timesheets.tasks.manage`
+   and `staff.timesheets.projects.view` (read-only: drop `tasks.manage`). The built-in
+   `employee` role has them; after enabling `staff` on an existing tenant, grant them with
+   `yarn mercato auth sync-role-acls --tenant <tenantId>`. The key's user sees only projects
+   they are a member of, unless they have `staff.timesheets.projects.manage`.
+2. **Key.** Settings → API Keys: create a key for that user **with an organization selected** —
+   the tools refuse keys without tenant and organization (`mcp:ensure-api-key` keys have no
+   organization, so they do not work here).
+3. **Claude Code** (`.mcp.json`, or `claude mcp add --transport http`):
+
+   ```json
+   {
+     "mcpServers": {
+       "open-mercato": {
+         "type": "http",
+         "url": "http://localhost:3001/mcp",
+         "headers": { "x-api-key": "omk_REPLACE_WITH_YOUR_KEY" }
+       }
+     }
+   }
+   ```
+
+`create_task` and `comment_task` write as soon as they are called and are not deduplicated:
+calling `create_task` twice creates two tasks. Leave client-side tool approval on for them.
+After changing the tool code, restart the MCP server; if it still runs old code, delete
+`.mercato/generated/ai-tools.generated.bundled.mjs`.
 
 ## Licence note
 

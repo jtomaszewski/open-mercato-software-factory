@@ -69,7 +69,7 @@
     "@open-mercato/checkout": "0.8.0",
     "@open-mercato/cli": "0.8.0",
     "@open-mercato/content": "0.8.0",
-    "@open-mercato/core": "0.8.0",
+    "@open-mercato/core": "patch:@open-mercato/core@npm%3A0.8.0#~/.yarn/patches/@open-mercato-core-npm-0.8.0-41c770ae92.patch",
     "@open-mercato/documents": "0.8.0",
     "@open-mercato/enterprise": "0.8.0",
     "@open-mercato/events": "0.8.0",
@@ -78,7 +78,7 @@
     "@open-mercato/queue": "0.8.0",
     "@open-mercato/scheduler": "0.8.0",
     "@open-mercato/search": "0.8.0",
-    "@open-mercato/shared": "0.8.0",
+    "@open-mercato/shared": "patch:@open-mercato/shared@npm%3A0.8.0#~/.yarn/patches/@open-mercato-shared-npm-0.8.0-8155f21d7b.patch",
     "@open-mercato/sync-akeneo": "0.8.0",
     "@open-mercato/telemetry": "0.8.0",
     "@open-mercato/tillio": "0.8.0",
@@ -166,7 +166,9 @@
   "resolutions": {
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "@open-mercato/shared@npm:0.8.0": "patch:@open-mercato/shared@npm%3A0.8.0#~/.yarn/patches/@open-mercato-shared-npm-0.8.0-8155f21d7b.patch",
+    "@open-mercato/core@npm:0.8.0": "patch:@open-mercato/core@npm%3A0.8.0#~/.yarn/patches/@open-mercato-core-npm-0.8.0-41c770ae92.patch"
   },
   "imports": {
     "#generated/entities.ids.generated": {

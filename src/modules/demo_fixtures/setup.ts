@@ -1,9 +1,9 @@
 import type { ModuleSetupConfig } from '@open-mercato/shared/modules/setup'
-import { seedStalZbiorniki } from './lib/stalZbiorniki'
+import { seedStalZbiornikiDemo } from './lib/stalZbiorniki'
 
 export const setup: ModuleSetupConfig = {
-  async seedExamples({ em, tenantId, organizationId }) {
-    await seedStalZbiorniki(em, { tenantId, organizationId })
+  async seedExamples({ em, container, tenantId, organizationId }) {
+    await seedStalZbiornikiDemo(em, container, { tenantId, organizationId })
   },
 }
 
