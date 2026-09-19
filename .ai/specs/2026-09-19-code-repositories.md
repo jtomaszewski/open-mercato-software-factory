@@ -1,10 +1,19 @@
 # Code repositories and the Developer agent
 
 **Date**: 2026-09-19
-**Status**: Draft
+**Status**: Draft (registry slice implemented, see below)
 **Scope**: Specification only. Registry, project links and repository-bound delegation; execution and delivery remain in their companions.
 **Companions**: [Agent execution and verified previews](2026-09-19-agent-execution-and-preview.md), [Candidate approval and delivery](2026-09-19-instance-delivery-and-recovery.md)
 **Decisions**: D-043..D-047 in [accepted decisions](2026-09-19-instance-development-decisions.md)
+
+## Implemented slice (2026-09-19)
+
+Only the registry ships for now; the Developer agent's run is unchanged (OpenCode sidecar, host checkout, host-opened PR, in-app approve).
+
+- **Built:** GitHub App connect with OAuth consent (only repositories the user can push to), register / change base branch / disable / enable / remove, project links with one default (injected project tab).
+- **Factory:** the site repo and GitHub token for a task come from its project's default (or only) linked repository as a short-lived installation token scoped to that repository; without a link, `FACTORY_SITE_REPO` + `FACTORY_GITHUB_TOKEN` as before. A link that cannot be used fails the run rather than falling back.
+- **Deviation:** the GitHub App key lives in the app environment (`REPOSITORIES_GITHUB_APP_*`), not a broker. Accepted because the long-lived `FACTORY_GITHUB_TOKEN` already lived there and the agent still runs beside the app; revisit with the isolated execution runtime.
+- **Deferred:** profile kinds and qualification (REQ-002), repository choice frozen on the delegation (REQ-004), revocation of in-flight work (REQ-005), agent rename (REQ-006), the broker.
 
 ## TLDR
 

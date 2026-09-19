@@ -39,11 +39,11 @@ describe('checkout helpers', () => {
 describe('prepareCheckout + collectChanges', () => {
   let root: string
   let config: CheckoutConfig
-  let calls: { command: string; args: string[] }[]
+  let calls: { command: string; args: string[]; env?: NodeJS.ProcessEnv }[]
   let porcelain: string
 
-  const exec: Exec = async (command, args) => {
-    calls.push({ command, args })
+  const exec: Exec = async (command, args, options) => {
+    calls.push({ command, args, env: options?.env })
     if (command === 'git' && args[0] === 'clone') {
       const work = args[args.length - 1]!
       await mkdir(work, { recursive: true })
@@ -86,6 +86,20 @@ describe('prepareCheckout + collectChanges', () => {
     porcelain = '?? leak.txt\0'
     await symlink('/etc/hosts', join(root, 'work/factory/task-1/leak.txt'))
     await expect(collectChanges(config, 'task-1', exec)).rejects.toMatchObject({ reason: 'protected_path' })
+  })
+
+  it('clones a private repo with the token in git env config, never on the command line', async () => {
+    await prepareCheckout(config, 'task-1', exec, 'ghs_secret')
+    const clone = calls.find((call) => call.args[0] === 'clone')!
+    expect(clone.args.join(' ')).not.toContain('ghs_secret')
+    expect(clone.args).toContain('https://github.com/o/site.git')
+    expect(clone.env).toMatchObject({
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+      GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${Buffer.from('x-access-token:ghs_secret').toString('base64')}`,
+    })
+    // Only the clone talks to GitHub; later git calls get no credentials.
+    expect(calls.filter((call) => call.args[0] !== 'clone').every((call) => call.env === undefined)).toBe(true)
   })
 
   it('reports a clone failure as a setup error', async () => {

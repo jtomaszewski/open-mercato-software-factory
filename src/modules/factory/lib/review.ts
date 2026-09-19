@@ -16,10 +16,10 @@ export type TaskReview = {
 /**
  * What Marek reviews in the task drawer (execution spec EX-P0): the factory PR's changed files
  * with their patches, the checks on its head commit and the preview deployment. Read through the
- * tasks delegation service, so the caller's task access applies; only the configured site repo's
- * PRs are read. Null when the task has no factory PR yet.
+ * tasks delegation service, so the caller's task access applies; only PRs of the task project's
+ * site repo are read. Null when the task has no factory PR yet.
  */
-export async function readTaskReview(ctx: CommandRuntimeContext, taskId: string, github: GitHubClient): Promise<TaskReview | null> {
+export async function readTaskReview(ctx: CommandRuntimeContext, taskId: string, githubFor: (projectId: string) => Promise<GitHubClient>): Promise<TaskReview | null> {
   const service = ctx.container.resolve<TaskDelegationService>('taskDelegationService')
   const [item] = await service.getDelegations(ctx, [taskId])
   if (!item) {
@@ -28,8 +28,10 @@ export async function readTaskReview(ctx: CommandRuntimeContext, taskId: string,
   }
   const delegation = item.delegation
   const link = delegation ? [...delegation.links].reverse().find((entry) => entry.kind === 'pr') : undefined
-  const number = pullRequestNumberFromUrl(link?.url, github.repo)
-  if (!delegation || !number) return null
+  if (!delegation || !link?.url) return null
+  const github = await githubFor(item.projectId)
+  const number = pullRequestNumberFromUrl(link.url, github.repo)
+  if (!number) return null
   const pr = await github.getPullRequest(number)
   if (!pr) return null
   const [files, checks, previewUrl] = await Promise.all([

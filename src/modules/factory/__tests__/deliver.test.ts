@@ -23,13 +23,14 @@ const container = {
   resolve: (name: string) => ({
     em: { fork: () => ({}) },
     commandBus: { execute },
-    queryEngine: { query: async () => ({ items: [{ id: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description }] }) },
+    queryEngine: { query: async () => ({ items: [{ id: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description, time_project_id: 'project-1' }] }) },
   } as Record<string, unknown>)[name],
 }
 const deps = {
   resolveContainer: async () => container as never,
   loadRecord: jest.fn<DeliverDeps['loadRecord']>(),
   loadOrder: jest.fn<DeliverDeps['loadOrder']>(),
+  resolveGitHub: jest.fn<DeliverDeps['resolveGitHub']>(),
   prepareCheckout: jest.fn<DeliverDeps['prepareCheckout']>(),
   collectChanges: jest.fn<DeliverDeps['collectChanges']>(),
   removeCheckout: jest.fn<DeliverDeps['removeCheckout']>(),
@@ -39,12 +40,14 @@ const prepare = createPrepareFunction(deps)
 const deliver = createDeliverFunction(deps)
 const context = { workflowInstance: { id: 'wf-1', definitionId: 'def-1', ...scope }, workflowContext: {} } as never
 const identity = { taskId: 'task-1', delegationId: 'delegation-1', processInstanceId: 'process-1' }
+const site = { token: 'app-token', repo: 'o/site', baseBranch: 'main', apiUrl: 'https://api.github.com' }
 const calls = () => execute.mock.calls.map(([id, args]) => [id, args.input])
 
 beforeEach(() => {
   description = productTaskDescription({ id: productId, sku: 'ZWM-1500', title: 'Zbiornik' })
   execute.mockReset().mockResolvedValue({ result: {} })
   resolveExecutionUser.mockReset().mockResolvedValue('principal-1')
+  deps.resolveGitHub.mockReset().mockResolvedValue(site)
   deps.loadRecord.mockReset().mockResolvedValue({ id: productId, sku: 'ZWM-1500' } as never)
   deps.loadOrder.mockReset().mockResolvedValue({ id: orderId, orderNumber: 'SO-2026-0042' } as never)
   deps.prepareCheckout.mockReset().mockResolvedValue({ baseSha: 'base-sha', workDir: '/home/opencode/work/factory/task-1' })
@@ -63,7 +66,8 @@ it('prepare: moves the bound task to In progress and hands the agent the checkou
   expect(calls()).toEqual([['task_delegation.task.set_status', { ...identity, stepId: `${PREPARE_FUNCTION}:in_progress`, status: 'in_progress' }]])
   expect(execute.mock.calls[0]![1].ctx.auth.sub).toBe('principal-1')
   expect(deps.loadRecord).toHaveBeenCalledWith(expect.anything(), scope, productId)
-  expect(deps.prepareCheckout).toHaveBeenCalledWith('task-1')
+  expect(deps.resolveGitHub).toHaveBeenCalledWith(expect.anything(), scope, 'project-1')
+  expect(deps.prepareCheckout).toHaveBeenCalledWith('task-1', site)
   expect(input).toEqual({
     taskId: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description, record: { id: productId, sku: 'ZWM-1500' }, order: null,
     workDir: '/home/opencode/work/factory/task-1', baseSha: 'base-sha',
@@ -96,6 +100,7 @@ it('deliver: commits the collected change with the agent summary, links the PR, 
   expect(deps.openPullRequest).toHaveBeenCalledWith(
     { id: 'task-1', title: 'Opublikuj stronę produktu ZWM-1500', description },
     { baseSha: 'base-sha', files: [{ path: 'app/a.tsx', content: 'x' }], summary: 'Dodałem stronę.' },
+    site,
   )
   expect(calls()).toEqual([
     ['task_delegation.task.link', { ...identity, stepId: `${DELIVER_FUNCTION}:pr`, kind: 'pr', ref: 'PR #7 · ZWM-1500', url: 'https://github.com/o/r/pull/7' }],

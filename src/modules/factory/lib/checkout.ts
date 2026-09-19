@@ -11,7 +11,7 @@ import { isAbsolute, join, resolve } from 'node:path'
  */
 
 export type CheckoutConfig = {
-  /** `owner/name` of the public site repo; cloned without credentials. */
+  /** `owner/name` of the site repo. */
   repo: string
   baseBranch: string
   /** Host path of the sandbox root (`OM_OPENCODE_WORKSPACE_ROOT`). */
@@ -92,11 +92,11 @@ export function isGenerated(path: string): boolean {
 export type Exec = (
   command: string,
   args: string[],
-  options?: { cwd?: string; timeoutMs?: number },
+  options?: { cwd?: string; timeoutMs?: number; env?: NodeJS.ProcessEnv },
 ) => Promise<{ stdout: string; stderr: string }>
 
 export const execCommand: Exec = (command, args, options = {}) => new Promise((resolvePromise, reject) => {
-  execFile(command, args, { cwd: options.cwd, timeout: options.timeoutMs, maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
+  execFile(command, args, { cwd: options.cwd, env: options.env, timeout: options.timeoutMs, maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
     if (error) {
       const failure = error as Error & { stdout?: string; stderr?: string }
       failure.stdout = String(stdout)
@@ -127,13 +127,30 @@ function gitFor(exec: Exec, paths: { work: string; gitDir: string }) {
   return (args: string[]) => exec('git', [`--git-dir=${paths.gitDir}`, `--work-tree=${paths.work}`, ...args], { cwd: paths.gitDir })
 }
 
-/** Fresh clone of the base branch for the task; a stale checkout of the same task is replaced. */
-export async function prepareCheckout(config: CheckoutConfig, taskId: string, exec: Exec = execCommand): Promise<PreparedCheckout> {
+/**
+ * The token reaches git as an in-memory config (`GIT_CONFIG_*`), never the command line or the
+ * clone's config, so neither `ps` nor the checkout's git dir holds it.
+ */
+function gitAuthEnv(token: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    GIT_TERMINAL_PROMPT: '0',
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'http.https://github.com/.extraheader',
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString('base64')}`,
+  }
+}
+
+/**
+ * Fresh clone of the base branch for the task; a stale checkout of the same task is replaced.
+ * Without a token the repo is cloned anonymously (a public repo).
+ */
+export async function prepareCheckout(config: CheckoutConfig, taskId: string, exec: Exec = execCommand, token?: string): Promise<PreparedCheckout> {
   const paths = checkoutPaths(config, taskId)
   await removeCheckout(config, taskId)
   await mkdir(join(config.workspaceRoot, 'factory'), { recursive: true })
   await mkdir(config.gitRoot, { recursive: true })
-  await exec('git', ['clone', '--depth', '1', '--branch', config.baseBranch, `--separate-git-dir=${paths.gitDir}`, `https://github.com/${config.repo}.git`, paths.work], { timeoutMs: 120_000 })
+  await exec('git', ['clone', '--depth', '1', '--branch', config.baseBranch, `--separate-git-dir=${paths.gitDir}`, `https://github.com/${config.repo}.git`, paths.work], { timeoutMs: 120_000, ...(token ? { env: gitAuthEnv(token) } : {}) })
     .catch((error: Error) => { throw new CheckoutError(`Cannot clone ${config.repo}: ${error.message}`, 'setup') })
   // The clone leaves a `.git` pointer file in the work tree; without it the agent sees no repository.
   await rm(join(paths.work, '.git'), { force: true })

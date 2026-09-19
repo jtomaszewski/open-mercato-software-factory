@@ -3,7 +3,7 @@ import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
 import { z } from 'zod'
 import { withTaskRoute } from '../../../../../task_delegation/api/route-context'
 import { approveProductTask } from '../../../../lib/approve'
-import { GitHubClient, readGitHubConfigFromEnv } from '../../../../lib/github'
+import { factoryGitHubFor } from '../../../../lib/github-source'
 
 const paramsSchema = z.object({ taskId: z.string().uuid() })
 
@@ -18,7 +18,7 @@ export async function POST(request: Request, route: { params: Promise<{ taskId: 
       input: { resourceKind: 'staff.timesheets.time_task', resourceId: taskId, operation: 'custom', mutationPayload: { taskId } },
     })
     if (!guards.ok) return guards.response
-    const result = await approveProductTask(commandContext, taskId, new GitHubClient(readGitHubConfigFromEnv()))
+    const result = await approveProductTask(commandContext, taskId, factoryGitHubFor(commandContext.container, { tenantId, organizationId }))
     await guards.runAfterSuccess()
     return Response.json(result)
   })

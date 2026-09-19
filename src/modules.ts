@@ -44,6 +44,8 @@ export const enabledModules: ModuleEntry[] = [
   { id: 'task_tools', from: '@app' },
   // Agent delegation on the staff board (SPEC-002), through staff's extension contracts.
   { id: 'task_delegation', from: '@app' },
+  // GitHub repositories registered through a GitHub App and linked to projects; the factory's site repo + token.
+  { id: 'repositories', from: '@app' },
 ]
 
 const enterpriseModulesEnabled = parseBooleanWithDefault(process.env.OM_ENABLE_ENTERPRISE_MODULES, false)
