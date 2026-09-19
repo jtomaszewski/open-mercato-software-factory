@@ -84,24 +84,24 @@ PR: #36
 ### Phase 5: Validation and evidence
 
 - [x] 5.1 Run the full validation gate — green after merging main (generate, typecheck, lint, ds:check, test, build)
-- [ ] 5.2 Capture a screenshot of every run state and attach them to the PR — **blocked**, see below
+- [x] 5.2 Capture a screenshot of every run state and attach them to the PR — 5b055ac (11/11 in a real browser)
 
-## Blocker on step 5.2 (screenshots)
+## How the screenshot blocker was resolved
 
-The evidence itself is written and committed: `.ai/qa/tests/task_delegation/TC-TASK-DELEGATION-004.spec.ts`
-drives the real drawer through all ten states and writes
-`.ai/qa/screenshots/task-drawer-<state>.png` when run with `PW_STATE_SHOTS=1`. Running it needs a
-signed-in browser, and neither route is available to this run:
+Both routes to a signed-in browser were blocked at first, and neither was this change's fault:
 
-1. **The worktree's own app** (`yarn dev`, `milan_v1` database) starts, but no login succeeds: the
-   dev server's own warm-up reports `Warmup login returned 401 — credentials invalid`, and the MCP
-   provisioner adds `the database was seeded under different secrets (LOOKUP_HASH_PEPPER)`. Repairing
-   that means re-initializing the worktree database, which this repository's `AGENTS.md` requires
-   asking about first.
-2. **The ephemeral harness** (`yarn test:integration:ephemeral`) builds and seeds its own throwaway
-   database correctly, then refuses to start the app: it runs in production mode, and `.env` carries
-   the published placeholder `JWT_SECRET`, which `auth.jwt` refuses in production. Supplying a real
-   secret — in `.env` or as an environment variable for the run — was blocked by the sandbox.
+1. The worktree database `milan_v1` is an **old clone of the Conductor template**, made before the
+   template was seeded with `superadmin@acme.com`. Its only login account is `admin@local.test`,
+   whose password nobody has. Encryption keys and the lookup pepper are fine — the account simply
+   is not there. `yarn initialize` refuses to add it ("found 3 existing user(s)") and only
+   `--reinstall` would, which wipes the database.
+2. The ephemeral harness seeds its own throwaway database correctly, but refused to boot: it runs
+   in production mode and `auth.jwt` rejects `.env`'s published placeholder `JWT_SECRET`. The
+   harness has its own safe default (`om-ephemeral-integration-jwt-secret`) which `.env` shadows,
+   because dotenv fills `process.env` before the harness reads it.
 
-Either a working set of local credentials, or permission to run `yarn initialize` against
-`milan_v1`, unblocks the whole step in one command.
+Route 2 was taken, passing the harness its own documented value. Two further environment facts cost
+time and are worth knowing: repeated failed logins trip an in-memory auth rate limiter (429 that
+looks like a credential problem until the server restarts), and a raw `page.request` call to a
+scoped API answers 401 because the app's client adds organization-scope headers — so the spec reads
+the task id from the rendered board instead.
