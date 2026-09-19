@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { seedStalZbiornikiDemo } from './lib/stalZbiorniki'
+import { applyDemoSidebar } from './lib/demoSidebar'
 import { seedTaskDelegationDemo } from '../task_delegation/lib/demoSetup'
 import { FACTORY_AGENT_DISPLAY_NAME } from '../task_delegation/lib/agentIdentity'
 
@@ -18,7 +19,7 @@ function readFlag(args: string[], ...names: string[]): string | undefined {
 
 // For a demo instance initialised with `--no-examples`: seeds only the Stal-Zbiorniki
 // demo data (catalog, the Park of Poland customer and its order, the DEMO task board), without
-// core's furniture examples.
+// core's furniture examples. Also trims the sidebar to the pitch's working places.
 const seedDemo: ModuleCli = {
   command: 'seed-stal-zbiorniki',
   async run(rest) {
@@ -39,6 +40,8 @@ const seedDemo: ModuleCli = {
     // The board scenes delegate tasks on the DEMO project to the `factory` agent (SPEC-004).
     const board = await seedTaskDelegationDemo(container, { tenantId, organizationId })
     console.log(`Task board: DEMO project ${board.projectId}, ${FACTORY_AGENT_DISPLAY_NAME} agent ${board.agentUserId ?? 'skipped (orchestrator disabled)'}`)
+    const sidebar = await applyDemoSidebar(em, container, { tenantId })
+    console.log(`Sidebar: ${sidebar.hiddenItems} items hidden for roles ${sidebar.roles.join(', ')}`)
   },
 }
 
