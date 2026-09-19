@@ -2,6 +2,12 @@ import { beforeEach, expect, it, jest } from '@jest/globals'
 
 const findOneWithDecryption = jest.fn<(...args: unknown[]) => Promise<unknown>>()
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({ findOneWithDecryption: (...args: unknown[]) => findOneWithDecryption(...args) }))
+const createAttachmentFromBuffer = jest.fn<(input: Record<string, unknown>) => Promise<{ url: string }>>()
+jest.mock('@open-mercato/core/modules/attachments/lib/createFromBuffer', () => ({ createAttachmentFromBuffer: (input: Record<string, unknown>) => createAttachmentFromBuffer(input) }))
+jest.mock('../stalZbiorniki', () => ({
+  ...jest.requireActual<object>('../stalZbiorniki'),
+  resolveOrderStatusEntry: async (_em: unknown, _scope: unknown, value: string) => ({ id: `status-${value}` }),
+}))
 
 import { seedStalZbiornikiCompany } from '../company'
 import { DEMO_COMPANY_NAME, DEMO_CUSTOMERS, DEMO_PEOPLE, DEMO_PROJECTS, DEMO_TASKS, DEMO_TEAMS, DEMO_WATER_ORDER } from '../companyStory'
@@ -15,6 +21,7 @@ const container = {
     em: { fork: () => ({}) },
     queryEngine: { query: async (entity: string) => ({ items: rows[entity] ?? [] }) },
     commandBus: { execute },
+    dataEngine: {},
   })[name],
 } as never
 
@@ -24,6 +31,7 @@ const products = [{ id: 'product-zppoz', handle: 'zppoz-20' }, { id: 'product-zc
 beforeEach(() => {
   rows = { 'staff:staff_time_task_status': statuses, 'catalog:catalog_product': products }
   findOneWithDecryption.mockReset().mockResolvedValue({ id: scope.organizationId, name: 'Acme Corp', logoUrl: null, parentId: null, childIds: [] })
+  createAttachmentFromBuffer.mockReset().mockResolvedValue({ url: '/api/attachments/file/logo-1' })
   execute.mockReset().mockImplementation(async (id) => ({
     result: { entityId: `customer-${id}`, teamId: 'team', memberId: 'member', timeProjectId: 'project', timeProjectMemberId: 'membership', taskId: 'task', orderId: 'order' },
   }))
@@ -35,7 +43,7 @@ it('brands the organization and seeds the company around the catalog', async () 
   const calls = execute.mock.calls.map(([id]) => id)
   expect(calls[0]).toBe('directory.organizations.update')
   expect(execute.mock.calls[0]![1].input).toMatchObject({
-    id: scope.organizationId, name: DEMO_COMPANY_NAME, logoUrl: expect.stringMatching(/\/brand\/stal-zbiorniki-logo\.png$/), parentId: null, childIds: [],
+    id: scope.organizationId, name: DEMO_COMPANY_NAME, logoUrl: '/api/attachments/file/logo-1', parentId: null, childIds: [],
   })
   expect(calls.filter((id) => id === 'customers.companies.create')).toHaveLength(DEMO_CUSTOMERS.length)
   expect(calls.filter((id) => id === 'staff.teams.create')).toHaveLength(DEMO_TEAMS.length)
@@ -45,7 +53,8 @@ it('brands the organization and seeds the company around the catalog', async () 
   // The DEMO board is task_delegation's; the company seed never creates it.
   expect(execute.mock.calls.some(([, args]) => args.input.code === 'DEMO')).toBe(false)
   const order = execute.mock.calls.find(([id]) => id === 'sales.orders.create')![1].input
-  expect(order).toMatchObject({ ...scope, orderNumber: DEMO_WATER_ORDER.orderNumber })
+  expect(createAttachmentFromBuffer).toHaveBeenCalledWith(expect.objectContaining({ ...scope, entityId: 'directory.organization', recordId: scope.organizationId }))
+  expect(order).toMatchObject({ ...scope, orderNumber: DEMO_WATER_ORDER.orderNumber, statusEntryId: 'status-in_fulfillment' })
   expect((order.lines as Array<{ productId: string }>).map((line) => line.productId)).toEqual(['product-zppoz', 'product-zch'])
   expect(result).toEqual({ created: execute.mock.calls.length - 1, branded: true })
 })
@@ -64,4 +73,5 @@ it('changes nothing when every record already exists', async () => {
 
   expect(await seedStalZbiornikiCompany(container, scope)).toEqual({ created: 0, branded: false })
   expect(execute).not.toHaveBeenCalled()
+  expect(createAttachmentFromBuffer).not.toHaveBeenCalled()
 })

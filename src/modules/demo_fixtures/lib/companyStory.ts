@@ -4,7 +4,7 @@
 // The DEMO board belongs to task_delegation's seed and scene 3; nothing here touches it.
 
 export const DEMO_COMPANY_NAME = 'Stal-Zbiorniki Sp. z o.o.'
-export const DEMO_COMPANY_LOGO_PATH = '/brand/stal-zbiorniki-logo.png'
+export const DEMO_COMPANY_LOGO_FILE = 'public/brand/stal-zbiorniki-logo.png'
 
 export const DEMO_CUSTOMERS = [
   { key: 'brewery', displayName: 'Browar Rzemieślniczy Ostrów', industry: 'Browarnictwo', domain: 'browar-ostrow.example', lifecycleStage: 'customer', description: 'Dwa zbiorniki ZWP-2000 zasilające linię warzelną, łącznie 4000 l.' },
@@ -44,6 +44,8 @@ export const DEMO_TASKS = [
 
 export const DEMO_WATER_ORDER = {
   orderNumber: 'SZ-2026-0051',
+  // The kitting task on the AQUA board is in progress.
+  status: 'in_fulfillment',
   placedAt: '2026-09-01',
   expectedDeliveryAt: '2026-09-25',
   comments: 'Aqua Dolina: komplet zbiorników do instalacji technologicznej.',

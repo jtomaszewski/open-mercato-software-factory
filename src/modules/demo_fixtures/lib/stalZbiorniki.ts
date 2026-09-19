@@ -550,7 +550,7 @@ function buildAddressSnapshot(address: CustomerAddress) {
   })
 }
 
-async function resolveOrderStatusEntry(em: EntityManager, scope: DemoSeedScope, value: string): Promise<DictionaryEntry | null> {
+export async function resolveOrderStatusEntry(em: EntityManager, scope: DemoSeedScope, value: string): Promise<DictionaryEntry | null> {
   const dictionary = await ensureSalesDictionary({ em, ...scope, kind: 'order-status' })
   return em.findOne(DictionaryEntry, { dictionary, ...scope, normalizedValue: normalizeDictionaryValue(value) })
 }
