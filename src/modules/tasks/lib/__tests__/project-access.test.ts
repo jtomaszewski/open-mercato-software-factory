@@ -25,6 +25,7 @@ it('denies expired Staff membership consistently in AI tools, delegation reads a
       if (name === 'moduleConfigService') return { getRecord: async (_module: string, key: string) => key === 'access.assignmentGraceDays' ? { value: 0 } : null }
       if (name === 'timeTrackingAccessResolver') return { resolveProjectAccess: (ctx: ProjectAccessContext) => resolveProjectAccess({ ...ctx, now: new Date('2026-09-19T12:00:00Z') }) }
       if (name === 'queryEngine') return { query }
+      if (name === 'tasksDelegationService') return createTasksDelegationService({ em })
       if (name === 'staffTimeTaskMutationService') return { lockTask: async () => ({ taskId, timeProjectId: projectId, updatedAt: '2026-09-19T10:00:00Z', childTaskIds: [] }) }
       throw new Error(`unexpected service ${name}`)
     },
@@ -36,8 +37,7 @@ it('denies expired Staff membership consistently in AI tools, delegation reads a
   const toolContext: McpToolContext = { container, userId: 'user-id', tenantId: 'tenant-id', organizationId: 'org-id', userFeatures: ['tasks.view'], isSuperAdmin: false }
   const staffAccess = await resolveProjectAccess({ em, userId: 'user-id', tenantId: 'tenant-id', organizationId: 'org-id', canManageAll: false, assignmentGraceDays: 0, now: new Date('2026-09-19T12:00:00Z') })
   expect(staffAccess.projectIds).toEqual([])
-  await expect(aiTools.find((tool) => tool.name === 'tasks_search')!.handler({ projectId }, toolContext)).resolves.toEqual({ items: [], total: 0 })
-  expect(query).not.toHaveBeenCalled()
+  await expect(aiTools.find((tool) => tool.name === 'tasks.get_delegation')!.handler({ taskId }, toolContext)).resolves.toEqual({ found: false })
   await expect(createTasksDelegationService({ em }).getDelegations(ctx, [taskId])).resolves.toEqual([])
   await expect(delegateTaskCommand.execute({ taskId, agentUserId: agentId }, ctx)).rejects.toMatchObject({ status: 403, body: { code: 'project_forbidden' } })
   expect(em.persist).not.toHaveBeenCalled()

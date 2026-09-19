@@ -102,7 +102,7 @@ Chat intake (next iteration, storyboarded now; see *Chat intake*):
 - **Business owner without `tasks.delegate`** gets the same card without the delegate, and the
   task lands in `Backlog` for someone who can delegate it.
 - **Anyone** asks "what's happening with WEB-12?" and gets the column, the run state and the
-  pending decision from `tasks_get`, with links. The chat never shows run progress itself.
+  pending decision from `task_tools.get_task` and `tasks.get_delegation`, with links. The chat never shows run progress itself.
 
 ## Proposed Solution
 
@@ -279,7 +279,7 @@ subtasks, so a follow-up of a subtask attaches to the subtask's parent. Delegati
 trigger, so the factory can't feed itself.
 
 **Comments** are `staff`'s comments. Agents don't write them: they write to the task through
-links and follow-ups only. Comments reach agents through `tasks_get`, so, like the description,
+links and follow-ups only. Comments reach agents through `task_tools.get_task`, so, like the description,
 they are **untrusted prompt input**.
 
 ### Out of scope (MVP), with the seam left for each
@@ -302,7 +302,8 @@ the right dock. Chat intake adds no chat UI; it adds one module agent and one wr
 - **Agent** `tasks.intake` ("Task intake", *Can write*) in the launcher's picker. Its job is
   to turn a vague request into a good task: ask at most a couple of questions, pick the
   project, write a title and a body with acceptance criteria, and quote the attached records.
-- **Tools.** Read: `tasks_search`, `tasks_get`, and `tasks_projects` (the `staff` projects). Write: `tasks_create
+- **Tools.** Read: SPEC-007's `task_tools.search_tasks`, `task_tools.get_task` and
+  `task_tools.list_projects`, plus `tasks.get_delegation`. Write: `tasks_create
   { projectId, title, description, delegate?: boolean }`, a mutation declared through
   `defineAiTool` + `prepareMutation`, so the chat shows OM's standard *Review proposed
   changes* card and nothing is written before **Confirm**. The approved call runs
@@ -410,7 +411,7 @@ net under *Delegation*.
 Events (after commit; scope in the emit options as well as the payload, per SPEC-001
 constraint 4):
 
-- `tasks.task.delegated { taskId, delegationId, delegateUserId, agentId, delegatedBy }`: persistent, server-only. The process reads authorized task details through `tasks_get`; task titles, references and actor identities are not sent on the browser event stream.
+- `tasks.task.delegated { taskId, delegationId, delegateUserId, agentId, delegatedBy }`: persistent, server-only. The process reads authorized task details through `task_tools.get_task` and `tasks.get_delegation`; task titles, references and actor identities are not sent on the browser event stream.
 - `tasks.task.undelegated { taskId, delegationId, processInstanceId? }`: persistent, server-only, consumed for cancellation.
 - `tasks.task.linked { taskId, delegationId, processInstanceId }`: server-only.
 - `tasks.task.changed { taskId }`: browser invalidation, scoped to tenant and organization. Widgets re-read the API, which enforces project access before returning task details.
@@ -418,10 +419,11 @@ constraint 4):
 Task creation, edits, moves and comments emit `staff`'s own events
 (`staff.timesheets.time_task.*`, `staff.timesheets.time_task_comment.*`).
 
-AI tools (read-only, for SPEC-001's research agent): `tasks_get { reference | taskId }`, which
-returns the task, its parent, its comments and its delegation with links, and
-`tasks_search { projectId, query?, status? }`. Both read `staff` records through the query
-engine with the caller's scope.
+AI tools (read-only, for SPEC-001's research agent): task reads, search and project lists are
+SPEC-007's `task_tools.*`, which go through the `staff` routes. This module adds only
+`tasks.get_delegation { taskId }` (feature `tasks.view`): the task's latest delegation with its
+delegate, run state, outcome and links, or `{ found: false }` when the task is missing or outside
+the caller's projects.
 
 ## Implementation Approach
 
@@ -461,8 +463,8 @@ SQL, and ask before applying.
    of a delegated card shows the 409 message and the card stays.
 8. Client-broadcast refresh. *Test:* integration: the badge goes `starting` → `running` without a
    reload.
-9. Read-only AI tools `tasks_get` and `tasks_search`. *Test:* Playground call returns scoped
-   data only.
+9. Read-only AI tool `tasks.get_delegation` (task reads come from SPEC-007's `task_tools`).
+   *Test:* Playground call returns scoped data only.
 
 **Phase 3: end to end**
 
@@ -523,3 +525,4 @@ test`; `yarn test:integration:ephemeral` after steps 7, 8 and 10.
 | 2026-09-18 | Drawer points to SPEC-003's change set panel and run view. |
 | 2026-09-18 | Chat intake designed (agent `tasks.intake`, write tool `tasks_create` behind OM's mutation approval); storyboard linked from Design. |
 | 2026-09-18 | Chat intake aligned with the `staff` rebuild: creates through the intake command, lands in `Backlog`, brings the `tasks_intake` table; storyboard board frames flagged as pre-rebuild. |
+| 2026-09-19 | AI tools deduplicated with SPEC-007: `tasks_get` and `tasks_search` removed in favour of `task_tools.get_task` / `search_tasks`; chat intake reads through `task_tools.*`; the module keeps only `tasks.get_delegation`. |

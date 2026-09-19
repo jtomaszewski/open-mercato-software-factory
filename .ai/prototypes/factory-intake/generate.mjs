@@ -425,14 +425,14 @@ function mutationCard({ canDelegate = true } = {}) {
 function chat(stage) {
   const intro = [
     msg('you', `<p>The product page on our website still shows last year’s price for this table. Can you get it fixed?</p>`),
-    msg('ai', `${tools([['tasks_projects', '2 projects'], ['tasks_search', 'no open task matches “Oak dining table price”']])}<p>Which site is it on: the main website (<b>WEB</b>) or the B2B shop (<b>B2B</b>)?</p>`),
+    msg('ai', `${tools([['task_tools.list_projects', '2 projects'], ['task_tools.search_tasks', 'no open task matches “Oak dining table price”']])}<p>Which site is it on: the main website (<b>WEB</b>) or the B2B shop (<b>B2B</b>)?</p>`),
     msg('you', `<p>Main website.</p>`),
   ]
   const propose = msg('ai', `<p>Here is the task. Confirm to create it and hand it to the ${AGENT}; you stay the owner.</p>${mutationCard()}`)
   const after = [
     msg('ai', `<div class="alert alert-success">${ic('check-circle')}<div><div class="alert-title">Action applied</div><div>WEB-13 was created and delegated to the ${AGENT}.</div><div class="tk-inline-links" style="margin-top:0.375rem"><a class="btn btn-outline btn-xs">View task WEB-13 ${ic('external')}</a></div></div></div><p>From here it runs on the board. You’ll get a Caseload item if the agent needs a decision.</p>`),
     msg('you', `<p>What’s happening with WEB-11?</p>`),
-    msg('ai', `${tools([['tasks_get', 'WEB-11']])}<p><b>WEB-11 · Add EU shipping calculator to checkout</b> is <b>In design</b>. The ${AGENT}’s plan has been waiting for your approval in the Caseload for 18 minutes: it recommends a zone table in the storefront, in 3 PRs.</p><div class="tk-inline-links"><a class="btn btn-primary btn-xs">Open in Caseload</a><a class="btn btn-outline btn-xs">Open task</a></div>`),
+    msg('ai', `${tools([['task_tools.get_task', 'WEB-11'], ['tasks.get_delegation', 'WEB-11']])}<p><b>WEB-11 · Add EU shipping calculator to checkout</b> is <b>In design</b>. The ${AGENT}’s plan has been waiting for your approval in the Caseload for 18 minutes: it recommends a zone table in the storefront, in 3 PRs.</p><div class="tk-inline-links"><a class="btn btn-primary btn-xs">Open in Caseload</a><a class="btn btn-outline btn-xs">Open task</a></div>`),
   ]
   const msgs = stage === 'propose' ? [...intro, propose] : [...intro.slice(0, 1), msg('ai', `<p class="muted" style="font-size:0.75rem">…3 earlier messages</p>`), ...after]
   return `<div class="tk-chat">
@@ -559,7 +559,7 @@ const screens = [
       }, mobile) })),
     notes: [
       'After the <code>sized</code> milestone, un-delegating returns 409 <code>decision_pending</code> with the instance link; the toast turns that into the next step.',
-      'Comments are context for the agent (read via <code>tasks_get</code>), treated as untrusted input like the body.',
+      'Comments are context for the agent (read via <code>task_tools.get_task</code>), treated as untrusted input like the body.',
     ],
   },
   {
@@ -626,13 +626,13 @@ const screens = [
   {
     id: 's14', nav: 'Chat: after', title: 'Chat intake, confirmed; then asking about another task',
     task: 'Maya confirms, gets a link to WEB-13, then asks what is happening with WEB-11.',
-    refs: ['SPEC-002 · Chat intake', 'AI tools · tasks_get'],
+    refs: ['SPEC-002 · Chat intake', 'AI tools · task_tools.get_task'],
     html: both((mobile) => shell({ url: '/backend/catalog/products/nw-oak-180', mobile, nav: 'products', crumbs: ['Catalog', 'Products', 'Oak dining table 180'], dock: dock('after'), tall: '52rem',
       page: productPage(mobile), overlay: mobile ? dock('after', true) : null })),
     notes: [
       'The chat hands off: progress, the design gate and the PR live on the board, the drawer and the Caseload, never as a stream in the chat.',
       '<code>source=chat</code> with the conversation and message id as <code>source_ref</code>, so a retried Confirm can’t create WEB-13 twice.',
-      'Status questions are read-only (<code>tasks_get</code>, <code>tasks_search</code>) and answer with links, not copies of the plan.',
+      'Status questions are read-only (<code>task_tools.get_task</code>, <code>tasks.get_delegation</code>, <code>task_tools.search_tasks</code>) and answer with links, not copies of the plan.',
     ],
   },
 ]
