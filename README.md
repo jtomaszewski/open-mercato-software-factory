@@ -66,6 +66,8 @@ The `task_tools` module (SPEC-007) lets Claude
 Code or any MCP client work with the `staff` task board: `task_tools.list_projects`,
 `search_tasks`, `get_task`, `create_task` and `comment_task`. `yarn dev` serves them at
 `http://localhost:3001/mcp` (standalone: `yarn mercato ai_assistant mcp:serve-http --port 3001`).
+When the enterprise agent modules are enabled, `factory.request_change` creates a `DEMO` task and
+delegates it to Developer; the existing Agent Orchestrator process then prepares the website PR.
 
 1. **Role.** Use a role holding `staff.timesheets.tasks.view`, `staff.timesheets.tasks.manage`
    and `staff.timesheets.projects.view` (read-only: drop `tasks.manage`). The built-in

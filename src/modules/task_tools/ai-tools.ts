@@ -9,7 +9,7 @@
  * Rules every tool follows:
  *  1. Scope never comes from the model: `requireToolScope` reads tenant, organization
  *     and user off the runtime context and throws before any read when one is missing.
- *  2. All data goes through the `staff` HTTP routes via `createAiApiOperationRunner`
+ *  2. All data goes through the `staff` HTTP routes via `createScopedApiOperationRunner`
  *     (`lib/staff-api.ts`). The runner refuses a route whose `requireFeatures` the tool
  *     does not declare, so each tool's `requiredFeatures` is the union of the features
  *     of every route it calls — not only the write feature. In the standalone MCP
@@ -20,12 +20,10 @@
  */
 import { z } from 'zod'
 import { defineAiTool } from '@open-mercato/ai-assistant/modules/ai_assistant/lib/ai-tool-definition'
-import {
-  createAiApiOperationRunner,
-  type AiToolExecutionContext,
-} from '@open-mercato/ai-assistant/modules/ai_assistant/lib/ai-api-operation-runner'
+import type { AiToolExecutionContext } from '@open-mercato/ai-assistant/modules/ai_assistant/lib/ai-api-operation-runner'
 import type { AiToolDefinition, McpToolContext } from '@open-mercato/ai-assistant/modules/ai_assistant/lib/types'
 import { requireToolScope } from './lib/scope'
+import { createScopedApiOperationRunner } from './lib/scoped-runner'
 import { installNextServerResolveShim } from './lib/next-server-resolve-shim'
 import {
   TaskToolError,
@@ -55,7 +53,7 @@ function staffApiFor(context: McpToolContext, tool: AiToolDefinition): StaffApi 
   requireToolScope(context)
   installNextServerResolveShim()
   const toolCtx: AiToolExecutionContext = { ...context, tool: context.tool ?? tool }
-  return createStaffApi(createAiApiOperationRunner(toolCtx))
+  return createStaffApi(createScopedApiOperationRunner(toolCtx))
 }
 
 function statusSlugOf(task: TaskRecord, slugs: Map<string, string>): string | null {
