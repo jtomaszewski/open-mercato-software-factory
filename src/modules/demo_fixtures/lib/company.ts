@@ -1,13 +1,16 @@
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 import type { AwilixContainer } from 'awilix'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { CommandBus } from '@open-mercato/shared/lib/commands'
 import type { QueryEngine } from '@open-mercato/shared/lib/query/types'
 import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { Organization } from '@open-mercato/core/modules/directory/data/entities'
+import { createAttachmentFromBuffer } from '@open-mercato/core/modules/attachments/lib/createFromBuffer'
 import { systemContext } from '../../task_delegation/lib/systemContext'
-import { STAL_ZBIORNIKI_PRODUCTS, type DemoSeedScope } from './stalZbiorniki'
+import { resolveOrderStatusEntry, STAL_ZBIORNIKI_PRODUCTS, type DemoSeedScope } from './stalZbiorniki'
 import {
-  DEMO_COMPANY_LOGO_PATH,
+  DEMO_COMPANY_LOGO_FILE,
   DEMO_COMPANY_NAME,
   DEMO_CUSTOMERS,
   DEMO_PEOPLE,
@@ -49,17 +52,32 @@ export async function seedStalZbiornikiCompany(container: AwilixContainer, scope
     return existing ?? create()
   }
 
+  // Stored as an attachment, the way the Branding page uploads it, so the logo URL is
+  // host-relative and survives a change of port or domain.
+  async function uploadLogo(): Promise<string> {
+    const attachment = await createAttachmentFromBuffer({
+      em,
+      dataEngine: container.resolve('dataEngine'),
+      ...scope,
+      entityId: 'directory.organization',
+      recordId: scope.organizationId,
+      fileName: path.basename(DEMO_COMPANY_LOGO_FILE),
+      mimeType: 'image/png',
+      buffer: await readFile(path.resolve(process.cwd(), DEMO_COMPANY_LOGO_FILE)),
+    })
+    return attachment.url
+  }
+
   const organization = await findOneWithDecryption(em, Organization, { id: scope.organizationId, tenant: scope.tenantId, deletedAt: null }, {}, scope)
   if (!organization) throw new Error(`Organization ${scope.organizationId} not found in tenant ${scope.tenantId}`)
   const branded = organization.name !== DEMO_COMPANY_NAME || !organization.logoUrl
   if (branded) {
-    const baseUrl = process.env.APP_URL || 'http://localhost:3000'
     await bus.execute('directory.organizations.update', {
       input: {
         id: organization.id,
         tenantId: scope.tenantId,
         name: DEMO_COMPANY_NAME,
-        logoUrl: organization.logoUrl || new URL(DEMO_COMPANY_LOGO_PATH, baseUrl).href,
+        logoUrl: organization.logoUrl || await uploadLogo(),
         logoPreserveAspectRatio: true,
         // The update command rewrites the hierarchy from its input, so pass the current one back.
         parentId: organization.parentId ?? null,
@@ -130,8 +148,9 @@ export async function seedStalZbiornikiCompany(container: AwilixContainer, scope
 
   if (!(await rows('sales:sales_order', { order_number: DEMO_WATER_ORDER.orderNumber }))[0]) {
     const catalog = await rows('catalog:catalog_product', { handle: { $in: DEMO_WATER_ORDER.lines.map((line) => line.handle) } }, ['handle'])
+    const status = await resolveOrderStatusEntry(em, scope, DEMO_WATER_ORDER.status)
     await execute('sales.orders.create', 'orderId', {
-      orderNumber: DEMO_WATER_ORDER.orderNumber, customerEntityId: customers.get('water'), currencyCode: 'PLN',
+      orderNumber: DEMO_WATER_ORDER.orderNumber, statusEntryId: status?.id, customerEntityId: customers.get('water'), currencyCode: 'PLN',
       placedAt: DEMO_WATER_ORDER.placedAt, expectedDeliveryAt: DEMO_WATER_ORDER.expectedDeliveryAt, comments: DEMO_WATER_ORDER.comments,
       lines: DEMO_WATER_ORDER.lines.map((line) => {
         const product = STAL_ZBIORNIKI_PRODUCTS.find((item) => item.handle === line.handle)!
