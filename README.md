@@ -47,6 +47,12 @@ Useful pages: **Agent Orchestrator → Playground** (`/backend/playground`), **C
 `factory ensure-process`. Plain `yarn reinstall` is not the same: it also seeds the core
 example catalog (sneakers, haircuts).
 
+`seed-stal-zbiorniki` also trims the sidebar to the pitch's working places, as a default for
+every role in the tenant: Projekty › Zadania, Katalog › Produkty i usługi, Sprzedaż › Szanse
+sprzedaży, Zamówienia, Klienci, and the whole Agenci and Automatyzacje groups. Hidden pages still
+open by URL. To get the full menu back, clear the role default in Customize sidebar
+(`/backend/sidebar-customization`).
+
 - Stop `yarn dev` first (its queue worker writes during the wipe). Kill leftover Next and
   worker processes too: `pkill -f "$PWD/"`.
 - Restart `yarn dev` afterwards. It rotates the MCP key and restarts the OpenCode sidecar. If
