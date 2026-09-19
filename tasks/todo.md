@@ -35,3 +35,40 @@ activity trail, cost per run), not a docker call the orchestrator never sees. Sa
 - The run principal needs `agent_orchestrator.agents.run` for the agent's MCP outcome submit.
 - Open: spec update (D-009 reversal), cost/tokens on the run are null for the OpenCode runtime,
   the process page's activity trail, drawer link to the run.
+
+---
+
+# Demo scenario validation
+
+## Plan
+
+- [x] Identify the documented first demo scenario and the supported reseed/start commands.
+- [x] Reseed the app and start the documented local environment.
+- [ ] Walk the complete first scenario in the browser and capture screenshots at key states.
+  Blocked: no Browser surface is available, and Scene 2's chat intake/Caseload record-change
+  path is not implemented.
+- [x] Record the result, evidence, and any blockers here.
+
+## Verification
+
+- ✅ The app readiness check succeeded after reseeding.
+- ❌ The documented scenario cannot complete because the chat intake and Caseload record-change
+  path are not implemented.
+- ❌ No screenshots were captured because the Conductor browser runtime had no available browser.
+
+## Review
+
+- `corepack yarn demo:reset` completed and seeded seven products, the DEMO project, Park of
+  Poland order, and Factory process.
+- `scripts/conductor-run.sh` started the app at `http://localhost:55110`; migrations were current
+  and readiness succeeded.
+- Live authenticated API evidence confirmed `ZDP-5000` has `capacityLiters: 5000` and no
+  dimensions, matching the Scene 2 starting state; the DEMO board has zero tasks.
+- `BASE_URL=http://localhost:55110 PW_CAPTURE_SCREENSHOTS=1 corepack yarn test:integration
+  --retries=0`: two authentication tests passed; the task-drawer UI case skipped because the
+  reset intentionally creates no task.
+- The Conductor browser runtime reported no available browser, so no useful UI screenshot or
+  recording could be captured.
+- Scene 2 is not runnable end to end in this revision: SPEC-004 still lists chat intake and
+  Caseload record changes as missing, and `task_tools` says its tools are only allow-listable by
+  an in-app agent later.
