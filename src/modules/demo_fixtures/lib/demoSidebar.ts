@@ -1,5 +1,6 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { AppContainer } from '@open-mercato/shared/lib/di/container'
+import { runWithCacheTenant } from '@open-mercato/cache'
 import { backendRouteMetadata } from '@/.mercato/generated/backend-route-metadata.generated'
 import { SIDEBAR_PREFERENCES_VERSION } from '@open-mercato/shared/modules/navigation/sidebarPreferences'
 import { findWithDecryption } from '@open-mercato/shared/lib/encryption/find'
@@ -14,16 +15,26 @@ import { saveRoleSidebarPreference } from '@open-mercato/core/modules/auth/servi
  * The task board is a child of "My work", which is hidden, so it comes back as a top-level
  * item injected by `widgets/injection/demo-tasks-menu`.
  */
-export const DEMO_SIDEBAR_VISIBLE_ITEMS = ['/backend/catalog/products', '/backend/sales/orders', '/backend/caseload']
+export const DEMO_SIDEBAR_VISIBLE_ITEMS = [
+  '/backend/catalog/products',
+  '/backend/customers/companies',
+  '/backend/customers/deals',
+  '/backend/sales/orders',
+]
+
+// Groups shown whole, sub-items included: the factory's agents and the automations it runs on.
+export const DEMO_SIDEBAR_VISIBLE_GROUPS = ['agent_orchestrator.nav.group', 'workflows.module.name']
 
 export const DEMO_SIDEBAR_GROUP_ORDER = [
   'staff.time_tracking.nav.group',
   'catalog.nav.group',
+  'customers.nav.group',
   'customers~sales.nav.group',
   'agent_orchestrator.nav.group',
+  'workflows.module.name',
 ]
 
-type RouteLike = { path?: string; pattern?: string }
+type RouteLike = { path?: string; pattern?: string; groupKey?: string }
 
 // Allow-list rather than a hand-kept deny-list: every static backend page except the visible
 // ones, so a module enabled later is hidden too (after the next seed).
@@ -33,6 +44,7 @@ export function demoSidebarHiddenItems(routes: RouteLike[]): string[] {
     const href = route.pattern ?? route.path ?? ''
     if (!href.startsWith('/backend/') || href.includes('[')) continue
     if (DEMO_SIDEBAR_VISIBLE_ITEMS.includes(href)) continue
+    if (route.groupKey && DEMO_SIDEBAR_VISIBLE_GROUPS.includes(route.groupKey)) continue
     hidden.add(href)
   }
   return Array.from(hidden).sort()
@@ -53,7 +65,10 @@ export async function applyDemoSidebar(
     })
   }
   // The nav payload is cached per user; drop the tenant's entries so the next load sees the change.
+  // The cache namespaces tags by tenant, so the delete has to run in the tenant's scope.
   const cache = container.resolve('cache') as { deleteByTags?: (tags: string[]) => Promise<unknown> } | null
-  await cache?.deleteByTags?.([`nav:sidebar:tenant:${tenantId}`])
+  await runWithCacheTenant(tenantId, async () => {
+    await cache?.deleteByTags?.([`nav:sidebar:tenant:${tenantId}`])
+  })
   return { roles: roles.map((role) => role.name), hiddenItems: hiddenItems.length }
 }
