@@ -1,0 +1,13 @@
+{
+  "taskId": "00000000-0000-4000-8000-000000000001",
+  "title": "Opublikuj stronę produktu ZWM-1500",
+  "description": "Nowy produkt „Od ręki” w katalogu: Zbiornik mobilny na wodę pitną 1500 l (ZWM-1500).",
+  "record": {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "sku": "ZWM-1500",
+    "title": "Zbiornik mobilny na wodę pitną 1500 l",
+    "categories": ["zbiorniki-na-wode-pitna", "od-reki"],
+    "prices": [{ "kind": "regular", "amount": 11900, "currency": "PLN" }]
+  },
+  "workDir": "/home/opencode/work/factory/00000000-0000-4000-8000-000000000001"
+}

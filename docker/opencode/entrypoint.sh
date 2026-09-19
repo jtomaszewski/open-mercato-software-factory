@@ -219,6 +219,14 @@ case "$(printf '%s' "${OM_OPENCODE_FILES_ENABLED:-false}" | tr '[:upper:]' '[:lo
   *) FILE_TOOL="false" ;;
 esac
 
+# Shell plane (factory Developer agent): OM_OPENCODE_BASH_ENABLED exposes the built-in `bash`
+# tool so a file-agent's frontmatter can allow it (`filesBash: true`); every other agent keeps
+# `bash: deny`. Default off => the historical global deny.
+case "$(printf '%s' "${OM_OPENCODE_BASH_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')" in
+  1|true|yes|on|enabled) BASH_TOOL="true"; BASH_PERMISSION="allow" ;;
+  *) BASH_TOOL="false"; BASH_PERMISSION="deny" ;;
+esac
+
 # Generate config file
 cat > "$CONFIG_FILE" << EOF
 {
@@ -230,7 +238,7 @@ cat > "$CONFIG_FILE" << EOF
   "instructions": ["AGENTS.md"],
   "tools": {
     "write": $FILE_TOOL,
-    "bash": false,
+    "bash": $BASH_TOOL,
     "edit": $FILE_TOOL,
     "read": $FILE_TOOL,
     "glob": false,
@@ -248,7 +256,7 @@ cat > "$CONFIG_FILE" << EOF
   },
   "permission": {
    "bash": {
-      "*": "deny"
+      "*": "$BASH_PERMISSION"
    }
   },
   "server": {

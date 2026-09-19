@@ -8,7 +8,21 @@
 # wrong image. Override per build with `--build-arg OPENCODE_BASE_IMAGE=...` or
 # set the default below to your registry namespace.
 ARG OPENCODE_BASE_IMAGE=docker.io/openmercatocom/open-mercato-opencode:1.18.3
+ARG NODE_IMAGE=docker.io/library/node:22-bookworm-slim
+FROM ${NODE_IMAGE} AS node
 FROM ${OPENCODE_BASE_IMAGE}
+
+# The Developer agent (src/modules/factory) builds the website checkout inside the sandbox, so
+# the sidecar carries the target's toolchain: node + npm from the official image (Debian's own
+# node is too old for Next.js) and git. Only file agents with `filesBash: true` may use them.
+USER root
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+  && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 # The base image already installed OpenCode, created the non-root `opencode`
 # user + /home/opencode/.config/opencode, and set WORKDIR. Re-assert them so

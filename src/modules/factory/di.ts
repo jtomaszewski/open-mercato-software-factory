@@ -1,16 +1,23 @@
 import { asValue } from 'awilix'
 import type { AppContainer } from '@open-mercato/shared/lib/di/container'
 import { registerWorkflowFunctions } from '@open-mercato/core/modules/workflows/lib/workflow-function-registry'
-import { createDeliverFunction, DELIVER_FUNCTION } from './lib/deliver'
+import { createDeliverFunction, createPrepareFunction, DELIVER_FUNCTION, PREPARE_FUNCTION } from './lib/deliver'
 
 registerWorkflowFunctions([
   {
+    name: PREPARE_FUNCTION,
+    description: 'Move the delegated board task to In progress and clone the website repo into the run sandbox for the Developer agent.',
+  },
+  {
     name: DELIVER_FUNCTION,
-    description: 'Open the website PR for the product linked from the delegated board task, then link it and move the task to review.',
+    description: 'Commit the Developer agent’s changes, open the website PR, link it on the task and move the task to review.',
   },
 ])
 
 export function register(container: AppContainer) {
-  // The function builds its own request container per run, so it holds no scoped services.
-  container.register({ [`workflowFunction:${DELIVER_FUNCTION}`]: asValue(createDeliverFunction()) })
+  // The functions build their own request container per run, so they hold no scoped services.
+  container.register({
+    [`workflowFunction:${PREPARE_FUNCTION}`]: asValue(createPrepareFunction()),
+    [`workflowFunction:${DELIVER_FUNCTION}`]: asValue(createDeliverFunction()),
+  })
 }
