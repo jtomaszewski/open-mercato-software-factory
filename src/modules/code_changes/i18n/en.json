@@ -1,8 +1,8 @@
 {
   "code_changes.approve.title": "Website change",
-  "code_changes.approve.hint": "Review the changes and the preview, then approve to publish.",
-  "code_changes.approve.action": "Approve and publish",
-  "code_changes.approve.working": "Publishing...",
+  "code_changes.approve.hint": "Review the preview before approving. Approval merges the changes and closes the task; it does not confirm website deployment.",
+  "code_changes.approve.action": "Approve changes",
+  "code_changes.approve.working": "Approving...",
   "code_changes.approve.errors.generic": "Approval failed.",
   "code_changes.approve.errors.notFound": "Task not found.",
   "code_changes.approve.errors.notDelegated": "The task is not delegated to the Software Engineer agent.",

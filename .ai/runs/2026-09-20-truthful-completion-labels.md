@@ -21,5 +21,10 @@ Changed labels and conditional UI may affect user expectations. Cover the releva
 PR: #54
 
 ### Phase 1: Correct the audited behavior
-- [ ] 1.1 Add regression coverage and implement the scoped correction.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.1 Add regression coverage and implement the scoped correction.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+
+## Verification
+All 16 edited locale values parsed successfully with identical key sets and placeholders. Generate, typecheck, lint, ds:check, all 295 tests and production build passed. Desktop QA inspected the review panel. Completed-state meaning was checked against the source, including manual completion; no merge or live deployment was executed.
+
+Independent primary review: no introduced blockers. Desktop evidence is attached to PR #54.

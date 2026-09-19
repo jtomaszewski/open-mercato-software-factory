@@ -1,8 +1,8 @@
 {
   "code_changes.approve.title": "Zmiana na stronie",
-  "code_changes.approve.hint": "Przejrzyj zmiany i podgląd, a potem zatwierdź, żeby opublikować.",
-  "code_changes.approve.action": "Zatwierdź i opublikuj",
-  "code_changes.approve.working": "Publikuję...",
+  "code_changes.approve.hint": "Sprawdź podgląd przed zatwierdzeniem. Zatwierdzenie połączy zmiany i zamknie zadanie, ale nie potwierdza wdrożenia na stronę.",
+  "code_changes.approve.action": "Zatwierdź zmiany",
+  "code_changes.approve.working": "Zatwierdzam...",
   "code_changes.approve.errors.generic": "Nie udało się zatwierdzić.",
   "code_changes.approve.errors.notFound": "Nie znaleziono zadania.",
   "code_changes.approve.errors.notDelegated": "Zadanie nie jest przekazane agentowi Software Engineer.",
