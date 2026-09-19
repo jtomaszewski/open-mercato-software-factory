@@ -1146,3 +1146,10 @@ body[data-demo-feedback-fab="visible"] main {
 .om-mdx-editor .cm-dropCursor {
   border-left-color: var(--foreground);
 }
+
+/* The header opens the legacy assistant chat (BackendHeaderChrome); hide the
+   AppShell agent-picker trigger that is hard-wired next to it. */
+[data-ai-launcher-trigger],
+[data-ai-launcher-trigger-mobile] {
+  display: none !important;
+}

@@ -1,0 +1,38 @@
+{
+  "format": "discovery-prototype-v1",
+  "skill": "om-mockup-prototype",
+  "slug": "repository-project-delegation",
+  "revision": 3,
+  "revisionPath": ".ai/prototypes/discovery/repository-project-delegation/revision-003",
+  "previousRevision": ".ai/prototypes/discovery/repository-project-delegation/revision-002",
+  "brief": ".ai/specs/2026-09-19-code-repositories.md",
+  "flow": "J-001 through J-004: register, link, delegate, revoke",
+  "panelReport": null,
+  "verification": "not-run",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "237a590dd5489f8f50d4d7776864505a3a7f75184dea4a45ab8713f9d217e4ea"
+    },
+    {
+      "path": "components.css",
+      "sha256": "5516f02ce8f3c435f27e4282c57bd1590a35861c03c5393a5568b7c6eedf003f"
+    },
+    {
+      "path": "index.html",
+      "sha256": "e1024020d2a1a414ef1b4a63e19f8e3f0164f3b804ffc9995a5907bd40b3c1d7"
+    },
+    {
+      "path": "repositories.css",
+      "sha256": "8800da2ce433667bcb5f8fd88fa45fccdf1bbad99835691f0a998fc3631a3637"
+    },
+    {
+      "path": "screens.css",
+      "sha256": "e7e3db84052df4ca7749f1cd85d6ffc2f2eaa99d778938577fd84b8928a5db4a"
+    },
+    {
+      "path": "tokens.css",
+      "sha256": "7b82425a0875d8fc3afe643aa1d68e5796526508ce07bfa065c6da18d961271f"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "format": "discovery-prototype-v1",
+  "skill": "om-mockup-prototype",
+  "slug": "repository-project-delegation",
+  "revision": 1,
+  "revisionPath": ".ai/prototypes/discovery/repository-project-delegation/revision-001",
+  "previousRevision": null,
+  "brief": ".ai/specs/2026-09-19-code-repositories.md",
+  "flow": "J-001 through J-004: register, link, delegate, revoke",
+  "panelReport": null,
+  "verification": "not-run",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "8c480dfd57eb82fa28b42681da6225c4ca552f1ea187de277900ed586ed99e51"
+    },
+    {
+      "path": "index.html",
+      "sha256": "151dc64d8b758eec2d238b56dd57ce5f08e8ce3f1fb91950dad487948bde53ce"
+    }
+  ]
+}

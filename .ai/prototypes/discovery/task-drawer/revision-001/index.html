@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototyp: zadanie na tablicy (uproszczona szuflada)</title>
+<style>
+  :root { --ink:#111; --muted:#666; --line:#d4d4d4; --bg:#fafafa; --panel:#fff; --soft:#f0f0f0; --focus:#111; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  a { color:var(--ink); }
+  button { font:inherit; color:inherit; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 10px; cursor:pointer; }
+  button.primary { background:var(--ink); color:#fff; border-color:var(--ink); }
+  button.quiet { border-color:transparent; background:transparent; text-decoration:underline; padding:2px 4px; }
+  button:disabled { opacity:.5; cursor:default; }
+  :focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  h1,h2,h3 { margin:0; }
+  h1 { font-size:20px; } h2 { font-size:16px; } h3 { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .sr { position:absolute; left:-9999px; }
+  .chip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:999px; padding:1px 8px; font-size:12px; background:var(--panel); white-space:nowrap; }
+  .chip.solid { background:var(--soft); }
+  .chip .dot { width:7px; height:7px; border-radius:50%; background:#777; display:inline-block; }
+  .chip.state-running .dot,.chip.state-starting .dot { background:#333; animation:pulse 1.2s infinite; }
+  .chip.state-failed { border-color:#111; border-style:dashed; }
+  @keyframes pulse { 50% { opacity:.3; } }
+  .avatar { display:inline-flex; width:20px; height:20px; border-radius:50%; background:var(--soft); border:1px solid var(--line); font-size:10px; align-items:center; justify-content:center; font-weight:600; }
+  .avatar.agent { border-radius:4px; }
+  .mutedtext { color:var(--muted); }
+
+  /* Toolbar (prototype-only) */
+  #tools { position:sticky; top:0; z-index:5; background:#eaeaea; border-bottom:1px solid var(--line); padding:6px 12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:12px; }
+  #tools .grow { flex:1; }
+  #tools label { display:inline-flex; gap:4px; align-items:center; }
+
+  /* Frame */
+  #frame { max-width:1280px; margin:0 auto; background:var(--panel); min-height:calc(100vh - 40px); border-left:1px solid var(--line); border-right:1px solid var(--line); position:relative; }
+  body.narrow #frame { max-width:390px; }
+  #screens > section { padding:16px; }
+  #screens > section[hidden] { display:none; }
+
+  /* Board */
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .topbar .sub { color:var(--muted); font-size:12px; }
+  .columns { display:grid; grid-template-columns:repeat(4,minmax(220px,1fr)); gap:12px; overflow-x:auto; }
+  body.narrow .columns { grid-template-columns:1fr; }
+  .col { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; min-height:120px; }
+  .col h3 { display:flex; justify-content:space-between; padding:4px 4px 8px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px; text-align:left; width:100%; display:block; text-decoration:none; }
+  .card:hover { border-color:#888; }
+  .card .ref { font-size:11px; color:var(--muted); font-family:ui-monospace,monospace; }
+  .card .title { font-weight:600; margin:2px 0 6px; }
+  .card .row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .card .who { margin-left:auto; display:inline-flex; gap:4px; }
+  .empty { color:var(--muted); font-size:12px; padding:8px 4px; }
+
+  /* Drawer */
+  #drawer-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.25); }
+  #drawer { position:absolute; top:0; right:0; bottom:0; width:640px; max-width:100%; background:var(--panel); border-left:1px solid var(--line); display:flex; flex-direction:column; box-shadow:-4px 0 12px rgba(0,0,0,.06); }
+  body.narrow #drawer { width:100%; border-left:0; }
+  #drawer header { padding:14px 16px 10px; border-bottom:1px solid var(--line); }
+  #drawer header .meta { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+  #drawer header .meta .ref { font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); }
+  #drawer header .close { margin-left:auto; }
+  #drawer h2 { font-size:18px; }
+  #drawer .body { flex:1; overflow:auto; padding:0 16px 16px; }
+  #drawer footer { border-top:1px solid var(--line); padding:8px 16px; display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--muted); }
+  .section { padding:14px 0; border-bottom:1px solid var(--line); }
+  .section:last-child { border-bottom:0; }
+  .section h3 { margin-bottom:8px; }
+
+  /* Status bar */
+  .statusbar { margin-top:14px; border:1px solid var(--ink); border-radius:8px; padding:12px; background:var(--panel); display:grid; grid-template-columns:1fr; gap:10px; }
+  .statusbar.warn { border-style:dashed; }
+  .statusbar.info { border-color:var(--line); background:var(--soft); }
+  .statusbar .head { font-weight:600; }
+  .statusbar .text { color:var(--muted); font-size:13px; margin-top:2px; }
+  .statusbar .actions { display:flex; gap:6px; flex-wrap:wrap; }
+  .statusbar .plan { grid-column:1 / -1; border-top:1px solid var(--line); padding-top:8px; font-size:13px; }
+  .statusbar .plan ul { margin:4px 0 0 18px; padding:0; }
+
+  /* Properties row */
+  .props { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; }
+  .props > div { display:flex; flex-direction:column; gap:3px; }
+  .props .label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .props select { font:inherit; padding:4px 6px; border:1px solid var(--line); border-radius:6px; background:var(--panel); }
+  .assign-btn { display:inline-flex; gap:6px; align-items:center; border:1px solid var(--line); border-radius:6px; padding:3px 8px; background:var(--panel); }
+  .assign-wrap { position:relative; }
+  .popover { position:absolute; top:100%; left:0; z-index:4; width:320px; max-width:calc(100vw - 32px); background:var(--panel); border:1px solid var(--ink); border-radius:8px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); margin-top:4px; }
+  .popover[hidden] { display:none; }
+  .popover input[type=search] { width:100%; font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+  .popover .group { margin-top:10px; }
+  .popover .group h4 { margin:0 0 4px; font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:.04em; }
+  .popover label.opt { display:flex; gap:8px; align-items:flex-start; padding:5px 4px; border-radius:6px; cursor:pointer; }
+  .popover label.opt:hover { background:var(--soft); }
+  .popover label.opt .desc { font-size:12px; color:var(--muted); display:block; }
+  .popover .foot { display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px; }
+  .popover .hint { font-size:11px; color:var(--muted); }
+  .popover .note { font-size:12px; color:var(--muted); border:1px dashed var(--line); border-radius:6px; padding:6px 8px; margin-top:8px; }
+  .error { color:#111; font-size:12px; border-left:3px solid #111; padding-left:8px; margin-top:6px; }
+
+  .desc p { margin:0 0 6px; } .desc ul { margin:0 0 6px 18px; padding:0; }
+  .timeline { list-style:none; margin:0; padding:0; }
+  .timeline li { display:flex; gap:8px; padding:3px 0; font-size:13px; }
+  .timeline li time { margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .comments .c { padding:6px 0; font-size:13px; } .comments .c b { margin-right:6px; } .comments .c time { color:var(--muted); font-size:12px; }
+  textarea { width:100%; font:inherit; border:1px solid var(--line); border-radius:6px; padding:8px; min-height:64px; resize:vertical; }
+  .change { border:1px solid var(--line); border-radius:8px; padding:10px; display:grid; gap:6px; font-size:13px; }
+  .change .k { color:var(--muted); }
+  details summary { cursor:pointer; color:var(--muted); font-size:13px; }
+  details .kv { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13px; margin-top:8px; }
+  .subtasks li { font-size:13px; }
+
+  /* Preview screen */
+  .browserbar { border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-family:ui-monospace,monospace; font-size:12px; color:var(--muted); margin:10px 0; background:var(--soft); }
+  .wire { border:1px dashed var(--line); border-radius:8px; padding:16px; margin-bottom:10px; }
+  .wire .img { height:140px; background:repeating-linear-gradient(45deg,#eee,#eee 8px,#f7f7f7 8px,#f7f7f7 16px); border-radius:6px; margin-bottom:10px; }
+
+  #live { position:absolute; left:-9999px; }
+  #recover { padding:16px; }
+</style>
+</head>
+<body>
+<div id="tools" aria-label="Narzędzia prototypu">
+  <strong>Prototyp discovery · dane symulowane</strong>
+  <span class="grow"></span>
+  <label><input type="checkbox" id="tool-narrow"> Widok 390 px</label>
+  <label><input type="checkbox" id="tool-noperm"> Użytkownik bez uprawnienia do delegowania</label>
+  <label><input type="checkbox" id="tool-factory-down"> Fabryka niegotowa (brak tokenu GitHub)</label>
+  <button type="button" id="tool-reset">Resetuj symulację</button>
+</div>
+<div id="live" role="status" aria-live="polite"></div>
+
+<div id="frame">
+  <div id="screens">
+
+    <section id="screen-board" aria-labelledby="board-h">
+      <div class="topbar">
+        <div>
+          <h1 id="board-h" tabindex="-1">Zadania</h1>
+          <div class="sub">Strona WWW · <span id="board-count"></span></div>
+        </div>
+        <div>
+          <span class="chip solid">Tablica</span>
+          <button type="button" class="quiet" title="Poza zakresem prototypu" aria-describedby="oos">Nowe zadanie</button>
+          <span id="oos" class="sr">Tworzenie zadania jest poza zakresem tego prototypu.</span>
+        </div>
+      </div>
+      <div class="columns" id="columns"></div>
+    </section>
+
+    <section id="screen-preview" aria-labelledby="preview-h" hidden>
+      <p><a href="#board" id="preview-back">← Wróć do zadania</a></p>
+      <h1 id="preview-h" tabindex="-1">Podgląd zmiany</h1>
+      <div class="browserbar" id="preview-url"></div>
+      <div class="wire">
+        <div class="img" role="img" aria-label="Zdjęcie produktu (symulacja)"></div>
+        <h2 id="preview-title"></h2>
+        <p class="mutedtext" id="preview-text"></p>
+      </div>
+      <p class="mutedtext">To jest uśpiony podgląd strony wygenerowany przez agenta. Zatwierdzenie odbywa się na zadaniu.</p>
+      <p><button type="button" class="primary" id="preview-back-btn">Wróć i zdecyduj</button></p>
+    </section>
+
+    <section id="screen-recover" aria-labelledby="recover-h" hidden>
+      <h1 id="recover-h" tabindex="-1">Nie ma takiego ekranu</h1>
+      <p>Adres nie wskazuje na żaden stan prototypu. <a href="#board">Wróć do tablicy</a>.</p>
+    </section>
+  </div>
+
+  <div id="drawer-root" hidden>
+    <div id="drawer-backdrop"></div>
+    <aside id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header>
+        <div class="meta">
+          <span class="chip solid" id="d-status"></span>
+          <span class="ref" id="d-ref"></span>
+          <button type="button" class="close" id="d-close" aria-label="Zamknij zadanie">✕</button>
+        </div>
+        <h2 id="drawer-title" tabindex="-1"></h2>
+        <div class="mutedtext" id="d-sub" style="font-size:12px"></div>
+      </header>
+      <div class="body">
+        <div id="d-statusbar"></div>
+
+        <div class="section">
+          <div class="props">
+            <div>
+              <span class="label">Status</span>
+              <select id="d-status-select" aria-label="Status zadania"></select>
+            </div>
+            <div class="assign-wrap">
+              <span class="label">Przypisane do</span>
+              <button type="button" class="assign-btn" id="d-assign" aria-haspopup="dialog" aria-expanded="false"></button>
+              <div class="popover" id="picker" role="dialog" aria-label="Przypisz zadanie" hidden></div>
+            </div>
+            <div>
+              <span class="label">Projekt</span>
+              <span>Strona WWW</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section desc" id="d-desc"></div>
+
+        <div class="section" id="d-change-section" hidden>
+          <h3>Zmiana na stronie</h3>
+          <div class="change" id="d-change"></div>
+        </div>
+
+        <div class="section" id="d-subtasks-section" hidden>
+          <h3>Zadania następcze</h3>
+          <ul class="subtasks" id="d-subtasks"></ul>
+        </div>
+
+        <div class="section">
+          <h3>Oś czasu</h3>
+          <ol class="timeline" id="d-timeline"></ol>
+        </div>
+
+        <div class="section comments">
+          <h3>Komentarze</h3>
+          <div id="d-comments"></div>
+          <form id="comment-form" novalidate>
+            <label for="comment-text" class="sr">Nowy komentarz</label>
+            <textarea id="comment-text" placeholder="Napisz komentarz…" aria-describedby="comment-err"></textarea>
+            <div id="comment-err" class="error" hidden></div>
+            <div style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+              <button type="submit">Skomentuj</button><span class="mutedtext" style="font-size:11px">⌘⏎ wysyła</span>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <details id="d-tech">
+            <summary>Szczegóły techniczne</summary>
+            <div class="kv" id="d-tech-kv"></div>
+          </details>
+        </div>
+      </div>
+      <footer>
+        <span>Zmiany zapisują się automatycznie</span>
+        <button type="button" id="d-close-2">Zamknij</button>
+      </footer>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // ---------- Fixtures (fictitious) ----------
+  const PEOPLE = [
+    { id: 'p1', name: 'Anna Nowak', initials: 'AN' },
+    { id: 'p2', name: 'Marek Wiśniewski', initials: 'MW' },
+    { id: 'p3', name: 'Ty (Jan Kowalski)', initials: 'JK' },
+  ];
+  const AGENTS = [
+    { id: 'a1', name: 'Software Engineer', initials: 'SE', desc: 'Analizuje, planuje i otwiera zmianę strony do Twojego zatwierdzenia.' },
+  ];
+  const COLUMNS = [
+    { id: 'backlog', name: 'Backlog' },
+    { id: 'in-progress', name: 'W toku' },
+    { id: 'in-review', name: 'Do sprawdzenia' },
+    { id: 'done', name: 'Zrobione' },
+  ];
+  function initial() {
+    return {
+      tasks: [
+        { ref: 'WWW-12', title: 'Opublikuj stronę produktu ZWM-1500', col: 'in-review', assignee: 'p3', agent: 'a1', run: 'complete',
+          created: '16 wrz', desc: ['Nowy zbiornik ZWM-1500 jest już w katalogu. Potrzebna strona produktu na www.', ['Dane techniczne z karty produktu', 'Zdjęcia z katalogu', 'Wersja polska i angielska']],
+          change: { pr: 10, files: 3, add: 212, del: 4, checks: 'green', preview: 'stal-zbiorniki.example/produkty/zwm-1500', previewTitle: 'Zbiornik ZWM-1500', previewText: 'Pojemność 1500 l · stal nierdzewna 1.4301 · atest PZH' },
+          timeline: [['Utworzone przez Jana Kowalskiego', '09:12'], ['Przekazane do Software Engineer', '09:14'], ['Plan: mała zmiana, bez projektu', '09:21'], ['Zmiana gotowa do zatwierdzenia', '09:58']],
+          comments: [['Anna Nowak', '09:30', 'Zdjęcia są już w katalogu, można brać.']],
+          subtasks: [], cost: '0,84 $', runId: 'run-7f2a' },
+        { ref: 'WWW-14', title: 'Popraw link do polityki prywatności w stopce', col: 'in-progress', assignee: 'p1', agent: 'a1', run: 'running', runMin: 12,
+          created: '18 wrz', desc: ['Link w stopce prowadzi do 404.', []],
+          timeline: [['Utworzone przez Annę Nowak', '10:02'], ['Przekazane do Software Engineer', '10:03'], ['Agent pracuje', '10:04']], comments: [], subtasks: [], cost: '0,31 $', runId: 'run-91c0' },
+        { ref: 'WWW-15', title: 'Dodaj cennik zbiorników do strony oferty', col: 'in-progress', assignee: 'p3', agent: 'a1', run: 'awaiting_decision',
+          created: '18 wrz', desc: ['Klienci pytają o ceny orientacyjne. Dodać tabelę cen na stronie oferty.', ['Ceny z katalogu, netto', 'Zastrzeżenie, że cena końcowa zależy od wyceny']],
+          plan: ['Nowa sekcja „Cennik orientacyjny” na stronie oferty', 'Tabela: model, pojemność, cena netto od', 'Zastrzeżenie prawne pod tabelą (treść do sprawdzenia przez Ciebie)'],
+          timeline: [['Utworzone przez Jana Kowalskiego', '11:40'], ['Przekazane do Software Engineer', '11:41'], ['Plan gotowy, czeka na decyzję', '11:55']], comments: [], subtasks: [], cost: '0,52 $', runId: 'run-3be1' },
+        { ref: 'WWW-16', title: 'Zaktualizuj produkty na stronie', col: 'backlog', assignee: 'p3', agent: 'a1', run: 'failed', failKind: 'config',
+          created: '19 wrz', desc: ['Na stronie brakuje trzech nowych modeli z katalogu.', []],
+          timeline: [['Utworzone przez Jana Kowalskiego', '08:15'], ['Przekazane do Software Engineer', '08:16'], ['Nie udało się uruchomić', '08:16']], comments: [], subtasks: [], cost: '0,00 $', runId: 'run-0a11' },
+        { ref: 'WWW-17', title: 'Dodaj galerię realizacji', col: 'backlog', assignee: 'p2', agent: null, run: null,
+          created: '19 wrz', desc: ['Zdjęcia z ostatnich montaży, sekcja „Realizacje” w menu.', []],
+          timeline: [['Utworzone przez Marka Wiśniewskiego', '09:02']], comments: [], subtasks: [], cost: null, runId: null },
+        { ref: 'WWW-18', title: 'Zamień zdjęcie główne na stronie startowej', col: 'backlog', assignee: 'p1', agent: 'a1', run: 'failed', failKind: 'agent', failReason: 'Nie znalazłem pliku hero-2026.jpg w katalogu zdjęć.',
+          created: '19 wrz', desc: ['Nowe zdjęcie hali z drona zamiast obecnego.', []],
+          timeline: [['Utworzone przez Annę Nowak', '09:30'], ['Przekazane do Software Engineer', '09:31'], ['Agent zakończył pracę z błędem', '09:38']], comments: [], subtasks: [], cost: '0,12 $', runId: 'run-c4d9' },
+        { ref: 'WWW-10', title: 'Nowe logo w nagłówku', col: 'done', assignee: 'p3', agent: 'a1', run: 'published',
+          created: '15 wrz', desc: ['Podmiana logo po rebrandingu.', []],
+          change: { pr: 8, files: 2, add: 14, del: 14, checks: 'green', merged: true, preview: 'stal-zbiorniki.example/', previewTitle: 'Stal-Zbiorniki', previewText: 'Strona startowa z nowym logo' },
+          timeline: [['Utworzone przez Jana Kowalskiego', '15 wrz'], ['Przekazane do Software Engineer', '15 wrz'], ['Zatwierdzone i opublikowane', '16 wrz']], comments: [], subtasks: [], cost: '0,40 $', runId: 'run-11aa' },
+      ],
+      noPerm: false,
+      factoryDown: false,
+    };
+  }
+  let S = initial();
+  let openRef = null;
+  let timers = [];
+
+  const $ = (id) => document.getElementById(id);
+  const live = (msg) => { $('live').textContent = ''; setTimeout(() => { $('live').textContent = msg; }, 30); };
+  const el = (tag, attrs, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') n.className = v; else if (k === 'text') n.textContent = v; else if (k.startsWith('on')) n.addEventListener(k.slice(2), v); else if (v !== null && v !== undefined) n.setAttribute(k, v);
+    }
+    for (const k of kids) if (k != null) n.append(k);
+    return n;
+  };
+  const person = (id) => PEOPLE.find(p => p.id === id);
+  const agent = (id) => AGENTS.find(a => a.id === id);
+  const task = (ref) => S.tasks.find(t => t.ref === ref);
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
+  // ---------- Run-state copy (one place) ----------
+  const RUN = {
+    starting: { chip: 'Startuje', head: 'Software Engineer zaczyna pracę', text: 'Za chwilę zobaczysz tu postęp. Możesz zamknąć zadanie, wrócimy do Ciebie.', cls: 'info' },
+    running: { chip: 'Pracuje', head: (t) => `Software Engineer pracuje · ${t.runMin || 1} min`, text: 'Gdy zmiana będzie gotowa, dostaniesz tu podgląd do zatwierdzenia.', cls: 'info' },
+    awaiting_decision: { chip: 'Czeka na decyzję', head: 'Software Engineer proponuje plan. Twoja decyzja', text: 'Przeczytaj plan i zdecyduj. Bez decyzji agent nie zaczyna budować.', cls: '' },
+    complete: { chip: 'Do zatwierdzenia', head: 'Zmiana gotowa. Sprawdź podgląd i zatwierdź', text: 'Po zatwierdzeniu strona zostanie opublikowana. Możesz też poprosić o poprawki.', cls: '' },
+    published: { chip: 'Opublikowane', head: 'Opublikowane na stronie', text: 'Zmiana jest już na żywo. Zadanie można zamknąć.', cls: 'info' },
+    failed_config: { chip: 'Nie udało się', head: 'Fabryka nie jest gotowa', text: 'Brakuje połączenia z GitHubem, więc agent nie mógł zacząć. To ustawienie administratora, nie Twoje. Zadanie zostaje w backlogu.', cls: 'warn' },
+    failed_agent: { chip: 'Nie udało się', head: 'Software Engineer nie dał rady', text: (t) => `Powód: „${t.failReason}”`, cls: 'warn' },
+    rejected: { chip: 'Odrzucone', head: 'Plan odrzucony', text: (t) => `Powód: „${t.failReason || 'brak'}”. Zadanie wróciło do backlogu; możesz je doprecyzować i zlecić ponownie.`, cls: 'info' },
+    none_agent: { chip: null, head: 'Nikt jeszcze nad tym nie pracuje', text: 'Możesz przekazać zadanie agentowi Software Engineer albo osobie z zespołu.', cls: 'info' },
+  };
+  function runKey(t) {
+    if (!t.agent && !t.run) return 'none_agent';
+    if (t.run === 'failed') return t.failKind === 'config' ? 'failed_config' : 'failed_agent';
+    return t.run || 'none_agent';
+  }
+  function chipFor(t) {
+    const k = runKey(t); const r = RUN[k];
+    if (!r || !r.chip) return null;
+    const label = k === 'running' ? `${r.chip} · ${t.runMin || 1} min` : r.chip;
+    return el('span', { class: `chip state-${t.run}` }, el('span', { class: 'dot', 'aria-hidden': 'true' }), label);
+  }
+  const txt = (v, t) => typeof v === 'function' ? v(t) : v;
+
+  // ---------- Board ----------
+  function renderBoard() {
+    const cols = $('columns'); cols.textContent = '';
+    for (const c of COLUMNS) {
+      const list = S.tasks.filter(t => t.col === c.id);
+      const col = el('div', { class: 'col', role: 'group', 'aria-label': c.name });
+      col.append(el('h3', {}, el('span', { text: c.name }), el('span', { text: String(list.length) })));
+      if (!list.length) col.append(el('div', { class: 'empty', text: 'Brak zadań' }));
+      for (const t of list) {
+        const a = person(t.assignee); const g = t.agent ? agent(t.agent) : null;
+        const who = el('span', { class: 'who' });
+        if (a) who.append(el('span', { class: 'avatar', title: a.name, text: a.initials }));
+        if (g) who.append(el('span', { class: 'avatar agent', title: g.name, text: g.initials }));
+        const row = el('div', { class: 'row' }); const ch = chipFor(t); if (ch) row.append(ch); row.append(who);
+        col.append(el('a', { class: 'card', href: `#task/${t.ref}`, 'aria-label': `${t.ref} ${t.title}` },
+          el('div', { class: 'ref', text: t.ref }), el('div', { class: 'title', text: t.title }), row));
+      }
+      cols.append(col);
+    }
+    $('board-count').textContent = `${S.tasks.length} zadań · agent pracuje nad ${S.tasks.filter(t => ['starting', 'running'].includes(t.run)).length}`;
+  }
+
+  // ---------- Drawer ----------
+  function statusBar(t) {
+    const k = runKey(t); const r = RUN[k];
+    const bar = el('div', { class: `statusbar ${r.cls}`, role: 'region', 'aria-label': 'Stan zadania' });
+    bar.append(el('div', {}, el('div', { class: 'head', text: txt(r.head, t) }), el('div', { class: 'text', text: txt(r.text, t) })));
+    const actions = el('div', { class: 'actions' });
+    const canDelegate = !S.noPerm;
+    switch (k) {
+      case 'none_agent':
+        if (canDelegate) actions.append(el('button', { class: 'primary', type: 'button', onclick: () => delegate(t) , text: 'Przekaż agentowi Software Engineer' }));
+        else bar.querySelector('.text').textContent = 'Przekazanie agentowi wymaga uprawnienia do delegowania. Poproś administratora albo osobę z uprawnieniem.';
+        break;
+      case 'starting': case 'running':
+        actions.append(el('button', { type: 'button', onclick: () => removeAgent(t), text: 'Przejmij zadanie' }));
+        break;
+      case 'awaiting_decision':
+        bar.append(el('div', { class: 'plan' }, el('strong', { text: 'Plan agenta' }), el('ul', {}, ...t.plan.map(p => el('li', { text: p })))));
+        actions.append(el('button', { class: 'primary', type: 'button', onclick: () => approvePlan(t), text: 'Zatwierdź plan' }));
+        actions.append(el('button', { type: 'button', onclick: () => rejectPlan(t), text: 'Odrzuć' }));
+        actions.append(el('a', { href: '#task/' + t.ref, class: 'quiet', onclick: (e) => { e.preventDefault(); live('Caseload orkiestratora jest poza zakresem prototypu.'); }, text: 'Szczegóły w Caseload' }));
+        break;
+      case 'complete':
+        actions.append(el('a', { class: 'assign-btn', href: `#preview/${t.ref}`, text: 'Podgląd strony' }));
+        actions.append(el('button', { class: 'primary', type: 'button', onclick: () => approveChange(t), text: 'Zatwierdź i opublikuj' }));
+        actions.append(el('button', { type: 'button', onclick: () => requestChanges(t), text: 'Poproś o poprawki' }));
+        break;
+      case 'published':
+        actions.append(el('a', { class: 'assign-btn', href: `#preview/${t.ref}`, text: 'Zobacz stronę' }));
+        break;
+      case 'failed_config':
+        actions.append(el('button', { type: 'button', onclick: () => removeAgent(t), text: 'Przejmij zadanie' }));
+        break;
+      case 'failed_agent': case 'rejected':
+        if (canDelegate) actions.append(el('button', { class: 'primary', type: 'button', onclick: () => delegate(t), text: 'Spróbuj ponownie' }));
+        actions.append(el('button', { type: 'button', onclick: () => removeAgent(t), text: 'Przejmij zadanie' }));
+        break;
+    }
+    bar.append(actions);
+    return bar;
+  }
+
+  function renderDrawer() {
+    const t = task(openRef); if (!t) return;
+    const col = COLUMNS.find(c => c.id === t.col);
+    $('d-status').textContent = col.name; $('d-ref').textContent = t.ref; $('drawer-title').textContent = t.title;
+    $('d-sub').textContent = `Strona WWW · utworzone ${t.created}`;
+    const sb = $('d-statusbar'); sb.textContent = ''; sb.append(statusBar(t));
+    // status select
+    const sel = $('d-status-select'); sel.textContent = '';
+    for (const c of COLUMNS) sel.append(el('option', { value: c.id, text: c.name }));
+    sel.value = t.col;
+    const processOwned = ['starting', 'running', 'awaiting_decision', 'complete'].includes(t.run);
+    sel.disabled = processOwned; sel.title = processOwned ? 'Statusem zarządza agent, dopóki pracuje' : '';
+    sel.onchange = () => { t.col = sel.value; live(`Status zmieniony na ${COLUMNS.find(c => c.id === t.col).name}`); renderAll(); };
+    // assign button
+    const ab = $('d-assign'); ab.textContent = '';
+    const a = person(t.assignee); const g = t.agent ? agent(t.agent) : null;
+    if (a) ab.append(el('span', { class: 'avatar', text: a.initials }), el('span', { text: a.name }));
+    if (g) ab.append(el('span', { class: 'avatar agent', text: g.initials }), el('span', { text: g.name }));
+    if (!a && !g) ab.append(el('span', { class: 'mutedtext', text: 'Nieprzypisane' }));
+    ab.onclick = () => togglePicker(t);
+    // description
+    const d = $('d-desc'); d.textContent = ''; d.append(el('p', { text: t.desc[0] }));
+    if (t.desc[1] && t.desc[1].length) d.append(el('ul', {}, ...t.desc[1].map(x => el('li', { text: x }))));
+    // change
+    const cs = $('d-change-section'); const c = $('d-change'); c.textContent = '';
+    if (t.change && (t.run === 'complete' || t.run === 'published')) {
+      cs.hidden = false;
+      c.append(el('div', {}, el('span', { class: 'k', text: 'Podgląd: ' }), el('a', { href: `#preview/${t.ref}`, text: t.change.preview })));
+      c.append(el('div', {}, el('span', { class: 'k', text: 'Sprawdzenie automatyczne: ' }), el('span', { class: 'chip', text: t.change.checks === 'green' ? 'wszystko przeszło' : 'w toku' })));
+      c.append(el('div', {}, el('span', { class: 'k', text: 'Zakres: ' }), el('span', { text: `${t.change.files} pliki · +${t.change.add} −${t.change.del}` })));
+      if (t.change.merged) c.append(el('div', {}, el('span', { class: 'chip solid', text: 'Opublikowane' })));
+    } else cs.hidden = true;
+    // subtasks
+    const ss = $('d-subtasks-section'); const sl = $('d-subtasks'); sl.textContent = '';
+    if (t.subtasks.length) { ss.hidden = false; for (const s of t.subtasks) sl.append(el('li', { text: s })); } else ss.hidden = true;
+    // timeline
+    const tl = $('d-timeline'); tl.textContent = '';
+    for (const [what, when] of t.timeline) tl.append(el('li', {}, el('span', { text: what }), el('time', { text: when })));
+    // comments
+    const cm = $('d-comments'); cm.textContent = '';
+    if (!t.comments.length) cm.append(el('div', { class: 'mutedtext', text: 'Brak komentarzy.' }));
+    for (const [who, when, body] of t.comments) cm.append(el('div', { class: 'c' }, el('b', { text: who }), el('time', { text: when }), el('div', { text: body })));
+    // tech
+    const kv = $('d-tech-kv'); kv.textContent = '';
+    const rows = [];
+    if (t.change) rows.push(['Pull request', `#${t.change.pr} (GitHub)`]);
+    if (t.runId) rows.push(['Uruchomienie', t.runId]);
+    if (t.cost) rows.push(['Koszt dotychczas', t.cost]);
+    if (!rows.length) rows.push(['Uruchomienie', 'brak']);
+    for (const [k, v] of rows) kv.append(el('span', { class: 'k mutedtext', text: k }), el('span', { text: v }));
+  }
+
+  // ---------- Picker ----------
+  let pickerState = null;
+  function togglePicker(t, force) {
+    const p = $('picker'); const open = force !== undefined ? force : p.hidden;
+    if (!open) { p.hidden = true; $('d-assign').setAttribute('aria-expanded', 'false'); $('d-assign').focus(); return; }
+    pickerState = { assignee: t.assignee, agent: t.agent };
+    renderPicker(t); p.hidden = false; $('d-assign').setAttribute('aria-expanded', 'true');
+    p.querySelector('input,button').focus();
+  }
+  function renderPicker(t) {
+    const p = $('picker'); p.textContent = '';
+    const live_ = ['starting', 'running', 'awaiting_decision', 'complete'].includes(t.run);
+    const q = el('input', { type: 'search', placeholder: 'Szukaj osób i agentów', 'aria-label': 'Szukaj osób i agentów' });
+    p.append(q);
+    const people = el('div', { class: 'group' }, el('h4', { text: 'Osoby' }));
+    const agents = el('div', { class: 'group' }, el('h4', { text: 'Agenci' }));
+    const draw = () => {
+      const f = q.value.trim().toLowerCase();
+      people.querySelectorAll('label').forEach(n => n.remove()); agents.querySelectorAll('label,.note').forEach(n => n.remove());
+      for (const pp of PEOPLE) if (!f || pp.name.toLowerCase().includes(f)) {
+        const r = el('input', { type: 'radio', name: 'person', value: pp.id });
+        r.checked = pickerState.assignee === pp.id; r.onchange = () => { pickerState.assignee = pp.id; };
+        people.append(el('label', { class: 'opt' }, r, el('span', {}, el('span', { class: 'avatar', text: pp.initials }), ' ', pp.name)));
+      }
+      if (S.noPerm) { agents.append(el('div', { class: 'note', text: 'Przekazanie agentowi wymaga uprawnienia do delegowania. Poproś administratora.' })); return; }
+      if (live_) { agents.append(el('div', { class: 'note', text: t.run === 'awaiting_decision' ? 'Agent czeka na Twoją decyzję o planie. Zdecyduj w pasku stanu albo zdejmij agenta.' : 'Agent pracuje nad zadaniem. Można go tylko zdjąć.' })); }
+      for (const ag of AGENTS) if (!f || ag.name.toLowerCase().includes(f)) {
+        const c = el('input', { type: 'checkbox', name: 'agent', value: ag.id });
+        c.checked = pickerState.agent === ag.id; c.disabled = live_ && !c.checked; c.onchange = () => { pickerState.agent = c.checked ? ag.id : null; };
+        agents.append(el('label', { class: 'opt' }, c, el('span', {}, el('span', { class: 'avatar agent', text: ag.initials }), ' ', ag.name, el('span', { class: 'desc', text: ag.desc }))));
+      }
+    };
+    q.oninput = draw; draw();
+    p.append(people, agents);
+    const err = el('div', { class: 'error', hidden: '' });
+    const foot = el('div', { class: 'foot' }, el('span', { class: 'hint', text: 'Osoba jest odpowiedzialna, agent wykonuje. Enter przypisuje, Esc zamyka' }),
+      el('span', {}, el('button', { type: 'button', text: 'Anuluj', onclick: () => togglePicker(t, false) }), ' ',
+        el('button', { type: 'button', class: 'primary', text: 'Przypisz', onclick: () => {
+          if (pickerState.agent && !pickerState.assignee) { err.hidden = false; err.textContent = 'Wybierz też osobę odpowiedzialną. Agent nie może być jedynym właścicielem zadania.'; return; }
+          const changedAgent = pickerState.agent !== t.agent;
+          t.assignee = pickerState.assignee;
+          if (changedAgent) { if (pickerState.agent) { t.agent = pickerState.agent; startRun(t); } else { t.agent = null; t.run = null; t.timeline.push(['Agent zdjęty z zadania', 'teraz']); } }
+          togglePicker(t, false); live('Przypisanie zapisane'); renderAll();
+        } })));
+    p.append(err, foot);
+    p.onkeydown = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); togglePicker(t, false); } if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); foot.querySelector('.primary').click(); } };
+  }
+
+  // ---------- Actions ----------
+  function startRun(t) {
+    if (S.factoryDown) { t.run = 'failed'; t.failKind = 'config'; t.col = 'backlog'; t.timeline.push(['Przekazane do Software Engineer', 'teraz'], ['Nie udało się uruchomić', 'teraz']); t.cost = '0,00 $'; t.runId = 'run-' + Math.random().toString(16).slice(2, 6); return; }
+    t.run = 'starting'; t.failKind = null; t.failReason = null; t.col = 'in-progress'; t.runMin = 0; t.runId = 'run-' + Math.random().toString(16).slice(2, 6); t.cost = '0,00 $';
+    t.timeline.push(['Przekazane do Software Engineer', 'teraz']);
+    later(() => { if (t.run === 'starting') { t.run = 'running'; t.runMin = 1; t.timeline.push(['Agent pracuje', 'teraz']); renderAll(); live('Software Engineer pracuje'); } }, 1500);
+  }
+  function delegate(t) { t.agent = 'a1'; startRun(t); live('Przekazane agentowi Software Engineer'); renderAll(); }
+  function removeAgent(t) { t.agent = null; t.run = null; t.col = 'backlog'; t.timeline.push(['Zadanie przejęte przez ' + (person(t.assignee) || {}).name, 'teraz']); live('Zadanie przejęte, agent zdjęty'); renderAll(); }
+  function approvePlan(t) { t.run = 'running'; t.runMin = 1; t.timeline.push(['Plan zatwierdzony', 'teraz'], ['Agent buduje zmianę', 'teraz']); live('Plan zatwierdzony, agent buduje'); renderAll();
+    later(() => { if (t.run === 'running') { t.run = 'complete'; t.col = 'in-review'; t.change = { pr: 11, files: 2, add: 48, del: 0, checks: 'green', preview: 'stal-zbiorniki.example/oferta', previewTitle: 'Oferta i cennik orientacyjny', previewText: 'Tabela cen netto „od” dla modeli ZWM' }; t.timeline.push(['Zmiana gotowa do zatwierdzenia', 'teraz']); renderAll(); live('Zmiana gotowa do zatwierdzenia'); } }, 2500); }
+  function rejectPlan(t) {
+    const reason = promptReason(t, 'Dlaczego odrzucasz plan? Agent dostanie ten powód.', (r) => { t.run = 'rejected'; t.failReason = r; t.col = 'backlog'; t.timeline.push(['Plan odrzucony: ' + r, 'teraz']); live('Plan odrzucony'); renderAll(); });
+  }
+  function approveChange(t) { t.run = 'published'; t.col = 'done'; t.change.merged = true; t.timeline.push(['Zatwierdzone i opublikowane', 'teraz']); live('Opublikowane na stronie'); renderAll(); }
+  function requestChanges(t) {
+    promptReason(t, 'Co ma się zmienić? Agent poprawi to w tej samej zmianie.', (r) => { t.run = 'running'; t.runMin = 1; t.col = 'in-progress'; t.comments.push(['Ty', 'teraz', r]); t.timeline.push(['Poproszono o poprawki', 'teraz']); live('Agent poprawia'); renderAll();
+      later(() => { if (t.run === 'running') { t.run = 'complete'; t.col = 'in-review'; t.change.add += 6; t.timeline.push(['Poprawki gotowe do zatwierdzenia', 'teraz']); renderAll(); live('Poprawki gotowe'); } }, 2500); });
+  }
+  function promptReason(t, label, onOk) {
+    const sb = $('d-statusbar'); sb.querySelector('.reasonbox')?.remove();
+    const ta = el('textarea', { 'aria-label': label });
+    const err = el('div', { class: 'error', hidden: '' });
+    const box = el('div', { class: 'statusbar reasonbox' }, el('div', {}, el('div', { class: 'head', text: label }), ta, err),
+      el('div', { class: 'actions' }, el('button', { type: 'button', class: 'primary', text: 'Wyślij', onclick: () => { const v = ta.value.trim(); if (!v) { err.hidden = false; err.textContent = 'Wpisz powód, agent musi wiedzieć co poprawić.'; ta.focus(); return; } onOk(v); } }),
+        el('button', { type: 'button', text: 'Anuluj', onclick: () => { box.remove(); } })));
+    sb.append(box); ta.focus();
+  }
+
+  // comment form
+  $('comment-form').addEventListener('submit', (e) => {
+    e.preventDefault(); const t = task(openRef); const ta = $('comment-text'); const err = $('comment-err');
+    const v = ta.value.trim(); if (!v) { err.hidden = false; err.textContent = 'Komentarz nie może być pusty.'; ta.focus(); return; }
+    err.hidden = true; t.comments.push(['Ty', 'teraz', v]); ta.value = ''; live('Komentarz dodany'); renderDrawer();
+  });
+  $('comment-text').addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); $('comment-form').requestSubmit(); } });
+
+  // ---------- Routing ----------
+  function show(id) { document.querySelectorAll('#screens > section').forEach(s => { s.hidden = s.id !== id; }); }
+  let lastFocus = null;
+  function route() {
+    const h = location.hash.replace(/^#/, '') || 'board';
+    const [screen, ref] = h.split('/');
+    $('drawer-root').hidden = true; $('picker').hidden = true;
+    if (screen === 'board' && !ref) { openRef = null; show('screen-board'); $('board-h').focus(); return; }
+    if (screen === 'task' && task(ref)) { openRef = ref; show('screen-board'); $('drawer-root').hidden = false; renderDrawer(); $('drawer-title').focus(); return; }
+    if (screen === 'preview' && task(ref) && task(ref).change) {
+      const t = task(ref); openRef = null; show('screen-preview');
+      $('preview-url').textContent = 'https://' + t.change.preview + '  (podgląd uśpiony, symulacja)';
+      $('preview-title').textContent = t.change.previewTitle; $('preview-text').textContent = t.change.previewText;
+      $('preview-back').href = `#task/${ref}`; $('preview-back-btn').onclick = () => { location.hash = `#task/${ref}`; };
+      $('preview-h').focus(); return;
+    }
+    openRef = null; show('screen-recover'); $('recover-h').focus();
+  }
+  window.addEventListener('hashchange', route);
+  $('d-close').onclick = $('d-close-2').onclick = () => { location.hash = '#board'; };
+  $('drawer-backdrop').onclick = () => { location.hash = '#board'; };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('drawer-root').hidden && $('picker').hidden) location.hash = '#board'; });
+
+  function renderAll() { renderBoard(); if (openRef) renderDrawer(); }
+
+  // ---------- Tools ----------
+  $('tool-narrow').onchange = (e) => { document.body.classList.toggle('narrow', e.target.checked); };
+  $('tool-noperm').onchange = (e) => { S.noPerm = e.target.checked; renderAll(); live(S.noPerm ? 'Symulacja: brak uprawnienia do delegowania' : 'Symulacja: uprawnienie do delegowania przywrócone'); };
+  $('tool-factory-down').onchange = (e) => { S.factoryDown = e.target.checked; live(S.factoryDown ? 'Symulacja: fabryka niegotowa' : 'Symulacja: fabryka gotowa'); };
+  $('tool-reset').onclick = () => { clearTimers(); S = initial(); $('tool-noperm').checked = false; $('tool-factory-down').checked = false; $('comment-text').value = ''; $('comment-err').hidden = true; location.hash = '#board'; renderAll(); live('Symulacja zresetowana'); };
+
+  renderAll(); route();
+})();
+</script>
+</body>
+</html>

@@ -39,6 +39,21 @@ Ports clash with another Open Mercato stack? Set `POSTGRES_PORT`, `REDIS_PORT`,
 Useful pages: **Agent Orchestrator → Playground** (`/backend/playground`), **Caseload**
 (`/backend/caseload`), **Processes** (`/backend/processes`), **Workflows**.
 
+## Reset to the demo state
+
+`corepack yarn demo:reset` wipes the database in `.env` `DATABASE_URL` and seeds the
+[SPEC-004](docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md) demo: `init --reinstall
+--no-examples`, then `demo_fixtures seed-stal-zbiorniki`, `task_delegation seed-demo` and
+`factory ensure-process`. Plain `yarn reinstall` is not the same: it also seeds the core
+example catalog (sneakers, haircuts).
+
+- Stop `yarn dev` first (its queue worker writes during the wipe). Kill leftover Next and
+  worker processes too: `pkill -f "$PWD/"`.
+- Restart `yarn dev` afterwards. It rotates the MCP key and restarts the OpenCode sidecar. If
+  that fails: `docker compose --profile agents up -d opencode`.
+- Log in again (`superadmin@acme.com` / `secret`). Tenant and org ids change.
+- GitHub is untouched: close leftover Factory PRs and branches on the landing repo.
+
 ## Connect an MCP client
 
 The `task_tools` module (SPEC-007) lets Claude

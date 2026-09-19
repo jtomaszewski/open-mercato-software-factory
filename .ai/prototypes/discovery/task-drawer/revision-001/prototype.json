@@ -1,0 +1,99 @@
+{
+  "format": "discovery-prototype-v1",
+  "skill": "om-mockup-prototype",
+  "slug": "task-drawer",
+  "revision": 1,
+  "revisionPath": ".ai/prototypes/discovery/task-drawer/revision-001",
+  "previousRevision": null,
+  "brief": "docs/specs/SPEC-001-2026-09-18-agentic-software-factory.md (no .ai/specs/product-brief.md; SPEC-001 + SPEC-002 used by user decision)",
+  "flow": "Business owner hands a website task to the Software Engineer agent, decides on its plan, previews and publishes the change, recovers from failures",
+  "panelReport": null,
+  "verification": "not-run",
+  "verificationNote": "Static review passed. Browser walk performed with Playwright MCP over a local 127.0.0.1 http.server because no .ai/browsers descriptor exists and both providers refuse file://; see README.md.",
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "fa33867e7e9798a389c13fc652cd9e9bc491e6a60e1137b56cc11cf480d9f801"
+    },
+    {
+      "path": "README.md",
+      "sha256": "5050ab2f6e17d0df52aeff7e9c16a59b6ef34e85f646d05b0b3502dbee2f2317"
+    },
+    {
+      "path": "evidence/01-board.png",
+      "sha256": "7673f626ae7f0d3d632a71b7f2f3dba64416db2098446f7faa88df9821183a92"
+    },
+    {
+      "path": "evidence/02-task-complete.png",
+      "sha256": "f72d48c571dda60e50d99f6460a5c1fc52f59669ae63a61308f2d3dd0059f970"
+    },
+    {
+      "path": "evidence/03-preview.png",
+      "sha256": "bfb310c98d61539a2ca0675eabbf9a806929ec37228b6270c9ac754a93816871"
+    },
+    {
+      "path": "evidence/04-published.png",
+      "sha256": "be87b37713f88ac1cc8d1f9ff94f6287c9838670a52ded4cfd2ab475bbfbc328"
+    },
+    {
+      "path": "evidence/05-awaiting-decision.png",
+      "sha256": "b0aa703dce2c17c9bc978516b11c07620f968f830420466c46590a0dcf2c72e3"
+    },
+    {
+      "path": "evidence/06-reject-validation.png",
+      "sha256": "8085fc2440c6ba94c79c4dbf5298324c18194c076107b7616d5a4ce654de6279"
+    },
+    {
+      "path": "evidence/07-rejected.png",
+      "sha256": "609795680755f170bb040983f821ab4992929d4aab951650732fd4ed49c635c3"
+    },
+    {
+      "path": "evidence/08-running.png",
+      "sha256": "c001146271d92fc9912b495b91483c3bf8f75e09c977d424bfa52f8b843f2540"
+    },
+    {
+      "path": "evidence/09-no-agent.png",
+      "sha256": "bf2a7d43809e946ff101d0adc6e23f075b322a56431901c17cb180f996518338"
+    },
+    {
+      "path": "evidence/10-picker.png",
+      "sha256": "b330390172563ff633c5ea399810fe3d24b989ce0e644c798047541c228921ee"
+    },
+    {
+      "path": "evidence/11-starting.png",
+      "sha256": "9c3f92cfe3d275839933cb90248f1a043aafdf64fc12bc3abb7524a2f6e45334"
+    },
+    {
+      "path": "evidence/12-picker-locked.png",
+      "sha256": "c9d99b3db122a2176d7b2eaf554f6da65f03e3968e90dc89d7f5a72599a7287c"
+    },
+    {
+      "path": "evidence/13-no-permission-comment-error.png",
+      "sha256": "8898a3b3c0ab7a9aa41db3f77c184c10df5e6446aed4330856b182c34adb737e"
+    },
+    {
+      "path": "evidence/14-factory-not-ready.png",
+      "sha256": "b6203b4d5458938fa3413c66404094f06106dc8dc8d1c8365a199f21aeebbf5b"
+    },
+    {
+      "path": "evidence/15-unknown-route.png",
+      "sha256": "fd6f0ff9aa251f9eb9fdd311229adde8c6ea13a10c25109aa54bd2aa327dbe91"
+    },
+    {
+      "path": "evidence/16-mobile-board.png",
+      "sha256": "bd7fdb3b5ba75ae10ee201644c56d6898c11f9b4e69eba3cb98b97499a884b83"
+    },
+    {
+      "path": "evidence/17-mobile-task.png",
+      "sha256": "c0844c03bac38f6fbde9e18c7e1553f1e39124cb21d384b809a4e430fa477074"
+    },
+    {
+      "path": "evidence/18-mobile-focus.png",
+      "sha256": "05ef3f63784c4c09841e14ac729f65e034631bed4d6f45a96c85ed91708ab4aa"
+    },
+    {
+      "path": "evidence/19-agent-failed.png",
+      "sha256": "ef22f1a7f408343b5f3a6e26d35ee3a38dffc483711446d5ce688560bf42dda7"
+    }
+  ]
+}
