@@ -9,8 +9,8 @@
   "task_delegation.assign.title": "Przypisane do",
   "task_delegation.assign.unassigned": "Nieprzypisane",
   "task_delegation.assign.search": "Szukaj osób i agentów",
-  "task_delegation.assign.people": "Osoby",
-  "task_delegation.assign.agents": "Agenci",
+  "task_delegation.assign.people": "Osoba odpowiedzialna",
+  "task_delegation.assign.agents": "Agent wykonujący",
   "task_delegation.assign.apply": "Przypisz",
   "task_delegation.assign.noMatch": "Nic nie pasuje do wyszukiwania.",
   "task_delegation.assign.noDelegateFeature": "Delegowanie do agenta wymaga uprawnienia do delegowania.",
@@ -19,7 +19,7 @@
   "task_delegation.assign.lockedDecision": "Zadanie czeka na decyzję o wielkości pracy w Caseloadzie.",
   "task_delegation.assign.caseload": "Otwórz Caseload",
   "task_delegation.assign.reload": "Odśwież zadanie",
-  "task_delegation.assign.hint": "Spacja zaznacza, Enter przypisuje, Esc zamyka",
+  "task_delegation.assign.hint": "Enter wybiera; na zaznaczonej pozycji zapisuje. Esc zamyka.",
   "task_delegation.errors.people": "Nie udało się wczytać osób.",
   "task_delegation.agents.softwareEngineer": "Software Engineer",
   "task_delegation.agents.softwareEngineer.description": "Analizuje, planuje i otwiera pull request",
@@ -105,5 +105,7 @@
   "task_delegation.runBar.technical.agent": "Agent",
   "task_delegation.runBar.technical.empty": "Brak szczegółów uruchomienia.",
   "task_delegation.errors.noAgentAvailable": "Żaden agent nie jest gotowy do przyjęcia zadania.",
-  "staff.time_tracking.board.summary.logged": ""
+  "staff.time_tracking.board.summary.logged": "",
+  "task_delegation.assign.startsAgent": "Zapisanie przypisania uruchomi wybranego agenta.",
+  "task_delegation.assign.applyAgent": "Przypisz i uruchom agenta"
 }

@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { Check } from 'lucide-react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { hasFeature } from '@open-mercato/shared/security/features'
 import { useBackendChrome } from '@open-mercato/ui/backend/BackendChromeProvider'
@@ -245,7 +246,7 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
         </div> : null}
         {optionsError ? <ErrorMessage label={t('task_delegation.errors.people', 'Could not load people.')} /> : null}
         {!optionsLoading && !optionsError ? <>
-          <h4 className="px-2 py-1 text-xs font-medium text-muted-foreground">{t('task_delegation.assign.people', 'People')}</h4>
+          <h4 className="px-2 py-1 text-xs font-medium text-muted-foreground">{t('task_delegation.assign.people', 'Responsible person')}</h4>
           {peopleOptions.length === 0 ? <p className="px-2 py-1 text-sm text-muted-foreground">{t('task_delegation.assign.noMatch', 'Nothing matches that search.')}</p> : null}
           {peopleOptions.map((option) => {
             const index = options.indexOf(option)
@@ -260,7 +261,7 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
           {!canDelegate
             ? <p className="px-2 py-2 text-sm text-muted-foreground">{t('task_delegation.assign.noDelegateFeature', 'Delegating to an agent needs the delegate permission.')}</p>
             : <>
-              <h4 className="px-2 py-1 text-xs font-medium text-muted-foreground">{t('task_delegation.assign.agents', 'Agents')}</h4>
+              <h4 className="px-2 py-1 text-xs font-medium text-muted-foreground">{t('task_delegation.assign.agents', 'Executing agent')}</h4>
               {activeDelegation ? <div className="space-y-2 px-2 py-1" data-testid="assigned-to-agent-locked">
                 <p className="text-sm">{activeDelegation.delegateName}</p>
                 <p className="text-xs text-muted-foreground">
@@ -292,6 +293,9 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
         </> : null}
       </div>
       <div className="space-y-2 border-t p-2">
+        {draft.agentUserId && !activeDelegation ? <p className="text-xs text-muted-foreground">
+          {t('task_delegation.assign.startsAgent', 'Saving this assignment starts the selected agent.')}
+        </p> : null}
         {draftAgentWithoutHuman
           ? <p className="text-xs text-muted-foreground" data-testid="assigned-to-accountable">
             {t('task_delegation.assign.accountable', 'You will be recorded as the accountable owner.')}
@@ -303,9 +307,13 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
             {t('task_delegation.assign.reload', 'Reload the task')}
           </Button>
           : null}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">{t('task_delegation.assign.hint', 'Space selects, Enter assigns, Esc closes')}</span>
-          <Button size="sm" disabled={saving || loading} onClick={() => void apply()}>{t('task_delegation.assign.apply', 'Assign')}</Button>
+        <div className="flex flex-col items-start gap-2">
+          <span className="text-xs text-muted-foreground">{t('task_delegation.assign.hint', 'Enter selects; on a selected option it saves. Esc closes.')}</span>
+          <Button size="sm" className="self-end" disabled={saving || loading} onClick={() => void apply()}>
+            {draft.agentUserId && !activeDelegation
+              ? t('task_delegation.assign.applyAgent', 'Assign and start agent')
+              : t('task_delegation.assign.apply', 'Assign')}
+          </Button>
         </div>
       </div>
     </PopoverContent>
@@ -326,6 +334,7 @@ function OptionRow({ option, selected, highlighted, onSelect }: { option: Option
       <span>{option.label}</span>
       {option.description ? <span className="text-xs text-muted-foreground">{option.description}</span> : null}
     </span>
+    {selected ? <Check className="ml-auto size-4 shrink-0" aria-hidden="true" data-testid="assigned-to-selected" /> : null}
   </button>
 }
 
