@@ -14,8 +14,10 @@ import type { ActivityContext } from '@open-mercato/core/modules/workflows/lib/a
 import { ProcessDefinition, ProcessInstance } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
 import type { Scope } from './catalogRecord'
 import { actingContext, readProductIdFromTask } from './board'
-import { GitHubApiError, GitHubClient, readGitHubConfigFromEnv } from './github'
-import { publishProductPage, type PublishResult } from './publishProduct'
+import { GitHubClient, readGitHubConfigFromEnv } from './github'
+import { loadCatalogRecordView } from './catalogRecord'
+import { deliverWithDeveloper, type DeliveredPr, type DeveloperTask } from './developer'
+import { readRunnerConfigFromEnv } from './runner'
 
 const logger = createLogger('factory').child({ component: 'deliver' })
 
@@ -39,8 +41,8 @@ export const DELIVER_GRANTED_FEATURES = ['task_delegation.view', 'task_delegatio
  */
 const deliverProduct = defineWorkflow({
   workflowId: DELIVER_WORKFLOW_ID,
-  workflowName: 'Factory: deliver product page',
-  description: 'Opens the website PR for the product linked from a delegated board task.',
+  workflowName: 'Factory: deliver website change',
+  description: 'The Developer agent changes the website for a delegated board task and opens the PR.',
   metadata: { category: 'Factory', tags: ['factory', 'catalog', 'website', 'tasks'], icon: 'globe' },
   steps: [
     { stepId: 'start', stepName: 'Task delegated', stepType: 'START', description: 'Input: { taskId, delegationId }.' },
@@ -70,8 +72,8 @@ const deliverProduct = defineWorkflow({
         activityType: 'EXECUTE_FUNCTION',
         config: { functionName: DELIVER_FUNCTION, args: {} },
         async: true,
-        // One engine attempt: the function retries transient GitHub errors itself and closes the
-        // task as failed on a final error (the 0.8.0 engine emits no workflows.instance.failed when
+        // One engine attempt: a retry would run the agent again, and the function already closes
+        // the task as failed on an error (the 0.8.0 engine emits no workflows.instance.failed when
         // an async activity fails, so nothing else would release the task).
         retryPolicy: { maxAttempts: 1, initialIntervalMs: 5000, backoffCoefficient: 2, maxIntervalMs: 30000 },
       }],
@@ -160,13 +162,26 @@ function record(value: unknown): Record<string, unknown> | null {
 
 export type DeliverDeps = {
   resolveContainer: () => Promise<AwilixContainer>
-  openPullRequest: (em: EntityManager, scope: Scope, productId: string) => Promise<PublishResult>
+  /** Produces the change for the task and opens (or reuses) its PR. */
+  produceChange: (em: EntityManager, scope: Scope, task: DeveloperTask, productId: string | null) => Promise<DeliveredPr>
+}
+
+/**
+ * The Developer agent in its disposable container (execution spec EX-P0), for any task; the
+ * linked product's catalog record, when there is one, goes into its prompt.
+ */
+export async function produceChangeWithAgent(em: EntityManager, scope: Scope, task: DeveloperTask, productId: string | null): Promise<DeliveredPr> {
+  const record = productId ? await loadCatalogRecordView(em, scope, productId) : null
+  return deliverWithDeveloper({
+    github: new GitHubClient(readGitHubConfigFromEnv()),
+    config: readRunnerConfigFromEnv(),
+    appUrl: process.env.APP_URL ?? null,
+  }, task, record)
 }
 
 const defaultDeps: DeliverDeps = {
   resolveContainer: () => createRequestContainer(),
-  openPullRequest: (em, scope, productId) =>
-    publishProductPage({ em, github: new GitHubClient(readGitHubConfigFromEnv()), appUrl: process.env.APP_URL ?? null }, scope, productId),
+  produceChange: produceChangeWithAgent,
 }
 
 /**
@@ -176,7 +191,7 @@ const defaultDeps: DeliverDeps = {
  * re-check that binding (SPEC-002 process authority). Step ids make each write replay-safe.
  */
 export function createDeliverFunction(deps: DeliverDeps = defaultDeps) {
-  return async (_args: Record<string, unknown>, context: ActivityContext): Promise<PublishResult> => {
+  return async (_args: Record<string, unknown>, context: ActivityContext): Promise<DeliveredPr> => {
     const instance = context.workflowInstance
     const tenantId = instance.tenantId ?? null
     const organizationId = instance.organizationId ?? null
@@ -202,16 +217,17 @@ export function createDeliverFunction(deps: DeliverDeps = defaultDeps) {
 
     await run('task_delegation.task.set_status', `${DELIVER_FUNCTION}:in_progress`, { status: 'in_progress' })
     try {
-      const tasks = await container.resolve<QueryEngine>('queryEngine').query<{ id: string; description: string | null }>('staff:staff_time_task', {
-        fields: ['id', 'description'], filters: { id: taskId }, page: { page: 1, pageSize: 1 }, ...scope,
+      const tasks = await container.resolve<QueryEngine>('queryEngine').query<{ id: string; title: string; description: string | null }>('staff:staff_time_task', {
+        fields: ['id', 'title', 'description'], filters: { id: taskId }, page: { page: 1, pageSize: 1 }, ...scope,
       })
-      const productId = readProductIdFromTask(tasks.items[0]?.description)
-      if (!productId) throw new Error(`${DELIVER_FUNCTION}: task ${taskId} does not link a catalog product`)
+      const task = tasks.items[0]
+      if (!task) throw new Error(`${DELIVER_FUNCTION}: task ${taskId} is not visible in its organization`)
+      const productId = readProductIdFromTask(task.description)
 
-      const result = await withTransientRetry(() => deps.openPullRequest(em, scope, productId))
+      const result = await deps.produceChange(em, scope, { id: task.id, title: task.title, description: task.description }, productId)
       await run('task_delegation.task.link', `${DELIVER_FUNCTION}:pr`, { kind: 'pr', ref: result.prLabel, url: result.prUrl })
       await run('task_delegation.task.set_status', `${DELIVER_FUNCTION}:in_review`, { status: 'in_review' })
-      logger.info('product page PR on the task', { taskId, productId, prUrl: result.prUrl, reused: result.reused })
+      logger.info('website PR on the task', { taskId, productId, prUrl: result.prUrl, reused: result.reused })
       return result
     } catch (error) {
       // The only release on failure: with one engine attempt, this is final (see t_open_pr).
@@ -222,19 +238,6 @@ export function createDeliverFunction(deps: DeliverDeps = defaultDeps) {
           taskId, error: closeError instanceof Error ? closeError.message : String(closeError),
         }))
       throw error
-    }
-  }
-}
-
-/** Retries GitHub 5xx/429 and network errors; opening the PR is idempotent per product branch. */
-export async function withTransientRetry<T>(work: () => Promise<T>, attempts = 3, delayMs = 3000): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await work()
-    } catch (error) {
-      const transient = error instanceof GitHubApiError ? error.status >= 500 || error.status === 429 : error instanceof TypeError
-      if (!transient || attempt >= attempts) throw error
-      await new Promise((resolve) => setTimeout(resolve, delayMs * attempt))
     }
   }
 }

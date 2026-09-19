@@ -325,6 +325,45 @@ Use self-contained fixtures for two tenants, task readers/controllers, a stub Gi
 
 These phases define future work, not authorization to implement it. Each includes its own UI/API integration evidence; no deferred integration bucket.
 
+### EX-P0: demo slice — disposable local runner for the registered website (SPEC-004 scene 3)
+
+Accepted 2026-09-19 for the Sunday pitch. It proves the user-visible loop on the one registered website and leaves the hardened execution architecture to EX-P1..P5. It is not an execution qualification.
+
+The loop: delegate → the Developer agent edits a checkout in a throwaway container and builds it → one PR → diff and preview in OM → approve merges.
+
+It builds on what `factory` already ships: `factory.deliver`, its owned workflow with its own execution principal, the PR link on the task, and the assignee-only approve route with its merge pinned to the reviewed head. EX-P0 changes one step, the effector.
+
+| Step | EX-P0 behaviour | Replaced later by |
+|---|---|---|
+| Checkout | The host clones the public site repo at the base branch head (base SHA recorded) into a per-run temp directory. No credential is needed to clone. | Supervisor checkout from the repository registry (code repositories spec) |
+| Execution | `docker run --rm` of the local image `om-developer-runner`: `node:22` plus the pinned OpenCode 1.18.3 binary copied from `openmercatocom/open-mercato-opencode:1.18.3`. The checkout is mounted at `/work`. The run is non-root, with CPU/memory limits and a wall-clock timeout, and the container is removed after the run. | EX-P1 isolated workspace |
+| Agent | `opencode run --format json` with `edit` and `bash` allowed inside the container. The prompt carries the task, the linked catalog record and the site's AGENTS.md rules. The agent must leave `npm ci && npm run lint && npm run build` green. | Same harness; EX-P1 adds budgets and qualification |
+| Secrets | Only the model API key enters the container. The GitHub token never does. | EX-P1 inference gateway; no key in the sandbox |
+| Network | Default bridge, needed for the model API and the npm registry | EX-P1 gateway-only egress |
+| Publication | The host reads the changed files, refuses protected paths (`.github/**`, `vercel.json`, `.git/**`), then commits through the existing factory GitHub client → one branch and PR per task | EX-P3 broker, candidate manifest |
+| Review | Task drawer: diff panel over the PR's files (GitHub API), the PR link, and the Vercel preview from the PR. Approve as already built. | EX-P3 in-OM file/diff UI and authenticated preview |
+| Failure | Timeout, non-zero exit, no change, or a protected path: the task closes as `failed` with the reason (same path as today) | EX-P2 journal, recovery, instructions |
+
+Deliberate gaps, all acceptable only on the presenter's laptop:
+
+- no inference gateway or budget admission;
+- unrestricted egress;
+- no crash recovery: a run lost mid-way closes the task as failed on the next attempt, or needs a re-delegation;
+- no independent reviewer; the site's `site` CI check and the human approval are the gates;
+- a single target configured by `FACTORY_SITE_REPO`, not the registry;
+- no transcript view beyond the host log;
+- the agent identity stays `factory` until the D-047 rename lands.
+
+The agent is the only effector: the deterministic page generator the first slice used is removed. Configuration: `FACTORY_RUNNER_IMAGE`, `FACTORY_RUNNER_MODEL` (default `anthropic/claude-sonnet-4-5`, or `openrouter/anthropic/claude-sonnet-4.5` when only an OpenRouter key is set), `FACTORY_RUNNER_TIMEOUT_MS`, and a model key in the host environment passed only to the container.
+
+Acceptance:
+
+- A product added in „Od ręki” produces a DEMO task whose PR was written by the agent.
+- `site` is green on that PR, and the drawer shows the diff and preview.
+- Approve merges and closes the task.
+- A timeout, an empty change or an edit to `.github/**` closes the task as failed with that reason.
+- No GitHub credential is present inside the container. `docker inspect` of a run shows only the model key env.
+
 ### EX-P1: authorized delegation and isolated bounded execution
 
 Depends on SPEC-002 ownership contracts and a compatible installed orchestrator. Add installation/profile validation, scoped attempt state, process adapter, external supervisor journal, gateway admission, sandbox isolation, and minimal run status view. Deliver a fixture task that enters an isolated environment and returns a verified operation result; concurrent/duplicate/denied runs must be safe. Close EX-01/02/03 with EX-T01/02/03/10 plus relevant EX-T07/11 cases. Individual steps: schema/command + replay tests; supervisor/gateway + boundary tests; orchestrator/run view + end-to-end delegation. Exit: two independent runs under fixed budgets and no privileged credentials inside them.
@@ -443,3 +482,5 @@ No unresolved product question from the interview (D-001 through D-042). Named t
 | 2026-09-19 | Initial execution specification following accepted two-document split; all behavior is proposed. |
 | 2026-09-19 | D-038..042: registered external website, proposed catalog data, v2 static artifact and private Vercel gateway. |
 | 2026-09-19 | D-043..047: self-instance target superseded (agent never edits OM); targets come from the OM repository registry and project links ([code repositories](2026-09-19-code-repositories.md)); `/api/tasks/targets` replaced by `/api/repositories/for-project`; enrollment replaced by OM features; agent renamed Developer. |
+| 2026-09-19 | EX-P0 demo slice accepted: disposable `node:22` + pinned OpenCode container per run for the registered website, host-side clone/publish, diff panel over the PR; gaps against EX-P1..P5 listed. |
+| 2026-09-19 | EX-P0: the Developer agent is the only effector; the deterministic product-page generator is removed. First real run: 144 s, USD 0.25, `site` green. |

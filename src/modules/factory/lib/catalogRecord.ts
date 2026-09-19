@@ -4,9 +4,29 @@ import {
   CatalogProductCategoryAssignment,
   CatalogProductPrice,
 } from '@open-mercato/core/modules/catalog/data/entities'
-import type { CatalogRecordView } from './productPage'
 
 export type Scope = { tenantId: string; organizationId: string }
+
+/** The „Od ręki” (in stock) category: a product created in it goes onto the DEMO board. */
+export const IN_STOCK_CATEGORY = 'od-reki'
+
+/** The catalog record the Developer agent gets as the source of truth for product data. */
+export type CatalogRecordView = {
+  id: string
+  sku: string | null
+  title: string
+  subtitle: string | null
+  description: string | null
+  /** Assigned category slugs in position order. */
+  categorySlugs: string[]
+  metadata: Record<string, unknown> | null
+  dimensions: Record<string, unknown> | null
+  weightValue: string | number | null
+  weightUnit: string | null
+  taxRate: string | number | null
+  /** `unitPriceNet` of the `regular` PLN price, or null. */
+  regularNetPricePln: string | number | null
+}
 
 /** Category slugs assigned to a product, in position order. Scoped; an unknown product yields []. */
 export async function loadCategorySlugs(em: EntityManager, scope: Scope, productId: string): Promise<string[]> {

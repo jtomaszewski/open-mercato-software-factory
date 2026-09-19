@@ -15,7 +15,12 @@ export type GitHubConfig = {
 
 export type PullRequestRef = { number: number; htmlUrl: string; headSha: string }
 
-export type CommitFile = { path: string; content: string }
+/** `content: null` deletes the file. */
+export type PullRequestFile = { filename: string; status: string; additions: number; deletions: number; patch: string | null }
+
+export type CheckRun = { name: string; status: string; conclusion: string | null; url: string | null }
+
+export type CommitFile = { path: string; content: string | null }
 
 export class GitHubApiError extends Error {
   constructor(
@@ -89,22 +94,14 @@ export class GitHubClient {
     return commit.tree.sha
   }
 
-  async getFileText(path: string, ref: string): Promise<string> {
-    const file = await this.request<{ content: string; encoding: string }>(
-      'GET',
-      this.repoPath(`/contents/${path}?ref=${encodeURIComponent(ref)}`),
-    )
-    if (!file) throw new Error(`${path} not found at ${ref}`)
-    if (file.encoding !== 'base64') throw new Error(`${path}: unexpected encoding ${file.encoding}`)
-    return Buffer.from(file.content, 'base64').toString('utf8')
-  }
-
   /** One commit with every file, on top of `parentSha`. Returns the new commit sha. */
   async createCommit(params: { parentSha: string; files: CommitFile[]; message: string }): Promise<string> {
     const baseTree = await this.getCommitTreeSha(params.parentSha)
     const tree = await this.request<{ sha: string }>('POST', this.repoPath('/git/trees'), {
       base_tree: baseTree,
-      tree: params.files.map((file) => ({ path: file.path, mode: '100644', type: 'blob', content: file.content })),
+      tree: params.files.map((file) => file.content === null
+        ? { path: file.path, mode: '100644', type: 'blob', sha: null }
+        : { path: file.path, mode: '100644', type: 'blob', content: file.content }),
     })
     const commit = await this.request<{ sha: string }>('POST', this.repoPath('/git/commits'), {
       message: params.message,
@@ -150,6 +147,35 @@ export class GitHubClient {
       'GET', this.repoPath(`/pulls/${number}`), undefined, true,
     )
     return pr ? { number: pr.number, state: pr.state, merged: pr.merged, htmlUrl: pr.html_url, headSha: pr.head.sha } : null
+  }
+
+  /** Changed files with unified-diff patches (GitHub omits `patch` for binary or huge files). */
+  async listPullRequestFiles(number: number): Promise<PullRequestFile[]> {
+    const files = await this.request<Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string }>>(
+      'GET', this.repoPath(`/pulls/${number}/files?per_page=100`),
+    )
+    return (files ?? []).map((file) => ({ filename: file.filename, status: file.status, additions: file.additions, deletions: file.deletions, patch: file.patch ?? null }))
+  }
+
+  async listCheckRuns(sha: string): Promise<CheckRun[]> {
+    const result = await this.request<{ check_runs: Array<{ name: string; status: string; conclusion: string | null; html_url: string | null }> }>(
+      'GET', this.repoPath(`/commits/${sha}/check-runs?per_page=50`),
+    )
+    return (result?.check_runs ?? []).map((run) => ({ name: run.name, status: run.status, conclusion: run.conclusion, url: run.html_url }))
+  }
+
+  /** The newest successful deployment's URL for `sha` (Vercel posts one per PR commit), or null. */
+  async findPreviewUrl(sha: string): Promise<string | null> {
+    const deployments = await this.request<Array<{ id: number }>>('GET', this.repoPath(`/deployments?sha=${sha}&per_page=5`))
+    for (const deployment of deployments ?? []) {
+      const statuses = await this.request<Array<{ state: string; environment_url?: string | null; target_url?: string | null }>>(
+        'GET', this.repoPath(`/deployments/${deployment.id}/statuses?per_page=5`),
+      )
+      const success = (statuses ?? []).find((status) => status.state === 'success')
+      const url = success?.environment_url || success?.target_url
+      if (url && /^https:\/\//.test(url)) return url
+    }
+    return null
   }
 
   /**

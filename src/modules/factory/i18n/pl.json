@@ -1,10 +1,8 @@
 {
   "factory.approve.title": "Zmiana na stronie",
-  "factory.approve.hint": "Sprawdź podgląd w pull requeście, a potem zatwierdź, żeby opublikować stronę.",
-  "factory.approve.openPr": "Otwórz pull request",
+  "factory.approve.hint": "Przejrzyj zmiany i podgląd, a potem zatwierdź, żeby opublikować.",
   "factory.approve.action": "Zatwierdź i opublikuj",
   "factory.approve.working": "Publikuję...",
-  "factory.approve.done": "Opublikowane: pull request zmergowany, zadanie zamknięte.",
   "factory.approve.errors.generic": "Nie udało się zatwierdzić.",
   "factory.approve.errors.notFound": "Nie znaleziono zadania.",
   "factory.approve.errors.notDelegated": "Zadanie nie jest delegowane do fabryki.",
@@ -12,5 +10,16 @@
   "factory.approve.errors.notInReview": "Zatwierdzić można tylko zadanie w recenzji.",
   "factory.approve.errors.assigneeOnly": "Pull request może zatwierdzić tylko osoba przypisana do zadania.",
   "factory.approve.errors.prClosed": "Pull request został zamknięty bez merge'a.",
-  "factory.approve.errors.mergeBlocked": "GitHub odmówił merge'a: checki nie są zielone albo pull request się zmienił. Sprawdź go ponownie."
+  "factory.approve.errors.mergeBlocked": "GitHub odmówił merge'a: checki nie są zielone albo pull request się zmienił. Sprawdź go ponownie.",
+  "factory.review.loading": "Ładuję zmianę na stronie...",
+  "factory.review.errors.load": "Nie udało się wczytać zmiany na stronie.",
+  "factory.review.pr": "PR #{number}",
+  "factory.review.preview": "Podgląd",
+  "factory.review.merged": "Zmergowany",
+  "factory.review.summary": "Zmienione pliki: {files} · +{additions} −{deletions}",
+  "factory.review.noPatch": "Brak podglądu tekstowego dla tego pliku (binarny albo za duży).",
+  "factory.review.checks.passing": "Checki zielone",
+  "factory.review.checks.failing": "Checki czerwone",
+  "factory.review.checks.pending": "Checki w toku",
+  "factory.review.checks.none": "Brak checków"
 }

@@ -3,8 +3,7 @@ import { CatalogProduct } from '@open-mercato/core/modules/catalog/data/entities
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import { openProductTask } from '../lib/board'
-import { loadCategorySlugs } from '../lib/catalogRecord'
-import { IN_STOCK_CATEGORY } from '../lib/productPage'
+import { IN_STOCK_CATEGORY, loadCategorySlugs } from '../lib/catalogRecord'
 
 const logger = createLogger('factory').child({ subscriber: 'product-created' })
 

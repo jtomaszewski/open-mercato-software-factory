@@ -2,18 +2,15 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { CatalogProduct } from '@open-mercato/core/modules/catalog/data/entities'
-import { GitHubClient, readGitHubConfigFromEnv } from './lib/github'
 import { openProductTask } from './lib/board'
 import { ensureFactoryDeliver } from './lib/deliver'
-import { publishProductPage } from './lib/publishProduct'
 
 const USAGE = [
   'Usage:',
-  '  mercato factory publish-product --product <productId> --tenant <tenantId> --org <organizationId> [--direct]',
+  '  mercato factory publish-product --product <productId> --tenant <tenantId> --org <organizationId>',
   '  mercato factory ensure-process --tenant <tenantId> --org <organizationId>',
   '',
-  '  publish-product  puts the product on the DEMO board as a task delegated to Software Engineer (needs the workers);',
-  '                   with --direct it opens the PR in-process instead, for rehearsals and debugging.',
+  '  publish-product  puts the product on the DEMO board as a task delegated to Software Engineer (the workers run it).',
   '  ensure-process   creates factory.deliver and its workflow for a tenant seeded before this module existed.',
 ].join('\n')
 
@@ -47,13 +44,6 @@ const publishProduct: ModuleCli = {
     }
     const container = await createRequestContainer()
     const em = (container.resolve('em') as EntityManager).fork()
-
-    if (rest.includes('--direct')) {
-      const github = new GitHubClient(readGitHubConfigFromEnv())
-      const result = await publishProductPage({ em, github, appUrl: process.env.APP_URL ?? null }, scope, productId)
-      console.log(`${result.reused ? 'Reused' : 'Opened'} ${result.prUrl} (${result.sku}, branch ${result.branch})`)
-      return
-    }
 
     const product = await em.findOne(CatalogProduct, { id: productId, ...scope, deletedAt: null })
     if (!product) {

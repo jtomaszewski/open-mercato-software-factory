@@ -1,10 +1,8 @@
 {
   "factory.approve.title": "Website change",
-  "factory.approve.hint": "Check the preview in the pull request, then approve to publish the page.",
-  "factory.approve.openPr": "Open pull request",
+  "factory.approve.hint": "Review the changes and the preview, then approve to publish.",
   "factory.approve.action": "Approve and publish",
   "factory.approve.working": "Publishing...",
-  "factory.approve.done": "Published: the pull request is merged and the task is done.",
   "factory.approve.errors.generic": "Approval failed.",
   "factory.approve.errors.notFound": "Task not found.",
   "factory.approve.errors.notDelegated": "The task is not delegated to the factory.",
@@ -12,5 +10,16 @@
   "factory.approve.errors.notInReview": "Only a task in review can be approved.",
   "factory.approve.errors.assigneeOnly": "Only the task assignee can approve the pull request.",
   "factory.approve.errors.prClosed": "The pull request was closed without merging.",
-  "factory.approve.errors.mergeBlocked": "GitHub refused the merge: checks are not green or the pull request changed. Review it again."
+  "factory.approve.errors.mergeBlocked": "GitHub refused the merge: checks are not green or the pull request changed. Review it again.",
+  "factory.review.loading": "Loading the website change...",
+  "factory.review.errors.load": "The website change could not be loaded.",
+  "factory.review.pr": "PR #{number}",
+  "factory.review.preview": "Preview",
+  "factory.review.merged": "Merged",
+  "factory.review.summary": "Changed files: {files} · +{additions} −{deletions}",
+  "factory.review.noPatch": "No text diff for this file (binary or too large).",
+  "factory.review.checks.passing": "Checks passing",
+  "factory.review.checks.failing": "Checks failing",
+  "factory.review.checks.pending": "Checks running",
+  "factory.review.checks.none": "No checks yet"
 }
