@@ -24,6 +24,10 @@ import { Button } from '@open-mercato/ui/primitives/button'
 import { ALL_ORGANIZATIONS_COOKIE_VALUE } from '@open-mercato/core/modules/directory/constants'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 
+// Single-tenant mode (default on): hide the super-admin tenant picker. Set
+// NEXT_PUBLIC_OM_SINGLE_TENANT_MODE=false to bring it back for multi-tenant installs.
+const SINGLE_TENANT_MODE = process.env.NEXT_PUBLIC_OM_SINGLE_TENANT_MODE !== 'false'
+
 type OrganizationMenuNode = {
   id: string
   name: string
@@ -348,7 +352,7 @@ export default function OrganizationSwitcher({ compact }: OrganizationSwitcherEx
   const tenantSelectValue = state.status === 'ready'
     ? state.tenantId ?? ''
     : tenantValue
-  const showTenantSelect = state.status === 'ready' && state.isSuperAdmin && tenantSelectOptions.length > 0
+  const showTenantSelect = !SINGLE_TENANT_MODE && state.status === 'ready' && state.isSuperAdmin && tenantSelectOptions.length > 0
 
   const flatOrgOptions = React.useMemo(() => {
     const out: Array<{ id: string; label: string; selectable: boolean; depth: number }> = []
