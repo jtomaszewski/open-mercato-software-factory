@@ -2,12 +2,12 @@
 status: proposed
 ---
 
-# Factory tools live in their own app module, not in `tasks`
+# Task tools live in their own app module, not in `tasks`
 
 SPEC-002 places task intake (the `tasks_create` tool) inside the `tasks` module. That module is
 being built by another person on a local branch and is on no remote branch the day before the
-demo freeze (2026-09-19). We put the factory AI tools in a separate app module
-(`src/modules/factory_tools/`) that creates tasks through the core `staff` task route and calls
+demo freeze (2026-09-19). We put the task AI tools in a separate app module
+(`src/modules/task_tools/`) that creates tasks through the core `staff` task route and calls
 the `tasks` delegation route only when the `tasks` module is installed; without it the task lands
 in the backlog and the tool says why. We chose independence from another person's timeline and
 no shared source files (only a coordinated one-line edit of `src/modules.ts`) over the tidier

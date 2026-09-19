@@ -1,19 +1,19 @@
-# SPEC-006: Factory tools: task management AI tools over MCP
+# SPEC-006: Task management AI tools over MCP
 
 **Status**: Draft
 **Owner**: HackOn team · **Date**: 2026-09-19 · **Tracker**: —
-**Parent**: [SPEC-001](./SPEC-001-2026-09-18-agentic-software-factory.md) (the factory),
+**Parent**: [SPEC-001](./SPEC-001-2026-09-18-agentic-software-factory.md) (agent runs started by delegation),
 [SPEC-002](./SPEC-002-2026-09-18-tasks-module.md) (the task board and delegation).
-**Glossary**: [`CONTEXT.md`](../../CONTEXT.md) · **Decisions**: [ADR-0001](../adr/0001-factory-tools-in-their-own-module.md)
+**Glossary**: [`CONTEXT.md`](../../CONTEXT.md) · **Decisions**: [ADR-0001](../adr/0001-task-tools-in-their-own-module.md)
 
 ## TLDR
 
 A developer in Claude Code (or Marek in any other MCP client) says "file a task for WEB: ZDP-5000
-holds 5 200 l, not 5 000, and the dimensions are missing; hand it to the factory", and a delegated
+holds 5 200 l, not 5 000, and the dimensions are missing; delegate it to an agent", and a delegated
 task is on the board with a link back. The same client can read a task, search tasks, list
 projects and comment.
 
-This is one app module, **`factory_tools`**, with five AI tools registered through `defineAiTool`
+This is one app module, **`task_tools`**, with five AI tools registered through `defineAiTool`
 and served by the Open Mercato MCP server: `create_task`, `get_task`, `search_tasks`,
 `list_projects`, `comment_task`. Everything is built on installed capabilities: the core `staff`
 task board (0.8.0), the `ai_assistant` MCP server and, when installed, the `tasks` module for
@@ -48,7 +48,7 @@ delegation. The tools write nothing but tasks and comments.
 - **REQ-001** — An MCP client whose API key may manage tasks creates a `staff` task; the result
   carries the reference and a link to the board.
 - **REQ-002** — With `delegate: true` and the `tasks` module installed, the created task is
-  delegated to the factory agent in the same call; without the module or the permission it lands
+  delegated to an agent (via the `tasks` module) in the same call; without the module or the permission it lands
   in the backlog and the result says why.
 - **REQ-003** — An MCP client can read a task by reference or id, search tasks and list projects,
   seeing exactly what the key's user sees on the board.
@@ -61,7 +61,7 @@ delegation. The tools write nothing but tasks and comments.
 ## Non-goals
 
 - Tools write only tasks and comments; no catalog or site mutations (catalog and site changes go
-  through the factory, SPEC-001).
+  through delegated agent runs, SPEC-001).
 - No in-app chat agent and no approval card; the tools are defined with `defineAiTool`, so a chat
   agent can allow-list them later without changing them.
 - No moving tasks between columns and no un-delegation (SPEC-002 guard; user decision).
@@ -71,11 +71,11 @@ delegation. The tools write nothing but tasks and comments.
 
 ## Proposed Solution
 
-One app module, `src/modules/factory_tools/`, with:
+One app module, `src/modules/task_tools/`, with:
 
-- **`ai-tools.ts`** — five tools, dot-namespaced like core (`factory_tools.create_task`,
-  `factory_tools.get_task`, `factory_tools.search_tasks`, `factory_tools.list_projects`,
-  `factory_tools.comment_task`). Writes are declared `isMutation: true`, so the runtime classifies
+- **`ai-tools.ts`** — five tools, dot-namespaced like core (`task_tools.create_task`,
+  `task_tools.get_task`, `task_tools.search_tasks`, `task_tools.list_projects`,
+  `task_tools.comment_task`). Writes are declared `isMutation: true`, so the runtime classifies
   them as writes; over MCP they execute on call.
 - **`index.ts`** — module metadata.
 - **`lib/*`** — scope guard, `staff` client, `tasks` client, footer.
@@ -93,10 +93,10 @@ installed; the dependency is optional and detected at call time.
 
 | Decision | Rationale | Alternative considered | Why rejected / deferred |
 |---|---|---|---|
-| Own module `factory_tools`, not `tasks` (ADR-0001) | `tasks` is on another person's local branch; zero shared files; testable today against core `staff` | Files inside `src/modules/tasks/` as SPEC-002 sketches | Nothing runs until the other branch lands; merge into the same directory hours before the freeze |
+| Own module `task_tools`, not `tasks` (ADR-0001) | `tasks` is on another person's local branch; zero shared files; testable today against core `staff` | Files inside `src/modules/tasks/` as SPEC-002 sketches | Nothing runs until the other branch lands; merge into the same directory hours before the freeze |
 | MCP server as the only surface | Scope decision of the repo owner; the team already works in MCP clients | In-app chat agent with an approval card | Deferred: `defineAiTool` lets a chat agent reuse the tools unchanged |
 | One write tool, one input shape | SPEC-001 (`factory_send_task`) and SPEC-002 (`tasks_create`) named the same thing twice | Two tools | Two names for one action confuse the model and the MCP client; SPEC-001 gets a changelog row |
-| Dot-namespaced names (`factory_tools.create_task`) | Core convention; the MCP server passes names through verbatim (verified 0.8.0) | Underscores as in SPEC-002 | Would be the only pack breaking the convention |
+| Dot-namespaced names (`task_tools.create_task`) | Core convention; the MCP server passes names through verbatim (verified 0.8.0) | Underscores as in SPEC-002 | Would be the only pack breaking the convention |
 | Task ACL = `staff` features | No new roles or features | An own feature set | Duplicates what the board already gates |
 | Delegate resolved from `GET /api/tasks/agents` **before the write** | Exactly one agent on the demo → zero configuration; several and none named → the call fails with the list before any task exists | Env var or module setting; resolving after creation | Configuration the board already knows; failing after creation would leave a task behind |
 | `project` is required, no default | User decision: no hidden default | Env var with the site project key | A wrong default silently files tasks in the wrong project |
@@ -120,7 +120,7 @@ Terms are defined in [`CONTEXT.md`](../../CONTEXT.md); the rules below are the o
 |---|---|---|---|
 | MCP client with a task-manager key (developer's Claude Code, Marek's Claude Desktop) | create task, delegate, comment, read tasks and projects | tenant + organisation of the API key; the key's user must **have a staff member** (otherwise `staff` answers `assignee_required`); task visibility = projects the user is a member of, or all with `staff.timesheets.manage_all` | `staff.timesheets.tasks.view`, `staff.timesheets.tasks.manage`, `tasks.delegate` (for delegation); **never** `catalog.products.manage` |
 | MCP client with a read-only key | read tasks and projects | same | `staff.timesheets.tasks.view`, `staff.timesheets.projects.view` |
-| Factory agent (workflow principal) | none of these tools | — | — |
+| Delegated agent (workflow principal) | none of these tools | — | — |
 
 `tenantId` and `organizationId` come only from `McpToolContext` (the API key); both must be
 present or the handler throws before any read (`requireToolScope`, the `example` pattern). No
@@ -135,20 +135,20 @@ route already narrows tasks to the caller's project memberships, so `search_task
 | Tasks, projects, references, comments, board | reuse | `staff` (core 0.8.0) | HTTP routes via `createAiApiOperationRunner`; ids only | The board is the source of truth (SPEC-002) |
 | Delegation, agents list, run state | reuse, optional | `tasks` (SPEC-002, in progress) | its HTTP routes called in-process through `createAiApiOperationRunner` (no raw fetch), 5 s per call; route absent (404) → degraded | Owned by another person; must not block us |
 | MCP server, API-key auth, tool registry | reuse | `ai_assistant` | module-root `ai-tools.ts` read by `yarn generate` | Standard surface |
-| Tool pack | app-own | `factory_tools` (new) | `ai-tools.ts`, `index.ts` | The only new surface |
+| Tool pack | app-own | `task_tools` (new) | `ai-tools.ts`, `index.ts` | The only new surface |
 
 ## Architecture and Data Flow
 
 ```text
 MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (ACL from the key's user)
-   ├─▶ factory_tools.create_task (isMutation)
+   ├─▶ task_tools.create_task (isMutation)
    │     ├─▶ [delegate && tasks installed?] GET /api/tasks/agents → one agent, or ambiguous_agent (nothing written)
    │     ├─▶ POST /api/staff/timesheets/tasks  (staff, existing)  → task {id, reference}
    │     └─▶ POST /api/tasks/delegations → tasks.task.delegated → SPEC-001 start-factory
    └─▶ get_task / search_tasks / list_projects / comment_task ──▶ staff routes [+ GET /api/tasks/delegations]
 ```
 
-- **Module boundaries:** `factory_tools` owns no records. It owns the tool definitions. Tasks
+- **Module boundaries:** `task_tools` owns no records. It owns the tool definitions. Tasks
   stay in `staff`; delegation stays in `tasks`.
 - **Extension points:** module-root `ai-tools.ts`. No ACL, setup, widget, interceptor or
   subscriber.
@@ -156,7 +156,7 @@ MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (AC
   ADR-0001; a Code Mode script instead of five tools — rejected because typed, individually
   gated tools are what an MCP client lists and a user can approve one by one.
 - **Compatibility:** no installed contract changes. SPEC-001's `factory_send_task` name is retired
-  in favour of `factory_tools.create_task` (changelog row in SPEC-001). SPEC-002's intake tool
+  in favour of `task_tools.create_task` (changelog row in SPEC-001). SPEC-002's intake tool
   `tasks_create` is superseded by this spec (changelog row in SPEC-002); its `tasks_intake` table
   remains that module's roadmap. Tool names and input shapes below become a contract for MCP
   clients once shipped (`BACKWARD_COMPATIBILITY.md` applies to renames).
@@ -170,9 +170,9 @@ MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (AC
    member** (the README says so; without one `staff` refuses with `assignee_required`).
 2. Claude Code is configured with `{"mcpServers":{"open-mercato":{"type":"http","url":"http://localhost:3001/mcp","headers":{"x-api-key":"omk_…"}}}}`.
 3. The developer types: "file a task: ZDP-5000 holds 5 200 l, not 5 000, and the dimensions are
-   missing; hand it to the factory". The client calls `factory_tools.list_projects` and asks which
+   missing; delegate it to an agent". The client calls `task_tools.list_projects` and asks which
    project if more than one exists.
-4. It calls `factory_tools.create_task { project: 'WEB', title, description, delegate: true, clientRef }`.
+4. It calls `task_tools.create_task { project: 'WEB', title, description, delegate: true, clientRef }`.
    The handler resolves the single agent, creates the task (`WEB-13`, assignee = the key user's
    staff member), appends the footer and delegates it. The result is
    `{ reference: 'WEB-13', statusSlug: 'queued', delegated: true, href }`; the board shows the card
@@ -186,10 +186,10 @@ MCP client ──▶ POST /mcp (x-api-key) ──▶ ai_assistant MCP server (AC
 ### Journey J-002 — "What is happening with WEB-13?"
 
 1. Anyone whose key holds `staff.timesheets.tasks.view` asks the client about `WEB-13`.
-2. `factory_tools.get_task { reference: 'WEB-13' }` returns the task, its column, parent,
+2. `task_tools.get_task { reference: 'WEB-13' }` returns the task, its column, parent,
    comments, and, when `tasks` is installed, the delegation (agent, run state, links to the
    instance, Caseload item, PR, preview) from `GET /api/tasks/delegations?taskIds=`.
-3. The user adds "customer confirmed 5 200 l" → `factory_tools.comment_task { task: 'WEB-13', body }`;
+3. The user adds "customer confirmed 5 200 l" → `task_tools.comment_task { task: 'WEB-13', body }`;
    the comment appears in the board drawer under the key user's name.
 4. A caller who is not a member of the task's project gets `{ found: false }` — the `staff` route
    returns no row, not a redacted one.
@@ -221,11 +221,11 @@ declared Zod schema.
 
 | Tool | Gate | Input | Success result | Errors / concurrency | REQ |
 |---|---|---|---|---|---|
-| `factory_tools.create_task` (`isMutation`) | `staff.timesheets.tasks.manage` | `{ project: string (project id or code), title: 1..255, description?: ≤ 7 800 md, delegate?: boolean, agentUserId?: uuid, links?: [{ kind: 'record'\|'url'\|'pr', label, href }] ≤ 10, clientRef?: 1..128 (informational) }` | `{ taskId, reference, projectId, statusSlug, delegated: boolean, delegationId?, reason?: 'tasks_module_absent'\|'no_permission'\|'no_agent'\|'delegation_failed', href }` | `project_not_found` (also for another tenant's code); `ambiguous_agent` with the agent list (nothing written); `staff` 422 `assignee_required`; delegation failure after creation → task kept, `delegated: false` | 001, 002, 006 |
-| `factory_tools.get_task` | `staff.timesheets.tasks.view` | `{ reference?: string, taskId?: uuid }` (one required) | `{ task: { id, reference, title, description, statusSlug, projectId, projectCode, assignee, parent?, updatedAt }, comments: [{ id, authorName, body, createdAt }] ≤ 50, delegation?: { agentId, agentLabel, runState, outcome?, links: [{ kind, url }] } }` | not found or not visible → `{ found: false }` | 003 |
-| `factory_tools.search_tasks` | `staff.timesheets.tasks.view` | `{ query?: string, project?: string, status?: string (slug), limit?: 1..50 = 20 }` | `{ items: [{ id, reference, title, statusSlug, projectCode, hasDelegate }], totalCount }` | none beyond ACL | 003 |
-| `factory_tools.list_projects` | `staff.timesheets.projects.view` | `{}` | `{ items: [{ id, code, name, isMember }] }` | none | 001, 003 |
-| `factory_tools.comment_task` (`isMutation`) | `staff.timesheets.tasks.manage` | `{ task: reference or id, body: 1..5000 }` | `{ commentId, taskId, reference }` | task not visible → `task_not_found` | 004 |
+| `task_tools.create_task` (`isMutation`) | `staff.timesheets.tasks.manage` | `{ project: string (project id or code), title: 1..255, description?: ≤ 7 800 md, delegate?: boolean, agentUserId?: uuid, links?: [{ kind: 'record'\|'url'\|'pr', label, href }] ≤ 10, clientRef?: 1..128 (informational) }` | `{ taskId, reference, projectId, statusSlug, delegated: boolean, delegationId?, reason?: 'tasks_module_absent'\|'no_permission'\|'no_agent'\|'delegation_failed', href }` | `project_not_found` (also for another tenant's code); `ambiguous_agent` with the agent list (nothing written); `staff` 422 `assignee_required`; delegation failure after creation → task kept, `delegated: false` | 001, 002, 006 |
+| `task_tools.get_task` | `staff.timesheets.tasks.view` | `{ reference?: string, taskId?: uuid }` (one required) | `{ task: { id, reference, title, description, statusSlug, projectId, projectCode, assignee, parent?, updatedAt }, comments: [{ id, authorName, body, createdAt }] ≤ 50, delegation?: { agentId, agentLabel, runState, outcome?, links: [{ kind, url }] } }` | not found or not visible → `{ found: false }` | 003 |
+| `task_tools.search_tasks` | `staff.timesheets.tasks.view` | `{ query?: string, project?: string, status?: string (slug), limit?: 1..50 = 20 }` | `{ items: [{ id, reference, title, statusSlug, projectCode, hasDelegate }], totalCount }` | none beyond ACL | 003 |
+| `task_tools.list_projects` | `staff.timesheets.projects.view` | `{}` | `{ items: [{ id, code, name, isMember }] }` | none | 001, 003 |
+| `task_tools.comment_task` (`isMutation`) | `staff.timesheets.tasks.manage` | `{ task: reference or id, body: 1..5000 }` | `{ commentId, taskId, reference }` | task not visible → `task_not_found` | 004 |
 
 Installed routes consumed (unchanged): `POST/GET /api/staff/timesheets/tasks` (query: `q`,
 `reference`, `id`, `timeProjectId`, `taskStatusId`, `pageSize` ≤ 100), `GET/POST
@@ -275,9 +275,9 @@ default status.
 | TEST-004 | integration | stub returns two agents | `create_task { delegate: true }` | `ambiguous_agent` with both agents; no task row; retry with `agentUserId` succeeds | REQ-002 |
 | TEST-005 | integration | project membership: caller not a member of `OPS` | `search_tasks`, `get_task` for an `OPS` task | `found: false`; `OPS` task absent from results | REQ-003 |
 | TEST-006 | integration | task `WEB-1` | `comment_task` | comment row with `authorUserId` = caller; body verbatim | REQ-004 |
-| TEST-007 | contract | generated registries | `mcp:list-tools` output | five tool names with the `factory_tools.` prefix; `create_task` and `comment_task` marked `isMutation` | REQ-005 |
+| TEST-007 | contract | generated registries | `mcp:list-tools` output | five tool names with the `task_tools.` prefix; `create_task` and `comment_task` marked `isMutation` | REQ-005 |
 | TEST-008 | manual (demo rehearsal) | seeded demo tenant, Claude Code with a task-manager key | J-001 and J-002 | `WEB-n` on the board with the delegate badge; comment in the drawer | REQ-001, REQ-002, REQ-004 |
-| TEST-009 | integration (MCP) | HTTP MCP server with an API key whose user holds only the two task features and has a staff member | `tools/list`, then `tools/call factory_tools.create_task { clientRef }` twice | list contains the five tools and no `catalog.*` mutation tool; task created with footer `Intake: mcp · ref <clientRef>`; second identical call creates a second task (documented) | REQ-005, REQ-006 |
+| TEST-009 | integration (MCP) | HTTP MCP server with an API key whose user holds only the two task features and has a staff member | `tools/list`, then `tools/call task_tools.create_task { clientRef }` twice | list contains the five tools and no `catalog.*` mutation tool; task created with footer `Intake: mcp · ref <clientRef>`; second identical call creates a second task (documented) | REQ-005, REQ-006 |
 | TEST-010 | integration | `tasks` stub: delegation with run state `in_design` and links | `get_task { reference }` | `delegation` present with agent label, run state and links; absent when the stub returns 404 | REQ-003 |
 | TEST-011 | security | tenant A and tenant B both with a project coded `WEB` | tenant B caller: `create_task { project: 'WEB' }`, `search_tasks { project: 'WEB' }` | resolves only B's project; A's tasks never appear; A's id as `project` → `project_not_found` | REQ-001, REQ-003 |
 
@@ -290,15 +290,15 @@ default status.
 - **Outcome:** an MCP client creates, reads, searches and comments on tasks and lists projects.
 - **Why this order / value delivered:** intake works even if `tasks` never lands (task in
   backlog, delegated by hand as today's fallback).
-- **Deliverables:** `src/modules/factory_tools/{index.ts, ai-tools.ts, lib/scope.ts,
+- **Deliverables:** `src/modules/task_tools/{index.ts, ai-tools.ts, lib/scope.ts,
   lib/staff-api.ts, lib/intake-footer.ts, __tests__/*}`; `modules.ts` entry; README section
   "Connect an MCP client".
 - **Independent slices / estimated commits:** (a) scaffold + read tools; (b) `create_task` +
   footer; (c) `comment_task`; (d) README + `mcp:list-tools` check. ~4 commits.
 - **Requirements closed:** REQ-001, REQ-003 (board part), REQ-004, REQ-005, REQ-006.
 - **Tests:** TEST-001, TEST-002, TEST-005, TEST-006, TEST-007, TEST-009, TEST-011.
-- **Validation:** `yarn generate && yarn typecheck && yarn lint && yarn test src/modules/factory_tools`;
-  `yarn mercato ai_assistant mcp:list-tools | grep factory_tools.`.
+- **Validation:** `yarn generate && yarn typecheck && yarn lint && yarn test src/modules/task_tools`;
+  `yarn mercato ai_assistant mcp:list-tools | grep task_tools.`.
 - **Exit gate:** J-001 without delegation from Claude Code; a key without
   `staff.timesheets.tasks.manage` does not see the write tools.
 
@@ -324,7 +324,7 @@ default status.
 
 | Requirement | Journey / surface | Data/API/event contracts | Phase | Tests | Acceptance criterion |
 |---|---|---|---|---|---|
-| REQ-001 | J-001 | `factory_tools.create_task`, `POST /api/staff/timesheets/tasks` | Phase 1 | TEST-001, TEST-002, TEST-011, TEST-008 | AC-001 |
+| REQ-001 | J-001 | `task_tools.create_task`, `POST /api/staff/timesheets/tasks` | Phase 1 | TEST-001, TEST-002, TEST-011, TEST-008 | AC-001 |
 | REQ-002 | J-001 steps 4–5 | `GET /api/tasks/agents`, `POST /api/tasks/delegations`, `tasks.task.delegated` | Phase 2 | TEST-003, TEST-004, TEST-008 | AC-002 |
 | REQ-003 | J-002 | `get_task`, `search_tasks`, `list_projects`, `GET /api/tasks/delegations` | Phase 1, 2 | TEST-005, TEST-010, TEST-011 | AC-003 |
 | REQ-004 | J-002 step 3 | `comment_task`, `POST …/tasks/{id}/comments` | Phase 1 | TEST-002, TEST-006 | AC-004 |
@@ -346,7 +346,7 @@ features, setup, i18n, entities, routes, widgets, subscribers.
 
 - **Migration:** none. `yarn db:generate` must report no change for this module.
 - **Enable:** add `{ id: 'staff' }`, `{ id: 'planner' }`, `{ id: 'resources' }` (core) and
-  `{ id: 'factory_tools', from: '@app' }` to `src/modules.ts`; `yarn generate`. Restart the MCP
+  `{ id: 'task_tools', from: '@app' }` to `src/modules.ts`; `yarn generate`. Restart the MCP
   process so ListTools includes the pack.
 - **Rollback:** remove the `modules.ts` entry and re-run `yarn generate`; tasks already created
   remain ordinary `staff` tasks with a footer. Revoke any API key issued for a client.
@@ -408,4 +408,4 @@ dependency.
 
 | Date | Change |
 |---|---|
-| 2026-09-19 | Initial draft after a two-round design interview; scope limited to task management tools over the Open Mercato MCP server by the repo owner's decision. Own module `factory_tools` (ADR-0001); one write tool replacing SPEC-001's `factory_send_task` and SPEC-002's `tasks_create`; dot-namespaced names; ACL reuses `staff` features; delegate resolved from the `tasks` agents list before the write, ambiguous agent writes nothing; project always required; intake footer instead of a dedupe table; informational `clientRef`; `source_ref` not obtainable because 0.8.0 exposes no conversation id to handlers. |
+| 2026-09-19 | Initial draft after a two-round design interview; scope limited to task management tools over the Open Mercato MCP server by the repo owner's decision. Own module `task_tools` (ADR-0001); one write tool replacing SPEC-001's `factory_send_task` and SPEC-002's `tasks_create`; dot-namespaced names; ACL reuses `staff` features; delegate resolved from the `tasks` agents list before the write, ambiguous agent writes nothing; project always required; intake footer instead of a dedupe table; informational `clientRef`; `source_ref` not obtainable because 0.8.0 exposes no conversation id to handlers. |
