@@ -27,6 +27,26 @@ const ACCOUNTS: { email: string; password: string }[] = [
   { email: process.env.OM_INIT_ADMIN_EMAIL ?? 'admin@acme.com', password: process.env.OM_INIT_ADMIN_PASSWORD ?? 'secret' },
 ]
 
+/**
+ * Opens the board as a signed-in user and returns the first card's task id.
+ *
+ * The id comes from the rendered board rather than from `/api/staff/timesheets/tasks`, because the
+ * app's own client adds organization-scope headers to every API call and a raw request without them
+ * is rejected — reading the DOM asks the question the way the application answers it.
+ */
+async function openBoard(page: Page, baseURL: string | undefined): Promise<string | null> {
+  await signIn(page)
+  await page.context().addCookies([{ name: 'locale', value: 'pl', url: baseURL ?? 'http://localhost:3000' }])
+  await page.goto('/backend/staff/time-tracking/board')
+  const firstCard = page.locator('[data-task-card]').first()
+  try {
+    await firstCard.waitFor({ state: 'attached', timeout: 15_000 })
+  } catch {
+    return null
+  }
+  return firstCard.getAttribute('data-task-card')
+}
+
 async function signIn(page: Page): Promise<void> {
   const answers: string[] = []
   for (const account of ACCOUNTS) {
@@ -128,7 +148,7 @@ const STATES: { name: string; delegation: Delegation; review: Record<string, unk
       closeReason: 'FACTORY_GITHUB_TOKEN is not set; the factory cannot open pull requests.',
     }),
     review: null,
-    expect: /Fabryka nie jest gotowa/,
+    expect: /Software Engineer nie m\u00f3g\u0142 wystartowa\u0107/,
   },
   {
     name: 'failed-agent',
@@ -155,14 +175,9 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
   test.beforeAll(() => { if (SHOTS) fs.mkdirSync(SHOT_DIR, { recursive: true }) })
 
   for (const state of STATES) {
-    test(`says what is happening in the ${state.name} state`, async ({ page }) => {
-      await signIn(page)
-      await page.context().addCookies([{ name: 'locale', value: 'pl', url: 'http://localhost:3000' }])
-
-      const tasks = await page.request.get('/api/staff/timesheets/tasks?page=1&pageSize=1')
-      test.skip(!tasks.ok(), `staff tasks unavailable (${tasks.status()}); seed the demo board first`)
-      const taskId = (await tasks.json() as { items?: { id?: string }[] }).items?.[0]?.id
-      test.skip(!taskId, 'no staff task in this environment; seed the demo board first')
+    test(`says what is happening in the ${state.name} state`, async ({ page, baseURL }) => {
+      const taskId = await openBoard(page, baseURL)
+      test.skip(!taskId, 'no staff task reachable in this environment; seed the demo board first')
 
       await stub(page, taskId!, state.delegation, state.review)
       await page.goto(`/backend/staff/time-tracking/board?task=${taskId}`)
@@ -170,6 +185,16 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
       const bar = page.getByTestId('task-run-status')
       await expect(bar).toBeVisible()
       await expect(bar).toContainText(state.expect)
+
+      // The bar belongs under the "Assigned to" picker. The spot renders the highest priority
+      // first, so a swapped number silently reverses them — this is the oracle for that.
+      const barFollowsPicker = await page.evaluate(() => {
+        const picker = document.querySelector('[data-testid="task-assigned-to"]')
+        const statusBar = document.querySelector('[data-testid="task-run-status"]')
+        if (!picker || !statusBar) return false
+        return Boolean(picker.compareDocumentPosition(statusBar) & Node.DOCUMENT_POSITION_FOLLOWING)
+      })
+      expect(barFollowsPicker, 'the status bar must render under the "Assigned to" picker').toBe(true)
 
       const drawer = page.getByTestId('task-drawer')
       // No raw i18n key reaches the owner, in any state.
@@ -185,14 +210,9 @@ test.describe('the task drawer reads as one status bar in Polish', () => {
     })
   }
 
-  test('the board card says the state in one Polish phrase', async ({ page }) => {
-    await signIn(page)
-    await page.context().addCookies([{ name: 'locale', value: 'pl', url: 'http://localhost:3000' }])
-
-    const tasks = await page.request.get('/api/staff/timesheets/tasks?page=1&pageSize=1')
-    test.skip(!tasks.ok(), `staff tasks unavailable (${tasks.status()}); seed the demo board first`)
-    const taskId = (await tasks.json() as { items?: { id?: string }[] }).items?.[0]?.id
-    test.skip(!taskId, 'no staff task in this environment; seed the demo board first')
+  test('the board card says the state in one Polish phrase', async ({ page, baseURL }) => {
+    const taskId = await openBoard(page, baseURL)
+    test.skip(!taskId, 'no staff task reachable in this environment; seed the demo board first')
 
     await stub(page, taskId!, delegation({ runState: 'running' }), null)
     await page.goto('/backend/staff/time-tracking/board')

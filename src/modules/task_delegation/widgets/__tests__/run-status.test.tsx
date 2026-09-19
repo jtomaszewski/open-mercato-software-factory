@@ -71,7 +71,7 @@ beforeEach(() => {
 it('sits in the drawer header under the assignment picker', () => {
   const header = injectionTable['detail:staff:staff_time_task:header']
   expect(header).toEqual([
-    { widgetId: 'task_delegation.injection.task-assigned-to', priority: 10 },
+    { widgetId: 'task_delegation.injection.task-assigned-to', priority: 30 },
     { widgetId: 'task_delegation.injection.task-run-status', priority: 20 },
   ])
 })

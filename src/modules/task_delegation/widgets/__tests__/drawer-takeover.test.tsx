@@ -32,7 +32,7 @@ it('renders the picker and its rule in the drawer header spot', () => {
   const host = screen.getByTestId('task-assigned-to')
   expect(host).toBeInTheDocument()
   expect(host.querySelector('style')?.textContent).toContain(STAFF_ASSIGNEE_FIELD_TESTID)
-  expect(injectionTable['detail:staff:staff_time_task:header']).toContainEqual({ widgetId: 'task_delegation.injection.task-assigned-to', priority: 10 })
+  expect(injectionTable['detail:staff:staff_time_task:header']).toContainEqual({ widgetId: 'task_delegation.injection.task-assigned-to', priority: 30 })
 })
 
 it('renders nothing without a task in context', () => {

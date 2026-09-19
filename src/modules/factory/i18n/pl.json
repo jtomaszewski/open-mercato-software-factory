@@ -5,7 +5,7 @@
   "factory.approve.working": "Publikuję...",
   "factory.approve.errors.generic": "Nie udało się zatwierdzić.",
   "factory.approve.errors.notFound": "Nie znaleziono zadania.",
-  "factory.approve.errors.notDelegated": "Zadanie nie jest delegowane do fabryki.",
+  "factory.approve.errors.notDelegated": "Zadanie nie jest przekazane agentowi Software Engineer.",
   "factory.approve.errors.noPullRequest": "Zadanie nie ma jeszcze pull requesta strony.",
   "factory.approve.errors.notInReview": "Zatwierdzić można tylko zadanie w recenzji.",
   "factory.approve.errors.assigneeOnly": "Pull request może zatwierdzić tylko osoba przypisana do zadania.",
@@ -22,5 +22,5 @@
   "factory.review.checks.failing": "Checki czerwone",
   "factory.review.checks.pending": "Checki w toku",
   "factory.review.checks.none": "Brak checków",
-  "factory.review.technicalDetails": "Szczegóły techniczne"
+  "factory.review.technicalDetails": "Pull request i zmienione pliki"
 }

@@ -29,7 +29,7 @@ const review: TaskReview = {
 beforeEach(() => { readApi.mockReset().mockResolvedValue({ review }) })
 
 it('sits under the run-status bar in the drawer header, not in the sidebar', () => {
-  expect(injectionTable['detail:staff:staff_time_task:header']).toEqual({ widgetId: 'factory.injection.task-approve', priority: 30 })
+  expect(injectionTable['detail:staff:staff_time_task:header']).toEqual({ widgetId: 'factory.injection.task-approve', priority: 10 })
   expect(injectionTable['detail:staff:staff_time_task:sidebar']).toBeUndefined()
 })
 

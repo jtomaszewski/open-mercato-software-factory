@@ -43,9 +43,10 @@ function FilePatch({ file }: { file: ReviewFile }) {
  * only decides what to show.
  *
  * It renders in the drawer header, right under `task_delegation`'s run-status bar: the bar says the
- * change is ready, this is where the owner looks at it and publishes it. Everything technical —
- * the pull request and the per-file diff — is folded under „Szczegóły techniczne”, because the
- * business owner this drawer is for reads a preview, not a patch.
+ * change is ready, this is where the owner looks at it and publishes it. The pull request and the
+ * per-file diff stay folded away, because the business owner this drawer is for reads a preview,
+ * not a patch — under their own heading rather than a second „Szczegóły techniczne”, which would
+ * put two identically named collapsibles in one drawer.
  */
 export default function TaskApprove({ context }: { context?: { taskId?: string } }) {
   const t = useT()
@@ -121,7 +122,7 @@ export default function TaskApprove({ context }: { context?: { taskId?: string }
     </> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     <details className="rounded-md border border-border px-3 py-2" data-testid="factory-review-technical">
-      <summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t('factory.review.technicalDetails', 'Technical details')}</summary>
+      <summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t('factory.review.technicalDetails', 'Pull request and changed files')}</summary>
       <div className="mt-2 space-y-1">
         <a className="text-sm text-primary underline" href={review.pr.url} target="_blank" rel="noopener noreferrer">{t('factory.review.pr', 'PR #{number}').replace('{number}', String(review.pr.number))}</a>
         {review.files.map((file) => <FilePatch key={file.filename} file={file} />)}

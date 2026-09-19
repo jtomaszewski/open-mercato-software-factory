@@ -39,9 +39,11 @@ export function isLiveOrClosedRun(delegation: TaskDelegationDto | null | undefin
  * reads and whether "Spróbuj ponownie" is offered, never whether a write is allowed.
  *
  * A run that never reached a process instance could not have been the agent's fault; beyond that,
- * the reasons the factory raises before the agent does anything name their setting
- * (`FACTORY_GITHUB_TOKEN`, `FACTORY_SITE_REPO`, a clone that could not start) or say the
- * orchestrator was unavailable.
+ * the reasons raised before the agent does anything name their setting (`FACTORY_GITHUB_TOKEN`,
+ * `FACTORY_SITE_REPO`, a clone that could not start) or say the orchestrator was unavailable.
+ * Those env-var names are internal and never reach the owner: the copy for this state talks about
+ * the Software Engineer not being able to start, because that is the only name for the agent the
+ * owner has ever been shown (SPEC-008).
  */
 const CONFIGURATION_REASON = /FACTORY_[A-Z_]+|orchestrator|orkiestrator|is not set|must be owner\/name|Cannot clone|unavailable|niedostępn/i
 
