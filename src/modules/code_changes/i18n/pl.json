@@ -1,4 +1,7 @@
 {
+  "code_changes.review.previewUnavailable": "Podgląd nie jest jeszcze dostępny. Odśwież dane przed zatwierdzeniem zmiany.",
+  "code_changes.review.refresh": "Odśwież",
+  "code_changes.review.refreshing": "Odświeżam...",
   "code_changes.approve.title": "Zmiana na stronie",
   "code_changes.approve.hint": "Przejrzyj zmiany i podgląd, a potem zatwierdź, żeby opublikować.",
   "code_changes.approve.action": "Zatwierdź i opublikuj",

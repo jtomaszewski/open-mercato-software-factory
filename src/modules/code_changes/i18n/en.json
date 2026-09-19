@@ -1,4 +1,7 @@
 {
+  "code_changes.review.previewUnavailable": "The preview is not available yet. Refresh to check again before approving.",
+  "code_changes.review.refresh": "Refresh",
+  "code_changes.review.refreshing": "Refreshing...",
   "code_changes.approve.title": "Website change",
   "code_changes.approve.hint": "Review the changes and the preview, then approve to publish.",
   "code_changes.approve.action": "Approve and publish",

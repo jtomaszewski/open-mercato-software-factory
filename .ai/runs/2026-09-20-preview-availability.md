@@ -21,5 +21,10 @@ Changed labels and conditional UI may affect user expectations. Cover the releva
 PR: #53
 
 ### Phase 1: Correct the audited behavior
-- [ ] 1.1 Add regression coverage and implement the scoped correction.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.1 Add regression coverage and implement the scoped correction.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+
+## Verification
+RED: four expected failures. GREEN: six component tests covering missing preview, initial error, stale error, pending refresh and recovery. Full generate, typecheck, lint, ds:check, 299 tests and production build passed. Desktop QA exercised refresh on an existing preview and confirmed disabled actions during loading. Missing-preview and error states were verified by component tests.
+
+Independent primary review: no introduced blockers. Desktop evidence is attached to PR #53.

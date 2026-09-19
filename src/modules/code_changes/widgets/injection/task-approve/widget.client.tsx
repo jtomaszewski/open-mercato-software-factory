@@ -74,11 +74,14 @@ export default function TaskApprove({ context }: { context?: { taskId?: string }
 
   if (!taskId) return null
   if (loading && !review) return <LoadingMessage label={t('code_changes.review.loading')} />
-  if (loadError && !review) return <ErrorMessage label={t('code_changes.review.errors.load')} />
+  if (loadError && !review) return <div className="space-y-2">
+    <ErrorMessage label={t('code_changes.review.errors.load')} />
+    <Button variant="outline" size="sm" onClick={refresh}>{t('code_changes.review.refresh')}</Button>
+  </div>
   if (!review) return null
 
   async function approve() {
-    if (!review || saving) return
+    if (!review?.previewUrl || saving || loading || loadError) return
     setSaving(true)
     setError(null)
     try {
@@ -107,18 +110,21 @@ export default function TaskApprove({ context }: { context?: { taskId?: string }
 
   return <section className="space-y-2" aria-label={t('code_changes.approve.title')} data-testid="code-changes-task-approve">
     <h3 className="text-sm font-medium">{t('code_changes.approve.title')}</h3>
+    {loadError ? <ErrorMessage label={t('code_changes.review.errors.load')} /> : null}
     <div className="flex flex-wrap items-center gap-2 text-sm">
       {review.previewUrl ? <a className="text-primary underline" href={review.previewUrl} target="_blank" rel="noopener noreferrer" data-testid="code-changes-review-preview">{t('code_changes.review.preview')}</a> : null}
       <StatusBadge variant={checksVariant}>{checksLabel}</StatusBadge>
       {review.pr.merged ? <StatusBadge variant="success">{t('code_changes.review.merged')}</StatusBadge> : null}
+      <Button variant="outline" size="sm" disabled={loading || saving} onClick={refresh}>{t(loading ? 'code_changes.review.refreshing' : 'code_changes.review.refresh')}</Button>
     </div>
+    {!review.previewUrl ? <p className="text-sm text-muted-foreground">{t('code_changes.review.previewUnavailable')}</p> : null}
     <p className="text-xs text-muted-foreground">
       {t('code_changes.review.summary', 'Changed files: {files} · +{additions} −{deletions}')
         .replace('{files}', String(review.files.length)).replace('{additions}', String(additions)).replace('{deletions}', String(deletions))}
     </p>
     {review.delegationActive && !review.pr.merged && review.pr.state === 'open' ? <>
-      <p className="text-sm text-muted-foreground">{t('code_changes.approve.hint')}</p>
-      <Button size="sm" disabled={saving} onClick={() => void approve()}>{saving ? t('code_changes.approve.working') : t('code_changes.approve.action')}</Button>
+      {review.previewUrl && !loadError ? <p className="text-sm text-muted-foreground">{t('code_changes.approve.hint')}</p> : null}
+      <Button size="sm" disabled={saving || loading || loadError || !review.previewUrl} onClick={() => void approve()}>{saving ? t('code_changes.approve.working') : t('code_changes.approve.action')}</Button>
     </> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
     <details className="rounded-md border border-border px-3 py-2" data-testid="code-changes-review-technical">
