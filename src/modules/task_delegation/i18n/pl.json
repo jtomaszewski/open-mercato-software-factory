@@ -12,6 +12,7 @@
   "task_delegation.assign.people": "Osoby",
   "task_delegation.assign.agents": "Agenci",
   "task_delegation.assign.apply": "Przypisz",
+  "task_delegation.assign.noAgentMatch": "Żaden agent nie pasuje do wyszukiwania.",
   "task_delegation.assign.noMatch": "Nic nie pasuje do wyszukiwania.",
   "task_delegation.assign.noDelegateFeature": "Delegowanie do agenta wymaga uprawnienia do delegowania.",
   "task_delegation.assign.accountable": "Zostaniesz zapisany jako osoba odpowiedzialna.",

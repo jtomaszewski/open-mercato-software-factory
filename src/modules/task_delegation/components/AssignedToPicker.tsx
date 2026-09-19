@@ -277,7 +277,7 @@ export function AssignedToPicker({ taskId, variant = 'drawer', keyboardShortcut 
               </div> : agentsError
                 ? <ErrorMessage label={t('task_delegation.errors.agents')} />
                 : agentOptions.length === 0
-                ? <p className="px-2 py-1 text-sm text-muted-foreground">{t('task_delegation.delegate.noAgents')}</p>
+                ? <p className="px-2 py-1 text-sm text-muted-foreground">{agents?.length ? t('task_delegation.assign.noAgentMatch', 'No agents match this search.') : t('task_delegation.delegate.noAgents')}</p>
                 : agentOptions.map((option) => {
                   const index = options.indexOf(option)
                   return <OptionRow

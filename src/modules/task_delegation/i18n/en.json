@@ -12,6 +12,7 @@
   "task_delegation.assign.people": "People",
   "task_delegation.assign.agents": "Agents",
   "task_delegation.assign.apply": "Assign",
+  "task_delegation.assign.noAgentMatch": "No agents match this search.",
   "task_delegation.assign.noMatch": "Nothing matches that search.",
   "task_delegation.assign.noDelegateFeature": "Delegating to an agent needs the delegate permission.",
   "task_delegation.assign.accountable": "You will be recorded as the accountable owner.",

@@ -21,5 +21,10 @@ Changed labels and conditional UI may affect user expectations. Cover the releva
 PR: #52
 
 ### Phase 1: Correct the audited behavior
-- [ ] 1.1 Add regression coverage and implement the scoped correction.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.1 Add regression coverage and implement the scoped correction.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+
+## Verification
+RED: one expected failure. GREEN: all 297 tests passed. Generate, typecheck, lint, ds:check and production build passed. Desktop QA confirmed the Polish no-match state; component tests also cover an empty roster and clearing the query.
+
+Independent primary review: no introduced blockers. Desktop evidence is attached to PR #52.
