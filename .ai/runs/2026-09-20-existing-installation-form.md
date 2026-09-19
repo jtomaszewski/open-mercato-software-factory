@@ -22,9 +22,9 @@ PR: #56
 
 ### Phase 1: Correct the audited behavior
 - [x] 1.1 Add regression coverage and implement the scoped correction.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
 
 ## Verification
 Generate, typecheck, lint, ds:check, all 295 tests and production build passed. Desktop QA confirmed one submit/cancel group, readable help, required-field validation and cancel navigation. No new unit tests were added for this layout and copy-only change; existing form and mutation behavior are preserved.
 
-Independent primary review is pending because runtime dispatch was blocked. Desktop evidence is attached to PR #56.
+Independent native primary review found no actionable issues at commit 0f438cab70cc68aeacd6f1f8f376216b1abb4134. Desktop evidence is attached to PR #56.
