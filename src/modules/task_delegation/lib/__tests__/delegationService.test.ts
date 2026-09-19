@@ -70,8 +70,8 @@ function peopleContext(access: { canManageAll: boolean; projectIds: string[] }, 
 }
 
 function agentRows(options: { agentDefinitionId?: string; definitions?: Record<string, unknown>[] } = {}): void {
-  rows.principals = [{ userId: AGENT_USER, agentDefinitionId: options.agentDefinitionId ?? 'factory' }]
-  rows.definitions = options.definitions ?? [{ name: 'factory.deliver', triggers: [{ kind: 'manual' }] }]
+  rows.principals = [{ userId: AGENT_USER, agentDefinitionId: options.agentDefinitionId ?? 'developer' }]
+  rows.definitions = options.definitions ?? [{ name: 'website_publishing.website_change', triggers: [{ kind: 'manual' }] }]
   rows.users = [{ id: AGENT_USER, name: 'Factory', email: 'factory@example.com' }]
 }
 
@@ -109,12 +109,30 @@ describe('tasks delegation service', () => {
     await expect(service.listAgents(ctx)).resolves.toEqual([])
   })
 
+  it('offers one entry per role when the same agent exists under its current and legacy id', async () => {
+    // A mixed rollout can leave both rows behind; the picker must show the role once, under the
+    // current id, not the same "Software Engineer" twice.
+    agentRows()
+    rows.principals = [
+      { userId: 'legacy-agent-user', agentDefinitionId: 'factory' },
+      { userId: AGENT_USER, agentDefinitionId: 'developer' },
+    ]
+    rows.users = [
+      { id: 'legacy-agent-user', name: 'Factory', email: 'legacy@example.com' },
+      { id: AGENT_USER, name: 'Factory', email: 'factory@example.com' },
+    ]
+    const service = createTaskDelegationService({ em: {} as EntityManager })
+    await expect(service.listAgents(listAgentsContext())).resolves.toMatchObject([
+      { userId: AGENT_USER, agentId: 'developer' },
+    ])
+  })
+
   it('offers a rostered role with its own copy alongside the principal name', async () => {
     agentRows()
     const service = createTaskDelegationService({ em: {} as EntityManager })
     await expect(service.listAgents(listAgentsContext())).resolves.toEqual([{
       userId: AGENT_USER,
-      agentId: 'factory',
+      agentId: 'developer',
       name: 'Factory',
       label: 'Software Engineer',
       description: 'Researches, plans and opens a PR',
@@ -131,7 +149,7 @@ describe('tasks delegation service', () => {
     agentRows({ definitions: [] })
     const service = createTaskDelegationService({ em: {} as EntityManager })
     await expect(service.listAgents(listAgentsContext())).resolves.toEqual([])
-    agentRows({ definitions: [{ name: 'factory.deliver', triggers: [{ kind: 'event' }] }] })
+    agentRows({ definitions: [{ name: 'website_publishing.website_change', triggers: [{ kind: 'event' }] }] })
     await expect(service.listAgents(listAgentsContext())).resolves.toEqual([])
   })
 

@@ -8,6 +8,7 @@ import { seedTaskDelegationDemo } from '../demoSetup'
 const scope = { tenantId: '00000000-0000-4000-8000-000000000001', organizationId: '00000000-0000-4000-8000-000000000002' }
 const execute = jest.fn<(id: string, args: { input: Record<string, unknown> }) => Promise<{ result: Record<string, string> }>>()
 const provision = jest.fn<(...args: unknown[]) => Promise<{ userId: string }>>()
+const resolvePrincipal = jest.fn<(...args: unknown[]) => Promise<{ userId: string } | null>>()
 let rows: Record<string, Array<Record<string, unknown>>>
 
 function container(withOrchestrator: boolean) {
@@ -15,7 +16,7 @@ function container(withOrchestrator: boolean) {
     em: { fork: () => ({}) },
     queryEngine: { query: async (entity: string) => ({ items: rows[entity] ?? [] }) },
     commandBus: { execute },
-    agentPrincipalService: { provision },
+    agentPrincipalService: { resolve: resolvePrincipal, provision },
   }
   return {
     resolve: (name: string) => services[name],
@@ -32,7 +33,8 @@ beforeEach(() => {
   execute.mockReset().mockImplementation(async (id) => ({
     result: { entityId: 'customer-1', memberId: 'member-1', timeProjectId: 'project-1', taskStatusId: `status-${id}` },
   }))
-  provision.mockReset().mockResolvedValue({ userId: 'factory-user' })
+  provision.mockReset().mockResolvedValue({ userId: 'agent-user-id' })
+  resolvePrincipal.mockReset().mockResolvedValue(null)
 })
 
 it('creates the Internal customer, admin staff member, DEMO project and agent', async () => {
@@ -46,14 +48,14 @@ it('creates the Internal customer, admin staff member, DEMO project and agent', 
   ])
   expect(execute.mock.calls[1]![1].input).toMatchObject({ ...scope, userId: 'admin-user', displayName: 'Marek' })
   expect(execute.mock.calls[2]![1].input).toMatchObject({ ...scope, code: 'DEMO', customerId: 'customer-1', ownerUserId: 'admin-user' })
-  // SPEC-008: the agent reads as a job title, while every identifier keeps saying `factory`.
+  // SPEC-008: the agent reads as a job title; the identifier is the roster's `developer`.
   expect(provision).toHaveBeenCalledWith(scope, expect.objectContaining({
-    agentDefinitionId: 'factory',
+    agentDefinitionId: 'developer',
     displayName: 'Software Engineer',
     roleFeatures: ['task_delegation.view', 'task_delegation.process'],
   }))
   expect(result).toEqual({
-    customerId: 'customer-1', staffMemberId: 'member-1', projectId: 'project-1', agentUserId: 'factory-user',
+    customerId: 'customer-1', staffMemberId: 'member-1', projectId: 'project-1', agentUserId: 'agent-user-id',
   })
 })
 

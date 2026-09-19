@@ -44,7 +44,7 @@ export const enabledModules: ModuleEntry[] = [
   { id: 'task_tools', from: '@app' },
   // Agent delegation on the staff board (SPEC-002), through staff's extension contracts.
   { id: 'task_delegation', from: '@app' },
-  // GitHub repositories registered through a GitHub App and linked to projects; the factory's site repo + token.
+  // GitHub repositories registered through a GitHub App and linked to projects; the repo + token a delegated code change works on.
   { id: 'repositories', from: '@app' },
 ]
 
@@ -74,7 +74,10 @@ if (enterpriseModulesEnabled && enterpriseAgentsEnabled) {
   // brand-new module. Its source ships in every preset; it imports the
   // orchestrator SDK, so it is only enabled alongside it.
   enabledModules.push({ id: 'agent_examples', from: '@app' })
-  // The software factory (SPEC-001): catalog intake → orchestrator process → website PR. Imports the
-  // orchestrator's process entities, so it is only enabled alongside it.
-  enabledModules.push({ id: 'factory', from: '@app' })
+  // Delegated task → pull request on the project's repository, reviewed and approved in the task
+  // drawer; and the website intake that composes it (SPEC-001/004/006: catalog and sales changes →
+  // Developer agent → website PR). Both import the orchestrator's process entities, so they are
+  // only enabled alongside it.
+  enabledModules.push({ id: 'code_changes', from: '@app' })
+  enabledModules.push({ id: 'website_publishing', from: '@app' })
 }

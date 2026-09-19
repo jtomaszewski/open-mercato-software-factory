@@ -12,7 +12,7 @@ ARG NODE_IMAGE=docker.io/library/node:22-bookworm-slim
 FROM ${NODE_IMAGE} AS node
 FROM ${OPENCODE_BASE_IMAGE}
 
-# The Developer agent (src/modules/factory) builds the website checkout inside the sandbox, so
+# The Developer agent (src/modules/website_publishing) builds the website checkout inside the sandbox, so
 # the sidecar carries the target's toolchain: node + npm from the official image (Debian's own
 # node is too old for Next.js) and git. Only file agents with `filesBash: true` may use them.
 USER root

@@ -5,7 +5,7 @@ import { seedStalZbiornikiDemo } from './lib/stalZbiorniki'
 import { seedStalZbiornikiCompany } from './lib/company'
 import { applyDemoSidebar } from './lib/demoSidebar'
 import { seedTaskDelegationDemo } from '../task_delegation/lib/demoSetup'
-import { FACTORY_AGENT_DISPLAY_NAME } from '../task_delegation/lib/agentIdentity'
+import { DEVELOPER_AGENT_DISPLAY_NAME } from '../task_delegation/lib/agentIdentity'
 
 const USAGE = 'Usage: mercato demo_fixtures seed-stal-zbiorniki --tenant <tenantId> --org <organizationId>'
 
@@ -39,9 +39,9 @@ const seedDemo: ModuleCli = {
       `Stal-Zbiorniki (org=${organizationId}, tenant=${tenantId}): ${result.products} products created, ` +
         `customer Park of Poland ${created(result.customer)}, order SO-2026-0042 ${created(result.order)}`,
     )
-    // The board scenes delegate tasks on the DEMO project to the `factory` agent (SPEC-004).
+    // The board scenes delegate tasks on the DEMO project to the `developer` agent (SPEC-004).
     const board = await seedTaskDelegationDemo(container, { tenantId, organizationId })
-    console.log(`Task board: DEMO project ${board.projectId}, ${FACTORY_AGENT_DISPLAY_NAME} agent ${board.agentUserId ?? 'skipped (orchestrator disabled)'}`)
+    console.log(`Task board: DEMO project ${board.projectId}, ${DEVELOPER_AGENT_DISPLAY_NAME} agent ${board.agentUserId ?? 'skipped (orchestrator disabled)'}`)
     const company = await seedStalZbiornikiCompany(container, { tenantId, organizationId })
     console.log(`Company: ${company.created} records created, branding ${company.branded ? 'applied' : 'already present'}`)
     const sidebar = await applyDemoSidebar(em, container, { tenantId })

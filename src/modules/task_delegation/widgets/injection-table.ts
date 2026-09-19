@@ -6,7 +6,7 @@ export const injectionTable: ModuleInjectionTable = {
     { widgetId: 'task_delegation.injection.task-delegate-badge', priority: 50 },
   ],
   // The drawer header is the whole owner-facing read of a delegated task: who owns it, then what
-  // the run is doing, then — from `factory` at priority 10 — the website change to approve. The
+  // the run is doing, then — from `code_changes` at priority 10 — the website change to approve. The
   // spot renders the highest priority first, so these numbers descend in reading order.
   'detail:staff:staff_time_task:header': [
     { widgetId: 'task_delegation.injection.task-assigned-to', priority: 30 },

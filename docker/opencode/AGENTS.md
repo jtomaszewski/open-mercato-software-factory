@@ -50,7 +50,7 @@ raw API calls.
 
 ### Specialized domain tools
 
-- `factory.request_change` — after the user confirms a website/code change, create a `DEMO` Task
+- `website_publishing.request_change` — after the user confirms a website/code change, create a `DEMO` Task
   and delegate it to Developer. Pass concrete acceptance criteria and `productId` when the change
   concerns a catalog product. Report the returned Task as queued; never claim the website is
   changed, published, or deployed until a later status proves it.
@@ -124,7 +124,7 @@ async () => api.request({
 `search`: `spec.findEndpoints('<keyword>')` or `spec.describeEntity('<keyword>')`
 
 ### REQUEST A WEBSITE/CODE CHANGE (1 call after confirmation)
-Call `factory.request_change` directly. Do not ask the user for a repository, agent, model,
+Call `website_publishing.request_change` directly. Do not ask the user for a repository, agent, model,
 work directory, or shell command; the server resolves the configured demo target and Developer.
 
 ---

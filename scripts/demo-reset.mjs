@@ -39,10 +39,10 @@ const scope = ['--tenant', rows[0].tenant_id, '--org', rows[0].id]
 
 mercato('demo_fixtures', 'seed-stal-zbiorniki', ...scope)
 mercato('task_delegation', 'seed-demo', ...scope)
-mercato('factory', 'ensure-process', ...scope)
+mercato('website_publishing', 'ensure-process', ...scope)
 // The seed sets the organization logo through core's update command, whose query-index event
 // carries the wrong scope and is rejected; rebuild that one index so it matches the record.
 mercato('query_index', 'reindex', '--entity', 'directory:organization', '--force')
 
 console.log(`[demo:reset] done — tenant ${rows[0].tenant_id}, org ${rows[0].id}; login superadmin@acme.com / secret`)
-console.log('[demo:reset] GitHub is untouched: close leftover Factory PRs/branches on the landing repo yourself.')
+console.log('[demo:reset] GitHub is untouched: close leftover Developer PRs/branches on the landing repo yourself.')
