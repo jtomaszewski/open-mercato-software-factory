@@ -18,9 +18,11 @@ describe('demoSidebarHiddenItems', () => {
 
   it('keeps the visible items pointing at installed pages', () => {
     const paths = backendRouteMetadata.map((route) => route.pattern ?? route.path)
-    for (const href of [...DEMO_SIDEBAR_VISIBLE_ITEMS, '/backend/staff/time-tracking/board']) {
+    const injected = ['/backend/staff/time-tracking/board', '/backend/customers/deals', '/backend/customers/companies']
+    for (const href of [...DEMO_SIDEBAR_VISIBLE_ITEMS, ...injected]) {
       expect(paths).toContain(href)
     }
-    expect(demoSidebarHiddenItems(backendRouteMetadata)).toContain('/backend/staff/time-tracking')
+    const hidden = demoSidebarHiddenItems(backendRouteMetadata)
+    expect(hidden).toEqual(expect.arrayContaining(['/backend/staff/time-tracking', ...injected.slice(1)]))
   })
 })

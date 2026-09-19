@@ -12,15 +12,11 @@ import { saveRoleSidebarPreference } from '@open-mercato/core/modules/auth/servi
  * installed and reachable by URL; it is only hidden from the menu, as a role default that
  * Customize sidebar can edit or clear.
  *
- * The task board is a child of "My work", which is hidden, so it comes back as a top-level
- * item injected by `widgets/injection/demo-tasks-menu`.
+ * A role default cannot move an item to another group, so the task board (under the hidden
+ * "My work"), deals and companies are hidden here and re-added where the pitch wants them by
+ * `widgets/injection/demo-menu`.
  */
-export const DEMO_SIDEBAR_VISIBLE_ITEMS = [
-  '/backend/catalog/products',
-  '/backend/customers/companies',
-  '/backend/customers/deals',
-  '/backend/sales/orders',
-]
+export const DEMO_SIDEBAR_VISIBLE_ITEMS = ['/backend/catalog/products', '/backend/sales/orders']
 
 // Groups shown whole, sub-items included: the factory's agents and the automations it runs on.
 export const DEMO_SIDEBAR_VISIBLE_GROUPS = ['agent_orchestrator.nav.group', 'workflows.module.name']
@@ -28,11 +24,14 @@ export const DEMO_SIDEBAR_VISIBLE_GROUPS = ['agent_orchestrator.nav.group', 'wor
 export const DEMO_SIDEBAR_GROUP_ORDER = [
   'staff.time_tracking.nav.group',
   'catalog.nav.group',
-  'customers.nav.group',
   'customers~sales.nav.group',
   'agent_orchestrator.nav.group',
   'workflows.module.name',
 ]
+
+// The board's group holds only the board; the pitch calls it Projects. Role defaults take a
+// literal label, not a translation key, so this is Polish like the rest of the demo.
+export const DEMO_SIDEBAR_GROUP_LABELS = { 'staff.time_tracking.nav.group': 'Projekty' }
 
 type RouteLike = { path?: string; pattern?: string; groupKey?: string }
 
@@ -61,6 +60,7 @@ export async function applyDemoSidebar(
     await saveRoleSidebarPreference(em, { roleId: role.id, tenantId, locale: 'pl' }, {
       version: SIDEBAR_PREFERENCES_VERSION,
       groupOrder: DEMO_SIDEBAR_GROUP_ORDER,
+      groupLabels: DEMO_SIDEBAR_GROUP_LABELS,
       hiddenItems,
     })
   }

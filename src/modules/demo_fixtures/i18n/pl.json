@@ -1,3 +1,5 @@
 {
-  "demo_fixtures.menu.taskBoard": "Zadania"
+  "demo_fixtures.menu.taskBoard": "Zadania",
+  "demo_fixtures.menu.deals": "Szanse sprzedaży",
+  "demo_fixtures.menu.customers": "Klienci"
 }
