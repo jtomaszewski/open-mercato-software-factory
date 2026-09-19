@@ -35,3 +35,73 @@ activity trail, cost per run), not a docker call the orchestrator never sees. Sa
 - The run principal needs `agent_orchestrator.agents.run` for the agent's MCP outcome submit.
 - Open: spec update (D-009 reversal), cost/tokens on the run are null for the OpenCode runtime,
   the process page's activity trail, drawer link to the run.
+
+---
+
+# Demo scenario validation
+
+## Plan
+
+- [x] Identify the documented first demo scenario and the supported reseed/start commands.
+- [x] Reseed the app and start the documented local environment.
+- [ ] Walk the complete first scenario in the browser and capture screenshots at key states.
+  Blocked: no Browser surface is available, and Scene 2's chat intake/Caseload record-change
+  path is not implemented.
+- [x] Record the result, evidence, and any blockers here.
+
+## Verification
+
+- ✅ The app readiness check succeeded after reseeding.
+- ❌ The documented scenario cannot complete because the chat intake and Caseload record-change
+  path are not implemented.
+- ❌ No screenshots were captured because the Conductor browser runtime had no available browser.
+
+## Review
+
+- `corepack yarn demo:reset` completed and seeded seven products, the DEMO project, Park of
+  Poland order, and Factory process.
+- `scripts/conductor-run.sh` started the app at `http://localhost:55110`; migrations were current
+  and readiness succeeded.
+- Live authenticated API evidence confirmed `ZDP-5000` has `capacityLiters: 5000` and no
+  dimensions, matching the Scene 2 starting state; the DEMO board has zero tasks.
+- `BASE_URL=http://localhost:55110 PW_CAPTURE_SCREENSHOTS=1 corepack yarn test:integration
+  --retries=0`: two authentication tests passed; the task-drawer UI case skipped because the
+  reset intentionally creates no task.
+- The Conductor browser runtime reported no available browser, so no useful UI screenshot or
+  recording could be captured.
+- Scene 2 is not runnable end to end in this revision: SPEC-004 still lists chat intake and
+  Caseload record changes as missing, and `task_tools` says its tools are only allow-listable by
+  an in-app agent later.
+
+---
+
+# Developer task intake tool
+
+## Plan
+
+- [x] Record the approved demo intake contract in a focused spec.
+- [x] Add an approval-aware `factory.request_change` AI/MCP tool that creates a scoped staff task
+      and delegates it to the existing Developer principal.
+- [x] Extend the Catalog Merchandising Assistant with the tool and teach OpenCode clients when to
+      use it and how to report queued work.
+- [x] Generate discovery output and run focused plus broad validation.
+- [x] Reseed/restart the demo, exercise the first scenario in the browser, and capture evidence.
+- [x] Review the final diff and commit the completed slice.
+
+## Verification
+
+- `yarn test`: 39 suites / 209 tests green; `yarn lint`: 0 errors; `yarn typecheck`: clean apart
+  from the live Developer checkout under `.mercato/opencode-work/` (tsconfig includes it mid-run).
+- Live chat (superadmin, Catalog Merchandising Assistant): "ZWP-5000 ma teraz 5200 l … na naszej
+  stronie WWW" → approval card (DEMO, Developer, product id) → Confirm → task DEMO-1 created and
+  delegated → `factory.developer` run finished `ok` in the sidecar.
+- PR step failed: `FACTORY_GITHUB_TOKEN` is empty in this worktree's `.env`.
+
+## Review
+
+- Live run exposed two bugs the mocks hid: the model invented `project: "website"` (input
+  dropped; server always files on DEMO), and the in-process runner returned no projects for a
+  super admin because it sends no selected-org cookie (fixed by `task_tools/lib/scoped-runner.ts`,
+  also used by `task_tools`; lesson recorded).
+- After approval the chat only shows "Action applied"; the task reference isn't shown back
+  (installed pending-action flow gives the model no follow-up turn).

@@ -39,12 +39,21 @@ rg -n 'Confirm before|_sessionToken|search.*fulltext|Common API Paths' docker/op
 
 ## Tools
 
-Two tools — both accept a "code" parameter with an async JavaScript arrow function.
+Code Mode provides the two tools below. MCP may also expose specialized domain tools; prefer one
+when it exactly matches the user's requested outcome instead of reconstructing the operation from
+raw API calls.
 
 | Tool | Purpose | Globals |
 |------|---------|---------|
 | `search` | Discover endpoints and schemas (READ-ONLY) | `spec` — OpenAPI paths + entity schemas |
 | `execute` | Make API calls (reads and writes) | `api.request()`, `context` |
+
+### Specialized domain tools
+
+- `factory.request_change` — after the user confirms a website/code change, create a `DEMO` Task
+  and delegate it to Developer. Pass concrete acceptance criteria and `productId` when the change
+  concerns a catalog product. Report the returned Task as queued; never claim the website is
+  changed, published, or deployed until a later status proves it.
 
 ### search helpers
 
@@ -113,6 +122,10 @@ async () => api.request({
 
 ### DISCOVER (1 call)
 `search`: `spec.findEndpoints('<keyword>')` or `spec.describeEntity('<keyword>')`
+
+### REQUEST A WEBSITE/CODE CHANGE (1 call after confirmation)
+Call `factory.request_change` directly. Do not ask the user for a repository, agent, model,
+work directory, or shell command; the server resolves the configured demo target and Developer.
 
 ---
 

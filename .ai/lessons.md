@@ -1,6 +1,6 @@
 # Lessons
 
-This catalog indexes 1 focused lessons without loading their full text. Route the task first, then read only records whose **modules**, standalone-harness **areas**, or **topics** match the work.
+This catalog indexes 2 focused lessons without loading their full text. Route the task first, then read only records whose **modules**, standalone-harness **areas**, or **topics** match the work.
 
 ## How to use this catalog
 
@@ -29,3 +29,4 @@ rg -l '"<area>"|"<module>"|"<topic>"' .ai/lessons/*.md
 ### debugging
 
 - [Keep cross-module runtime registries on globalThis, and verify them in the built app](lessons/module-state-must-survive-bundle-duplication.md) — area:debugging,testing; module:task_delegation; topic:generated-files,command-transactions,di
+- [Pin the selected organization when an AI tool calls routes through the operation runner](lessons/ai-tool-runner-needs-selected-org.md) — area:debugging,ai-workflow; module:task_tools,factory; topic:data-scoping,ai-tools
