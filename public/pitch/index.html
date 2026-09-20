@@ -76,6 +76,11 @@
   .slide.active { display: flex; }
   .notes { display: none; }
 
+  /* build steps: parts that arrive on a later click, without shifting the layout */
+  .slide [data-step] { opacity: 0; transform: translateY(28px);
+    transition: opacity .5s ease, transform .5s ease; }
+  .slide [data-step].shown { opacity: 1; transform: none; }
+
   /* chrome: drafting-sheet border with cherry corner ticks + ruled footer */
   .slide::before { content: ""; position: absolute; inset: 40px; pointer-events: none;
     border: 1px solid var(--border);
@@ -269,6 +274,7 @@
     .slide { display: flex !important; position: relative; page-break-after: always; break-after: page; width: 1920px; height: 1080px;
       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     #progress, #black { display: none; }
+    .slide [data-step] { opacity: 1 !important; transform: none !important; }
   }
 </style>
 </head>
@@ -298,7 +304,7 @@
       </dl>
       <div class="zero"><span>Programiści</span><b>0</b></div>
     </div>
-    <div class="hook-right">
+    <div class="hook-right" data-step="1">
       <h2>Strona mówi co innego niż&nbsp;magazyn</h2>
       <div class="shot">
         <img src="img/site-od-reki.png" alt="Sekcja produktów na stronie Metal Zbiorniki: karty zbiorników z cenami">
@@ -509,6 +515,7 @@
   const presenter = new URLSearchParams(location.search).has('presenter')
   const channel = 'BroadcastChannel' in window ? new BroadcastChannel('om-pitch') : null
   let current = 0
+  let step = 0
 
   // footers: "02 / 06" for the pitch, "B1" for backup
   let backupNo = 0
@@ -531,34 +538,69 @@
     deck.style.transform = `translate(-50%, -50%) scale(${scale})`
   }
 
-  function show(index, { broadcast = true } = {}) {
+  // a slide may reveal parts on later clicks: [data-step="1"], [data-step="2"], …
+  const stepEls = (slide) => [...slide.querySelectorAll('[data-step]')]
+  const maxStep = (slide) => stepEls(slide).reduce((m, el) => Math.max(m, +el.dataset.step || 1), 0)
+
+  function applySteps() {
+    stepEls(slides[current]).forEach((el) =>
+      el.classList.toggle('shown', (+el.dataset.step || 1) <= step))
+  }
+
+  function show(index, { broadcast = true, step: to = 0 } = {}) {
     current = Math.max(0, Math.min(slides.length - 1, index))
+    step = to === 'last' ? maxStep(slides[current]) : Math.min(to, maxStep(slides[current]))
     slides.forEach((s, i) => s.classList.toggle('active', i === current))
+    applySteps()
     history.replaceState(null, '', `${location.search}#${current + 1}`)
     document.getElementById('progress').style.width =
       `${Math.min(100, ((current + 1) / mainCount) * 100)}%`
     if (presenter) renderPresenter()
-    if (broadcast && channel) channel.postMessage({ slide: current })
+    if (broadcast && channel) channel.postMessage({ slide: current, step })
+  }
+
+  // one click = next build step if the slide still has one, otherwise next slide
+  function advance(dir) {
+    const next = step + dir
+    if (next >= 0 && next <= maxStep(slides[current])) {
+      step = next
+      applySteps()
+      if (presenter) renderPresenter()
+      if (channel) channel.postMessage({ slide: current, step })
+      return
+    }
+    show(current + dir, { step: dir < 0 ? 'last' : 0 })
   }
 
   // presenter window: current + next slide, notes, timer
   let started = null
-  function mini(target, slide) {
+  function mini(target, slide, { allSteps = false } = {}) {
     target.innerHTML = ''
     if (!slide) return
     const clone = slide.cloneNode(true)
     clone.classList.add('active')
+    if (allSteps) clone.querySelectorAll('[data-step]').forEach((el) => el.classList.add('shown'))
     clone.querySelectorAll('video').forEach((v) => v.removeAttribute('src'))
     target.appendChild(clone)
     requestAnimationFrame(() => { clone.style.transform = `scale(${target.clientWidth / 1920})` })
   }
   function renderPresenter() {
     mini(document.getElementById('pv-now'), slides[current])
-    mini(document.getElementById('pv-next'), slides[current + 1])
+    const steps = maxStep(slides[current])
+    if (step < steps) {
+      // next click stays on this slide — preview it with one more part revealed
+      const preview = slides[current].cloneNode(true)
+      preview.querySelectorAll('[data-step]').forEach((el) =>
+        el.classList.toggle('shown', (+el.dataset.step || 1) <= step + 1))
+      mini(document.getElementById('pv-next'), preview)
+    } else {
+      mini(document.getElementById('pv-next'), slides[current + 1], { allSteps: true })
+    }
     const notes = slides[current].querySelector('.notes')
     document.getElementById('pv-notes').innerHTML = notes ? notes.innerHTML : ''
     document.getElementById('pv-pos').textContent =
-      `${current + 1} / ${slides.length} · ${slides[current].dataset.title || ''}`
+      `${current + 1} / ${slides.length} · ${slides[current].dataset.title || ''}` +
+      (steps ? ` · klik ${step} / ${steps}` : '')
   }
   function tick() {
     const el = document.getElementById('pv-clock')
@@ -578,17 +620,18 @@
 
   if (channel) {
     channel.onmessage = ({ data }) => {
-      if (typeof data.slide === 'number' && data.slide !== current) show(data.slide, { broadcast: false })
+      if (typeof data.slide === 'number' && (data.slide !== current || data.step !== step))
+        show(data.slide, { broadcast: false, step: data.step || 0 })
       if (data.black !== undefined) document.body.classList.toggle('black', data.black)
-      if (data.hello && !presenter) channel.postMessage({ slide: current })
+      if (data.hello && !presenter) channel.postMessage({ slide: current, step })
     }
   }
 
   addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return
     const k = e.key
-    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); show(current + 1) }
-    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); show(current - 1) }
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); advance(1) }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); advance(-1) }
     else if (k === 'Home') show(0)
     else if (k === 'End') show(mainCount - 1)
     else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()
