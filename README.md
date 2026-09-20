@@ -49,15 +49,22 @@ and the approve/reject decision on it), **Code → Code repositories**
 `website_publishing ensure-process`. Plain `yarn reinstall` is not the same: it also seeds the
 core example catalog (sneakers, haircuts).
 
-A reset wipes our record of the GitHub App installation — the connection, the registered
-repository and its link to `WWW` — so the script ends by telling you whether one is linked.
-**Scenes 3 and 3b need it**: without a repository the intake still puts its task on the board and
-the coding run then dies at checkout.
+**The GitHub App connection survives a reset.** The App (`om-software-factory`) stays installed
+on GitHub regardless; what a wipe used to destroy was our record of it — the connection, the
+registered repository and its link to `WWW` — and rebuilding that costs a browser consent the
+script cannot make. So the rows are carried over and re-scoped to the new tenant, and the script
+says which repository it kept. Nothing new is granted: the consent already happened. To start
+genuinely clean, disconnect in **Settings → Code repositories** after the reset.
 
-No personal access token is involved. The App (`om-software-factory`) stays installed on GitHub
-across resets, so reconnecting is one consent click: **Code → Code repositories → Repository
-settings → Connect GitHub**, register the landing repo, then link it to `WWW` on the project
-page. The run then uses a short-lived installation token scoped to that one repository.
+**Scenes 3 and 3b need that link.** Without a repository the intake still puts its task on the
+board and the coding run then dies at checkout — the script warns when none is linked.
+
+First time, or after disconnecting: no personal access token is involved. Connect with one
+consent click — **Code → Code repositories → Repository settings → Connect GitHub**, register the
+landing repo, then link it to `WWW` on the project page. The run then uses a short-lived
+installation token scoped to that one repository. If the App is *already* installed on your
+account, use **Connect existing installation** instead: the plain Connect button opens GitHub's
+install page, which is a dead end once the App is installed.
 
 Two things to check if the consent redirect lands nowhere: the App must list
 `<dev origin>/backend/repositories/connect` as a callback URL, and each Conductor worktree runs on
