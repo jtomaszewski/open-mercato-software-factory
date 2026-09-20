@@ -16,7 +16,14 @@ import { saveRoleSidebarPreference } from '@open-mercato/core/modules/auth/servi
  * "My work"), deals and companies are hidden here and re-added where the pitch wants them by
  * `widgets/injection/demo-menu`.
  */
-export const DEMO_SIDEBAR_VISIBLE_ITEMS = ['/backend/catalog/products', '/backend/sales/orders']
+export const DEMO_SIDEBAR_VISIBLE_ITEMS = [
+  '/backend/catalog/products',
+  '/backend/sales/orders',
+  // The Code section: where the owner sees what the Developer proposed and decides it. The board
+  // drawer can approve one change, but only the change it belongs to — this is the list.
+  '/backend/code/changes',
+  '/backend/code/repositories',
+]
 
 // Groups shown whole, sub-items included: the factory's agents and the automations it runs on.
 export const DEMO_SIDEBAR_VISIBLE_GROUPS = ['agent_orchestrator.nav.group', 'workflows.module.name']
@@ -25,6 +32,8 @@ export const DEMO_SIDEBAR_GROUP_ORDER = [
   'staff.time_tracking.nav.group',
   'catalog.nav.group',
   'customers~sales.nav.group',
+  // The business areas, then the code the agents changed, then the agents themselves.
+  'backend.nav.code',
   'agent_orchestrator.nav.group',
   'workflows.module.name',
 ]
