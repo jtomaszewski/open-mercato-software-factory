@@ -2,7 +2,7 @@ import { OptionalProps } from '@mikro-orm/core'
 import { Entity, Index, PrimaryKey, Property } from '@mikro-orm/decorators/legacy'
 import type { DelegationOutcome } from '../lib/transitionPolicy'
 
-export type TaskDelegationLinkKind = 'pr' | 'caseload' | 'artifact' | 'instance' | 'run'
+export type TaskDelegationLinkKind = 'pr' | 'caseload' | 'artifact' | 'instance' | 'run' | 'change'
 export type TaskDelegationLink = {
   kind: TaskDelegationLinkKind
   ref: string

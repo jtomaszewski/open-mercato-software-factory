@@ -38,7 +38,13 @@ const logger = createLogger('task_delegation').child({ component: 'task-commands
 const UUID = z.string().uuid()
 const processIdentitySchema = z.object({ delegationId: UUID, processInstanceId: UUID, stepId: z.string().min(1).max(100) })
 const setStatusSchema = processIdentitySchema.extend({ taskId: UUID, status: z.enum(['open', 'queued', 'in_design', 'in_progress', 'in_review', 'done', 'rejected', 'failed']), reason: z.string().max(8000).optional() })
-const linkSchema = processIdentitySchema.extend({ taskId: UUID, kind: z.enum(['pr', 'caseload', 'artifact', 'instance', 'run']), ref: z.string().min(1).max(500), url: z.string().url().max(2000).optional() })
+// A link is either an absolute http(s) URL (a pull request, a preview) or an in-app backend path
+// (the change request, the Caseload) — the two shapes every surface that renders a link accepts.
+const linkUrl = z.string().max(2000).refine(
+  (value) => value.startsWith('/backend/') || /^https?:\/\//.test(value),
+  { message: 'Link must be an http(s) URL or a /backend/ path' },
+)
+const linkSchema = processIdentitySchema.extend({ taskId: UUID, kind: z.enum(['pr', 'caseload', 'artifact', 'instance', 'run', 'change']), ref: z.string().min(1).max(500), url: linkUrl.optional() })
 const followupSchema = processIdentitySchema.extend({ parentId: UUID, title: z.string().trim().min(1).max(255), body: z.string().max(8000) })
 
 type StatusRow = { id: string; slug: string }

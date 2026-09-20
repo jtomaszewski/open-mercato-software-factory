@@ -45,7 +45,7 @@ const site = { token: 'app-token', repo: 'o/site', baseBranch: 'main', apiUrl: '
 const calls = () => execute.mock.calls.map(([id, args]) => [id, args.input])
 
 beforeEach(() => {
-  execute.mockReset().mockResolvedValue({ result: {} })
+  execute.mockReset().mockResolvedValue({ result: { id: 'change-1' } })
   resolveExecutionUser.mockReset().mockResolvedValue('principal-1')
   deps.resolveGitHub.mockReset().mockResolvedValue(site)
   deps.prepareCheckout.mockReset().mockResolvedValue({ baseSha: 'base-sha', workDir: '/home/opencode/work/tasks/task-1' })
@@ -67,6 +67,11 @@ it('prepare: moves the bound task to In progress and checks out its project repo
       ...identity, stepId: `${PREPARE_CHECKOUT_FUNCTION}:change_request`,
       projectId: 'project-1', title: 'Opublikuj stronę produktu ZWM-1500', repoFullName: 'o/site', baseBranch: 'main', repositoryId: 'repo-1',
     }],
+    // The drawer's one offer while the agent works: open the change and watch it happen.
+    ['task_delegation.task.link', {
+      ...identity, stepId: `${PREPARE_CHECKOUT_FUNCTION}:change_link`,
+      kind: 'change', ref: 'Opublikuj stronę produktu ZWM-1500', url: '/backend/code/changes/change-1',
+    }],
   ])
   expect(execute.mock.calls[0]![1].ctx.auth.sub).toBe('principal-1')
   expect(deps.resolveGitHub).toHaveBeenCalledWith(expect.anything(), scope, 'project-1')
@@ -83,11 +88,12 @@ it('prepare: a clone failure closes the task with the reason', async () => {
   expect(calls().map(([id]) => id)).toEqual([
     'task_delegation.task.set_status',
     'code_changes.change_request.start',
+    'task_delegation.task.link',
     'task_delegation.task.set_status',
     'code_changes.change_request.mark_failed',
   ])
-  expect((execute.mock.calls[2]![1].input as { reason: string }).reason).toContain('Cannot clone')
   expect((execute.mock.calls[3]![1].input as { reason: string }).reason).toContain('Cannot clone')
+  expect((execute.mock.calls[4]![1].input as { reason: string }).reason).toContain('Cannot clone')
 })
 
 it('open PR: commits the collected change with the agent summary, links the PR, moves the task to review and removes the checkout', async () => {

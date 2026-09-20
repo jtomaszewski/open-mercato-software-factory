@@ -20,7 +20,7 @@ export type RunBarState =
   | 'failedAgent'
   | 'rejected'
 
-export type RunBarAction = 'delegate' | 'retry' | 'takeOver' | 'caseload'
+export type RunBarAction = 'delegate' | 'retry' | 'takeOver' | 'caseload' | 'changeDetail'
 
 /**
  * A delegation released without an outcome is an agent a person removed: the task is back in human
@@ -72,15 +72,20 @@ export function resolveRunBarState(delegation: TaskDelegationDto | null | undefi
 /**
  * What the owner may do, in the order the bar renders it. The primary action is first.
  *
+ * While the agent is working normally the one offer is to open its change and watch it happen —
+ * taking the task over mid-run is an escape hatch, not the owner's next step, so it is kept for
+ * the states where the run is not going anywhere (stalled, failed, rejected). Without a change to
+ * open — a run that died before it proposed one — the escape hatch is all that is left.
+ *
  * `awaiting_decision` links to the Caseload and offers nothing else: deciding a plan inline is out
  * of scope for this change (assumption A-1 of the discovery prototype).
  */
-export function runBarActions(state: RunBarState): RunBarAction[] {
+export function runBarActions(state: RunBarState, hasChangeLink = false): RunBarAction[] {
   switch (state) {
     case 'none': return ['delegate']
     case 'starting':
-    case 'stalled':
-    case 'running': return ['takeOver']
+    case 'running': return hasChangeLink ? ['changeDetail'] : ['takeOver']
+    case 'stalled': return hasChangeLink ? ['changeDetail', 'takeOver'] : ['takeOver']
     case 'awaiting_decision': return ['caseload']
     case 'failedConfig': return ['takeOver']
     case 'failedAgent':
@@ -137,9 +142,11 @@ export function availableRunBarActions(input: {
   state: RunBarState
   hasActiveDelegation: boolean
   canDelegate: boolean
+  hasChangeLink?: boolean
 }): RunBarAction[] {
-  return runBarActions(input.state).filter((action) => {
-    if (action === 'caseload') return true
+  return runBarActions(input.state, input.hasChangeLink ?? false).filter((action) => {
+    // Reading the change is not a write: everyone who can see the task may open it.
+    if (action === 'caseload' || action === 'changeDetail') return true
     if (!input.canDelegate) return false
     if (action === 'takeOver') return input.hasActiveDelegation
     return true

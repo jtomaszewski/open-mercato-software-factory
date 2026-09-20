@@ -24,4 +24,9 @@ describe('website_publishing AI agent contributions', () => {
     expect(WEBSITE_CHANGE_PROMPT).toContain('Report the returned Task as queued')
     expect(WEBSITE_CHANGE_PROMPT).not.toContain('repoUrl')
   })
+
+  it('asks for the queued task to be linked back to its board card', () => {
+    expect(WEBSITE_CHANGE_PROMPT).toContain('markdown link')
+    expect(WEBSITE_CHANGE_PROMPT).toContain('`href`')
+  })
 })

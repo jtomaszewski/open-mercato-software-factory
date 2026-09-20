@@ -165,7 +165,7 @@ it('takes the task over by removing the agent', async () => {
   await waitFor(() => expect(apiCall).toHaveBeenCalledWith(`/api/task_delegation/delegations/${TASK_ID}`, { method: 'DELETE' }))
 })
 
-it('keeps the run’s pull request and process under collapsed technical details', () => {
+it('shows no run internals — the pull request and the process live on the change’s own page', () => {
   show({
     runState: 'complete',
     links: [
@@ -173,11 +173,17 @@ it('keeps the run’s pull request and process under collapsed technical details
       { kind: 'run', ref: 'run-11aa', url: '/backend/agents/runs/run-11aa', addedAt: '2026-09-19T11:58:00.000Z' },
     ],
   })
-  const technical = screen.getByTestId('task-run-status-technical')
-  expect(technical.tagName).toBe('DETAILS')
-  expect(technical).not.toHaveAttribute('open')
-  expect(screen.getByRole('link', { name: '#8' })).toHaveAttribute('href', 'https://github.test/o/r/pull/8')
-  expect(screen.getByRole('link', { name: 'run-11aa' })).toHaveAttribute('href', '/backend/agents/runs/run-11aa')
+  expect(screen.queryByTestId('task-run-status-technical')).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: '#8' })).not.toBeInTheDocument()
+})
+
+it('sends the owner of a running task to its change rather than offering to take it over', () => {
+  show({
+    runState: 'running',
+    links: [{ kind: 'change', ref: 'Aktualizacja zbiornika', url: '/backend/code/changes/change-1', addedAt: '2026-09-19T11:56:00.000Z' }],
+  })
+  expect(screen.getByTestId('task-run-status-changeDetail')).toHaveAttribute('href', '/backend/code/changes/change-1')
+  expect(screen.queryByTestId('task-run-status-takeOver')).not.toBeInTheDocument()
 })
 
 it('renders nothing without a task in context', () => {
