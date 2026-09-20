@@ -2,18 +2,18 @@
 
 **Status**: Draft
 **Właściciel**: zespół HackOn · **Data**: 2026-09-19 · **Tracker**: —
-**Nadrzędna**: [SPEC-004](./SPEC-004-2026-09-18-demo-stal-zbiorniki.md) (scena 3b), buduje na
+**Nadrzędna**: [SPEC-004](./SPEC-004-2026-09-18-demo-metal-zbiorniki.md) (scena 3b), buduje na
 intake'u ze [SPEC-002](./SPEC-002-2026-09-18-tasks-module.md), zmianach `message` i `code` ze
 [SPEC-003](./SPEC-003-2026-09-18-task-change-set.md) i stronie ze
-[SPEC-005](./SPEC-005-2026-09-19-stal-zbiorniki-www.md).
+[SPEC-005](./SPEC-005-2026-09-19-metal-zbiorniki-www.md).
 
 ## TLDR
 
 Handlowiec oznacza zamówienie **Park of Poland (Suntago)** jako zrealizowane. Fabryka
 scrape'uje stronę klienta (Firecrawl), znajduje logo i opis firmy i otwiera PR do strony
-Stal-Zbiorniki: logo w „Zaufali nam” i karta w „Realizacje” z danymi z linii zamówienia. Gdy
+Metal Zbiorniki: logo w „Zaufali nam” i karta w „Realizacje” z danymi z linii zamówienia. Gdy
 ktoś wrzuci zdjęcia z montażu do zamówienia, drugi PR dodaje galerię. Wszystko klasą `content`,
-więc merguje Marek po obejrzeniu preview. Zgoda klienta na referencję (mail wysyłany
+więc merguje Norbert po obejrzeniu preview. Zgoda klienta na referencję (mail wysyłany
 i czytany przez Open Mercato) to usprawnienie po wersji basic, opisane w *Poza zakresem*.
 
 Dowodzi dwóch rzeczy naraz: wyzwalacz żyje w sprzedaży, nie w repo, a fabryka wciąga do
@@ -53,7 +53,7 @@ INVOKE_AGENT researcher   tylko gdy jest zamówienie (warunek przejścia): web_f
                           → artefakt { summary, siteTitle, description, sourceUrl }
 INVOKE_AGENT developer    order + research: logo curl-em z nagłówka strony klienta (reguła),
                           wpis w lib/realizations.ts → PR do repo strony (klasa content)
-           → preview → Marek zatwierdza → merge → strona na żywo
+           → preview → Norbert zatwierdza → merge → strona na żywo
 
 attachments.attachment.created (entity = zamówienie, mime image/*)
   └─ tasks subscriber → zadanie „Galeria realizacji: Park of Poland”, delegowane
@@ -123,7 +123,7 @@ bez modelu.
 Handlowiec zmienia status zamówienia Park of Poland na *Fulfilled*. Tablica pokazuje zadanie
 delegowane, z `sales.order.updated`. Przeskok do gotowego uruchomienia: artefakt researchera
 z logo Suntago i opisem, PR z preview: logo w „Zaufali nam”, karta „Zbiorniki dla Suntago”.
-Marek zatwierdza, strona na żywo. Jeśli jest czas: przeciągnięcie dwóch zdjęć na zamówienie,
+Norbert zatwierdza, strona na żywo. Jeśli jest czas: przeciągnięcie dwóch zdjęć na zamówienie,
 drugie zadanie, PR z galerią.
 
 ## Poza zakresem (usprawnienia po wersji basic)
@@ -199,3 +199,4 @@ drugie zadanie, PR z galerią.
 | 2026-09-19 | Q1 rozstrzygnięte: wyzwalacz to `status → fulfilled` (jedyny status z UI). Zrobione: seed klienta i zamówienia w `demo_fixtures`, fixture `suntago.json`; Faza 1 strony zmergowana w repo landing (PR #5). |
 | 2026-09-19 | Wersja basic: krok zgody (pole, mail, drugi subscriber) wycięty z przepływu; pętla mailowa przez Communications Hub (IMAP/Gmail, `sendAsUser`, `message.received`) opisana jako usprawnienie w *Poza zakresem*. Q2 i Q3 rozstrzygnięte. |
 | 2026-09-19 | Fazy 2–3 zrobione: `sales.order.updated` nie jest emitowane przez 0.8.0, więc wyzwalacz to interceptor `sales.orders.update` → `factory.order.fulfilled`; researcher z `web_fetch` jako warunkowy krok `factory.deliver`; logo pobiera Developer (web_fetch zwraca sam tekst); binarne pliki w PR-ach. Próba: 21 s researcher, 150 s developer, PR #12 w repo landing z zielonym `site`. |
+| 2026-09-20 | Rebranding na Metal Zbiorniki (patrz SPEC-004): referencje wyjściowe na `main` to prawdziwi klienci z własnymi logo. Kontrakt bez zmian — `data-trusted-by` i `data-trusted-logo` przeniesione do sekcji „Realizacje”, ale pod tymi samymi nazwami. |

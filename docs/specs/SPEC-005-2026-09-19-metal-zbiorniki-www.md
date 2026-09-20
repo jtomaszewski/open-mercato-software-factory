@@ -1,14 +1,14 @@
-# SPEC-005: Strona Stal-Zbiorniki, docelowe repo fabryki na demo
+# SPEC-005: Strona Metal Zbiorniki, docelowe repo fabryki na demo
 
 **Status**: Draft
 **Właściciel**: zespół HackOn · **Data**: 2026-09-19 · **Tracker**: —
-**Nadrzędna**: [SPEC-004](./SPEC-004-2026-09-18-demo-stal-zbiorniki.md) (Q1 i sekcja „Docelowa
+**Nadrzędna**: [SPEC-004](./SPEC-004-2026-09-18-demo-metal-zbiorniki.md) (Q1 i sekcja „Docelowa
 strona”), korzysta z kontraktu runnera i kierowania recenzji ze
 [SPEC-001](./SPEC-001-2026-09-18-agentic-software-factory.md).
 
 ## TLDR
 
-Firmowa strona Stal-Zbiorniki to publiczne repo
+Firmowa strona Metal Zbiorniki to publiczne repo
 [`jtomaszewski/hackaton-stal-zbiorniki-landing`](https://github.com/jtomaszewski/hackaton-stal-zbiorniki-landing),
 w którym fabryka otwiera PR-y w scenach 3 i 4 demo. To aplikacja **Next.js** (App Router)
 eksportowana statycznie (`output: 'export'`). Każdy produkt to osobna strona
@@ -28,7 +28,7 @@ SPEC-001 zakłada, że możliwości agenta zależą od tego, jak dobrze da się 
 repo: testy, lokalne uruchomienie jedną komendą, CI, preview. Na demo nie ma jeszcze docelowego
 repo. Sceny 3 („katalog → strona”) i 4 („regulamin czeka na prawnika”) potrzebują strony, która:
 
-- wygląda jak strona producenta, bo jury ma uwierzyć w Marka;
+- wygląda jak strona producenta, bo jury ma uwierzyć w Norberta;
 - przyjmuje nowy produkt jako mały PR, który wygląda jak praca programisty, a nie edycja w CMS-ie.
   To demo fabryki oprogramowania;
 - ma preview dla każdego PR. Linkuje do niego ścieżka recenzji i prawnik otwiera je bez konta
@@ -133,19 +133,20 @@ nie przepuścił niczego poza danymi i opisem:
 Domyślna mapa SPEC-001 wysyła do `legal` także „pricing copy, product claims”, a strona produktu
 ma cenę i atesty. W tym projekcie mapa celowo traktuje strony produktów jako `content`. Zgodność
 ceny i atestów z katalogiem sprawdza `factory/catalog-match`, a nie człowiek, bo źródłem tych
-wartości jest rekord, który Marek już zatwierdził w katalogu.
+wartości jest rekord, który Norbert już zatwierdził w katalogu.
 
 **Strony.** Tylko te, które pojawiają się w scenach 3 i 4:
 
 | Trasa | Zawartość |
 |---|---|
-| `/` | hero, pas „Od ręki” (do 3 produktów), lista wszystkich produktów pogrupowana po kategoriach, sekcja atestów (PZH, UDT, CNBOP), stopka z fikcyjnymi danymi kontaktowymi |
+| `/` | hero, lista wszystkich produktów, pas logo klientów „Realizacje”, jednowierszowa stopka bez danych kontaktowych |
 | `/od-reki` | produkty z `inStock: true` |
 | `/produkty/<sku>` | ilustracja, nazwa, SKU, kategoria, tabela parametrów (pojemność, materiał, wymiary, waga, atesty), cena netto i brutto albo „Cena na zapytanie”, opis, przycisk „Wyślij zapytanie” (`mailto:` na fikcyjny adres) |
 | `/regulamin` | warunki sprzedaży z § „Gwarancja” |
 
 Wygląd wzorujemy na układzie prawdziwej strony producenta (ciemny granat i stal, zdjęcie hali
-w hero, gęsta tabela parametrów), ale nazwa, logo, telefony i klienci są fikcyjni. Strona jest po
+w hero, gęsta tabela parametrów); nazwa, logo i klienci są prawdziwi, a danych kontaktowych firmy
+strona nie publikuje w ogóle. Strona jest po
 polsku i responsywna, bo w demo pokażemy ją też na telefonie. Styl w Tailwind.
 
 **Weryfikacja.** Trzy warstwy, z czego tylko ostatnia porównuje z katalogiem:
@@ -240,7 +241,7 @@ obrazka, a strona nie używa cudzych zdjęć.
   - GitHub App fabryki (bot kodujący) ma `contents: write` i `pull_requests: write`, ale nie ma
     bypassu, więc nie zmerguje własnego PR-a.
   - PR z klasą `legal` merguje człowiek po zatwierdzeniu prawnika w Caseload.
-  - Jeśli na drugą aplikację zabraknie czasu, Marek klika merge na scenie po obejrzeniu preview,
+  - Jeśli na drugą aplikację zabraknie czasu, Norbert klika merge na scenie po obejrzeniu preview,
     a waiver pokazujemy na slajdzie.
 - **Produkcja:** merge do `main` uruchamia deploy produkcyjny Vercela na domenie `*.vercel.app`
   projektu.
@@ -253,7 +254,7 @@ obrazka, a strona nie używa cudzych zdjęć.
 | Agent doda do strony produktu import, skrypt albo `fetch` | `npm run lint` czerwony, jak wyżej |
 | Agent zapomni dopisać stronę do rejestru | test: liczba katalogów ≠ liczba adresów w sitemap, `site` czerwony |
 | Agent wpisze złą cenę spójnie w kodzie i na stronie | `site` zielony, `catalog-match` czerwony, brak waivera, zadanie czeka na developera z opisem niezgodności |
-| Produkt dodany w UI bez kategorii innej niż „Od ręki” albo bez pojemności w tytule, podtytule i `metadata` | run kończy się pytaniem do Marka, bez PR-a |
+| Produkt dodany w UI bez kategorii innej niż „Od ręki” albo bez pojemności w tytule, podtytule i `metadata` | run kończy się pytaniem do Norberta, bez PR-a |
 | Produkt w katalogu nie ma ceny | `priceNetPln: null`, strona pokazuje „Cena na zapytanie”; to częste przy zbiornikach na zamówienie |
 | Produkt w katalogu nie ma wymiarów (`ZDP-5000` przed sceną 2) | `dimensionsMm: null`, wiersz wymiarów znika z tabeli |
 | Zduplikowane SKU albo katalog ≠ `sku` | `site` czerwony |
@@ -269,7 +270,8 @@ obrazka, a strona nie używa cudzych zdjęć.
   env), żeby w razie potrzeby dało się je odtworzyć na innym koncie w kilka minut.
 - **Kod w klasie `content`.** Waiver przepuszcza TSX. Ograniczenia ESLint z *Architektury* są
   warunkiem waivera, a nie dodatkiem. Krok 4 testuje je PR-em z niedozwolonym importem.
-- **Podobieństwo do prawdziwej firmy.** Fikcyjna nazwa, logo, dane kontaktowe i klienci. Układ
+- **Podobieństwo do prawdziwej firmy.** Marka, logo i klienci są prawdziwi (za zgodą — Metal
+  Zbiorniki to klient Full Stack House), danych kontaktowych strona nie publikuje. Układ
   inspirowany, bez kopiowania tekstów ani zdjęć.
 - **Wygląd poniżej oczekiwań jury.** Krok 3 kończy się zrzutami na desktopie i telefonie
   przeglądanymi przez zespół, zanim ktokolwiek zacznie łączyć sceny.
@@ -314,7 +316,7 @@ Faza 3). Kroki 1–5 nie zależą od fabryki.
 6. Ruleset na `main` (PR, `site`, 1 approve) z bypassem dla merge App; GitHub App fabryki ze
    SPEC-001 zainstalowana tylko na tym repo. *Test:* token bota wypycha gałąź i otwiera PR, który
    dostaje deployment Vercela `success`; ten sam token nie może zmergować PR-a, a merge App może.
-7. Próba sceny 3 bez fabryki: `ZWM-1500` dodany w UI katalogu tak, jak zrobi to Marek (SPEC-004),
+7. Próba sceny 3 bez fabryki: `ZWM-1500` dodany w UI katalogu tak, jak zrobi to Norbert (SPEC-004),
    a potem ręcznie przepisany na stronę według tabeli *Model danych*. *Test:* każde pole da się
    wyprowadzić z rekordu utworzonego w UI; check zielony; preview pokazuje zbiornik na `/od-reki`
    i na `/produkty/zwm-1500`. PR zamykamy bez merge'a, bo na scenie zrobi go fabryka.
@@ -332,3 +334,4 @@ z krokiem 3 SPEC-001. Ich test: PR z celowo złą ceną dostaje `catalog-match: 
 | 2026-09-19 | Rozstrzygnięte: Astro, Vercel na koncie Jacka, publiczne repo `hackaton-stal-zbiorniki-landing`, produkty z plików w repo. Pełny spec: architektura, model danych z mapowaniem z katalogu, kontrakty, przypadki brzegowe, plan wdrożenia. |
 | 2026-09-19 | Po recenzji: merge przez osobną App z bypassem (bot kodujący nie merguje), status `factory/catalog-match` jako warunek waivera, preview z GitHub deployment status zamiast stacku runnera, plik produktu nazwany po SKU, mapowanie odporne na produkt dodany w UI, kształt ilustracji, `id` w `categories.json`, test parsuje pliki sam, zakres zawężony do stron ze scen 3 i 4. |
 | 2026-09-19 | Astro i Markdown zastąpione przez Next ze static export: strona TSX na produkt i rejestr, typ `Product` zamiast schematu Zod, ograniczenia ESLint dla klasy `content`, test Playwright chodzi po zbudowanym `out/` i sitemapie. |
+| 2026-09-20 | Rebranding na Metal Zbiorniki (patrz SPEC-004): granat marki `#274086` na bieli zamiast granatu i pomarańczy, Open Sans zamiast Barlow, prawdziwe logo i 16 prawdziwych klientów w „Zaufali nam”. Strona główna ścięta do czterech sekcji (hero, produkty, realizacje, jednowierszowa stopka); sekcje marketingowe i `lib/content.ts` usunięte. Żadnych prawdziwych danych kontaktowych: `COMPANY` niesie tylko nazwę, hasło i adres `.example`. |

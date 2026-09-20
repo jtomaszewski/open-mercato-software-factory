@@ -8,7 +8,7 @@ import { findOneWithDecryption } from '@open-mercato/shared/lib/encryption/find'
 import { Organization } from '@open-mercato/core/modules/directory/data/entities'
 import { createAttachmentFromBuffer } from '@open-mercato/core/modules/attachments/lib/createFromBuffer'
 import { systemContext } from '../../task_delegation/lib/systemContext'
-import { resolveOrderStatusEntry, STAL_ZBIORNIKI_PRODUCTS, type DemoSeedScope } from './stalZbiorniki'
+import { resolveOrderStatusEntry, METAL_ZBIORNIKI_PRODUCTS, type DemoSeedScope } from './metalZbiorniki'
 import {
   DEMO_COMPANY_LOGO_FILE,
   DEMO_COMPANY_NAME,
@@ -17,7 +17,7 @@ import {
   DEMO_PROJECTS,
   DEMO_TASKS,
   DEMO_TEAMS,
-  DEMO_WATER_ORDER,
+  DEMO_OPEN_ORDER,
 } from './companyStory'
 
 export type CompanySeedResult = { created: number; branded: boolean }
@@ -29,7 +29,7 @@ type Row = { id: string; [field: string]: unknown }
  * tasks, one more order). Needs the catalog seeded first. Writes go through the owning modules'
  * commands; every record is find-or-create on its natural key, so a repeat run adds nothing.
  */
-export async function seedStalZbiornikiCompany(container: AwilixContainer, scope: DemoSeedScope): Promise<CompanySeedResult> {
+export async function seedMetalZbiornikiCompany(container: AwilixContainer, scope: DemoSeedScope): Promise<CompanySeedResult> {
   const em = (container.resolve('em') as EntityManager).fork()
   const qe = container.resolve<QueryEngine>('queryEngine')
   const bus = container.resolve<CommandBus>('commandBus')
@@ -146,16 +146,16 @@ export async function seedStalZbiornikiCompany(container: AwilixContainer, scope
     }
   }
 
-  if (!(await rows('sales:sales_order', { order_number: DEMO_WATER_ORDER.orderNumber }))[0]) {
-    const catalog = await rows('catalog:catalog_product', { handle: { $in: DEMO_WATER_ORDER.lines.map((line) => line.handle) } }, ['handle'])
-    const status = await resolveOrderStatusEntry(em, scope, DEMO_WATER_ORDER.status)
+  if (!(await rows('sales:sales_order', { order_number: DEMO_OPEN_ORDER.orderNumber }))[0]) {
+    const catalog = await rows('catalog:catalog_product', { handle: { $in: DEMO_OPEN_ORDER.lines.map((line) => line.handle) } }, ['handle'])
+    const status = await resolveOrderStatusEntry(em, scope, DEMO_OPEN_ORDER.status)
     await execute('sales.orders.create', 'orderId', {
-      orderNumber: DEMO_WATER_ORDER.orderNumber, statusEntryId: status?.id, customerEntityId: customers.get('water'), currencyCode: 'PLN',
-      placedAt: DEMO_WATER_ORDER.placedAt, expectedDeliveryAt: DEMO_WATER_ORDER.expectedDeliveryAt, comments: DEMO_WATER_ORDER.comments,
-      lines: DEMO_WATER_ORDER.lines.map((line) => {
-        const product = STAL_ZBIORNIKI_PRODUCTS.find((item) => item.handle === line.handle)!
+      orderNumber: DEMO_OPEN_ORDER.orderNumber, statusEntryId: status?.id, customerEntityId: customers.get(DEMO_OPEN_ORDER.customer), currencyCode: 'PLN',
+      placedAt: DEMO_OPEN_ORDER.placedAt, expectedDeliveryAt: DEMO_OPEN_ORDER.expectedDeliveryAt, comments: DEMO_OPEN_ORDER.comments,
+      lines: DEMO_OPEN_ORDER.lines.map((line) => {
+        const product = METAL_ZBIORNIKI_PRODUCTS.find((item) => item.handle === line.handle)!
         const productId = catalog.find((row) => row.handle === line.handle)?.id
-        if (!productId) throw new Error(`Cannot seed order ${DEMO_WATER_ORDER.orderNumber}: missing product ${line.handle}`)
+        if (!productId) throw new Error(`Cannot seed order ${DEMO_OPEN_ORDER.orderNumber}: missing product ${line.handle}`)
         return {
           productId, name: product.title, kind: 'product', quantity: line.quantity, quantityUnit: 'pc',
           currencyCode: 'PLN', unitPriceNet: product.netPricePln, taxRate: 23,

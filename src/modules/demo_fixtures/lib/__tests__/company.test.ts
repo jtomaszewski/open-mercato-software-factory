@@ -4,13 +4,13 @@ const findOneWithDecryption = jest.fn<(...args: unknown[]) => Promise<unknown>>(
 jest.mock('@open-mercato/shared/lib/encryption/find', () => ({ findOneWithDecryption: (...args: unknown[]) => findOneWithDecryption(...args) }))
 const createAttachmentFromBuffer = jest.fn<(input: Record<string, unknown>) => Promise<{ url: string }>>()
 jest.mock('@open-mercato/core/modules/attachments/lib/createFromBuffer', () => ({ createAttachmentFromBuffer: (input: Record<string, unknown>) => createAttachmentFromBuffer(input) }))
-jest.mock('../stalZbiorniki', () => ({
-  ...jest.requireActual<object>('../stalZbiorniki'),
+jest.mock('../metalZbiorniki', () => ({
+  ...jest.requireActual<object>('../metalZbiorniki'),
   resolveOrderStatusEntry: async (_em: unknown, _scope: unknown, value: string) => ({ id: `status-${value}` }),
 }))
 
-import { seedStalZbiornikiCompany } from '../company'
-import { DEMO_COMPANY_NAME, DEMO_CUSTOMERS, DEMO_PEOPLE, DEMO_PROJECTS, DEMO_TASKS, DEMO_TEAMS, DEMO_WATER_ORDER } from '../companyStory'
+import { seedMetalZbiornikiCompany } from '../company'
+import { DEMO_COMPANY_NAME, DEMO_CUSTOMERS, DEMO_PEOPLE, DEMO_PROJECTS, DEMO_TASKS, DEMO_TEAMS, DEMO_OPEN_ORDER } from '../companyStory'
 
 const scope = { tenantId: '00000000-0000-4000-8000-000000000001', organizationId: '00000000-0000-4000-8000-000000000002' }
 const execute = jest.fn<(id: string, args: { input: Record<string, unknown> }) => Promise<{ result: Record<string, string> }>>()
@@ -38,7 +38,7 @@ beforeEach(() => {
 })
 
 it('brands the organization and seeds the company around the catalog', async () => {
-  const result = await seedStalZbiornikiCompany(container, scope)
+  const result = await seedMetalZbiornikiCompany(container, scope)
 
   const calls = execute.mock.calls.map(([id]) => id)
   expect(calls[0]).toBe('directory.organizations.update')
@@ -54,7 +54,7 @@ it('brands the organization and seeds the company around the catalog', async () 
   expect(execute.mock.calls.some(([, args]) => args.input.code === 'DEMO')).toBe(false)
   const order = execute.mock.calls.find(([id]) => id === 'sales.orders.create')![1].input
   expect(createAttachmentFromBuffer).toHaveBeenCalledWith(expect.objectContaining({ ...scope, entityId: 'directory.organization', recordId: scope.organizationId }))
-  expect(order).toMatchObject({ ...scope, orderNumber: DEMO_WATER_ORDER.orderNumber, statusEntryId: 'status-in_fulfillment' })
+  expect(order).toMatchObject({ ...scope, orderNumber: DEMO_OPEN_ORDER.orderNumber, statusEntryId: 'status-in_fulfillment' })
   expect((order.lines as Array<{ productId: string }>).map((line) => line.productId)).toEqual(['product-zppoz', 'product-zch'])
   expect(result).toEqual({ created: execute.mock.calls.length - 1, branded: true })
 })
@@ -71,7 +71,7 @@ it('changes nothing when every record already exists', async () => {
     'sales:sales_order': [{ id: 'order' }],
   }
 
-  expect(await seedStalZbiornikiCompany(container, scope)).toEqual({ created: 0, branded: false })
+  expect(await seedMetalZbiornikiCompany(container, scope)).toEqual({ created: 0, branded: false })
   expect(execute).not.toHaveBeenCalled()
   expect(createAttachmentFromBuffer).not.toHaveBeenCalled()
 })

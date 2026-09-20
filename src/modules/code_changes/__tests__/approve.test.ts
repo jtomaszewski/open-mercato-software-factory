@@ -27,14 +27,14 @@ function ctx() {
   }
   return {
     container: { resolve: (name: string) => services[name] },
-    auth: { sub: 'marek', tenantId: 't', orgId: 'o' }, selectedOrganizationId: 'o', organizationIds: ['o'], organizationScope: null,
+    auth: { sub: 'norbert', tenantId: 't', orgId: 'o' }, selectedOrganizationId: 'o', organizationIds: ['o'], organizationScope: null,
   } as never
 }
 
 beforeEach(() => {
   delegation = { releasedAt: null, links: [{ kind: 'pr', ref: 'PR #8', url: PR_URL }] }
   statusSlug = 'in-review'
-  assigneeUserId = 'marek'
+  assigneeUserId = 'norbert'
   execute.mockReset().mockResolvedValue({ result: {} })
   getPullRequest.mockReset().mockResolvedValue({ number: 8, state: 'open', merged: false, htmlUrl: PR_URL, headSha: 'abc' })
   mergePullRequest.mockReset().mockResolvedValue({ sha: 'merge-sha' })

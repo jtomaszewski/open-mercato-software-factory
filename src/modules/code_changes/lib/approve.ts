@@ -77,7 +77,7 @@ async function resolveDecision(ctx: CommandRuntimeContext, taskId: string, githu
 }
 
 /**
- * Marek's „zatwierdź” (SPEC-004 scene 3): merges the PR the delegated run linked on the task and
+ * Norbert's „zatwierdź” (SPEC-004 scene 3): merges the PR the delegated run linked on the task and
  * closes the task as Done. The merge is pinned to the PR head the check saw; Done then goes
  * through staff's status change, which the tasks guard turns into a release with outcome `done`.
  */

@@ -5,7 +5,7 @@
 
 ## Outcome and document boundaries
 
-Software Factory is an installable module that lets an authorized human delegate a task to Open Mercato Developer, inspect the resulting PR diff and running preview inside Open Mercato, and approve deployment to that same instance. The initial installation is local, with a later single-VPS installation. Targets include the hosting instance's configured source repository and administrator-registered external websites, initially Stal-Zbiorniki. A task selects one target; unregistered repositories are refused.
+Software Factory is an installable module that lets an authorized human delegate a task to Open Mercato Developer, inspect the resulting PR diff and running preview inside Open Mercato, and approve deployment to that same instance. The initial installation is local, with a later single-VPS installation. Targets include the hosting instance's configured source repository and administrator-registered external websites, initially Metal Zbiorniki. A task selects one target; unregistered repositories are refused.
 
 Decision D-037 accepts two linked specifications:
 
@@ -23,8 +23,8 @@ Repository baseline: `0cf9e24`, root-level standalone application. Existing docu
 | [SPEC-001](../../docs/specs/SPEC-001-2026-09-18-agentic-software-factory.md) | Agent Orchestrator process, explicit delegation, grants, durable workflow | Replace GitHub-only review and no-auto-merge assumptions for the instance-development mode; permissioned author approval allowed; change isolation, resource retention, budgets, and delivery boundaries as specified. |
 | [SPEC-002](../../docs/specs/SPEC-002-2026-09-18-tasks-module.md) | Staff tasks/projects/comments, delegation, fencing, task commands | In delivery-enabled mode, `done` means verified deployment, not manually marking an externally merged PR done. Review fixes remain attempts of the same task, not automatically delegated finding subtasks. |
 | [SPEC-003](../../docs/specs/SPEC-003-2026-09-18-task-change-set.md) | Code change row, run timeline, evidence manifest and task drawer injection | Add an actual diff. Enforce task ACL on every preview request, including localhost. Replace 72-hour retained compute with 30-minute sleeping preview and seven-day terminal cleanup. Raw transcripts are not an ordinary task artifact. |
-| [SPEC-004](../../docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md) | Fictional company/catalog scenario | The external website and coordinated catalog price tasks are now in scope; WordPress stays out. |
-| [SPEC-005](../../docs/specs/SPEC-005-2026-09-19-stal-zbiorniki-www.md) | Static website structure, npm checks and Vercel target | New mode replaces public preview, low-risk waiver and main auto-publication with task-authenticated preview, human approval for every change and exact staged-deployment promotion. |
+| [SPEC-004](../../docs/specs/SPEC-004-2026-09-18-demo-metal-zbiorniki.md) | Fictional company/catalog scenario | The external website and coordinated catalog price tasks are now in scope; WordPress stays out. |
+| [SPEC-005](../../docs/specs/SPEC-005-2026-09-19-metal-zbiorniki-www.md) | Static website structure, npm checks and Vercel target | New mode replaces public preview, low-risk waiver and main auto-publication with task-authenticated preview, human approval for every change and exact staged-deployment promotion. |
 
 Do not silently change those documents or installed APIs. The new behavior is an explicit, administrator-enabled instance-development process version. Existing non-code processes remain unchanged. The configured spec location is `.ai/specs`; existing SPEC numbers are not reused.
 

@@ -61,7 +61,7 @@ The infrastructure package has a trusted supervisor, GitHub broker, inference ga
 | Term | Meaning / invariant |
 |---|---|
 | Instance | The hosting Open Mercato installation, common identity authority and inference-budget boundary. Its own code deployment affects its tenants; a website deployment affects only the registered website target. |
-| Target | Administrator-registered immutable repository ID/base branch and deployment profile. `self_instance` targets the hosting application; `external_site` initially targets the Stal-Zbiorniki static site. Every task selects exactly one target. |
+| Target | Administrator-registered immutable repository ID/base branch and deployment profile. `self_instance` targets the hosting application; `external_site` initially targets the Metal Zbiorniki static site. Every task selects exactly one target. |
 | Delegation | SPEC-002 task-to-agent assignment; one active generation. Stale generations cannot mutate task state or create effects. |
 | Attempt | One bounded execution allocation for a task/delegation, including its phase sessions. Review fixes create another attempt, keeping task, branch, and PR. |
 | Candidate | Frozen source tree, image digest, profile, verification manifest and review; any mutation creates a new candidate. |

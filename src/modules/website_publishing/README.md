@@ -1,8 +1,8 @@
 # website_publishing
 
-Keeps the Stal-Zbiorniki website in step with the ERP (SPEC-004 scenes 3 and 3b, SPEC-005,
+Keeps the Metal Zbiorniki website in step with the ERP (SPEC-004 scenes 3 and 3b, SPEC-005,
 SPEC-006). Three intakes put a task on the DEMO board, delegated to the Software Engineer; its
-process runs the Developer agent against the website repo through `code_changes`, and Marek
+process runs the Developer agent against the website repo through `code_changes`, and Norbert
 approves the PR from the task drawer.
 
 ```

@@ -81,7 +81,7 @@ function delegation(overrides: Record<string, unknown> = {}): Delegation {
 const REVIEW = {
   delegationActive: true,
   pr: { number: 8, url: 'https://github.test/o/site/pull/8', state: 'open', merged: false, headSha: 'abc123' },
-  previewUrl: 'https://preview.test/stal-zbiorniki',
+  previewUrl: 'https://preview.test/metal-zbiorniki',
   checks: [{ name: 'build', status: 'completed', conclusion: 'success', url: 'https://github.test/checks/1' }],
   files: [{ filename: 'index.html', status: 'modified', additions: 14, deletions: 14, patch: '@@ -1 +1 @@\n-<h1>Stare</h1>\n+<h1>Nowe</h1>' }],
 }

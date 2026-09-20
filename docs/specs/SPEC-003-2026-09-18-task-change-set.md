@@ -64,7 +64,7 @@ task sees `running` for twenty minutes and then a link.
 ## User Stories
 
 - **Business owner** delegates "ZDP-5000 holds 5200 l, not 5000, and its dimensions are empty"
-  (the demo company's diesel tank, [SPEC-004](./SPEC-004-2026-09-18-demo-stal-zbiorniki.md)). The
+  (the demo company's diesel tank, [SPEC-004](./SPEC-004-2026-09-18-demo-metal-zbiorniki.md)). The
   Caseload asks them to approve one change to *ZDP-5000*.
   The task drawer shows `description` and `dimensions` before and after. They approve, the product
   updates, and the entry shows `applied` with a link to the audit log entry (and, from Phase 2,
@@ -314,7 +314,7 @@ closes or 72 h pass. This spec defines how that stack is reached:
   needs no label: the runner takes `environment_url` from the GitHub deployment status for the PR
   head, waits up to 5 minutes, and otherwise records `previewUrl: null`. Public repos link to it
   directly, without the signed redirect below. The demo site uses this
-  ([SPEC-005](./SPEC-005-2026-09-19-stal-zbiorniki-www.md)).
+  ([SPEC-005](./SPEC-005-2026-09-19-metal-zbiorniki-www.md)).
 - **Routing.** A reverse proxy (Caddy) on the runner VM serves a wildcard host
   `*.preview.<factory domain>`. When the stack is healthy, the shim adds the route
   `<runId>.preview.<domain> → run-<id>_web:<port>` through Caddy's admin API, bound to localhost.
@@ -387,7 +387,7 @@ the declared risk of every record command, the same way SPEC-001 treats code.
 
 No storyboard yet. Screens:
 
-- **Drawer panel**, collapsed rows: `[icon] ZDP-5000 · title, description, dimensions · applied · by Marek`
+- **Drawer panel**, collapsed rows: `[icon] ZDP-5000 · title, description, dimensions · applied · by Norbert`
   and `[icon] PR #41 · 7 files (1 unplanned, lockfile) · checks green · preview`. States: loading
   skeleton, empty (delegated, nothing proposed yet: "Nothing proposed yet"), orchestrator
   absent (the panel hides), `conflict` (three columns: proposed against, current, proposed),
