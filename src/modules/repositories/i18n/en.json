@@ -30,7 +30,7 @@
       },
       "empty": {
         "title": "No repositories yet",
-        "description": "Connect GitHub to choose repositories for your projects."
+        "description": "Connect GitHub to choose repositories for your projects. If the App is already installed on your account, connect that installation instead."
       },
       "success": {
         "disable": "Repository disabled.",

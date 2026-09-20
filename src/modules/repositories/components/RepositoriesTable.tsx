@@ -7,9 +7,10 @@ import { useOrganizationScopeVersion } from '@open-mercato/shared/lib/frontend/u
 import { Page, PageBody } from '@open-mercato/ui/backend/Page'
 import { DataTable } from '@open-mercato/ui/backend/DataTable'
 import { RowActions } from '@open-mercato/ui/backend/RowActions'
-import { ListEmptyState } from '@open-mercato/ui/backend/filters/ListEmptyState'
+import { EmptyState } from '@open-mercato/ui/primitives/empty-state'
 import { Button } from '@open-mercato/ui/primitives/button'
 import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
+import { Inbox, Plus } from 'lucide-react'
 import { apiCall, apiCallOrThrow, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/utils/apiCall'
 import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
@@ -131,7 +132,30 @@ export function RepositoriesTable() {
           pagination={{ page, pageSize: 20, total, totalPages, onPageChange: setPage }}
           isLoading={isLoading}
           error={error}
-          emptyState={<ListEmptyState title={t('repositories.list.empty.title')} description={t('repositories.list.empty.description')} onCreate={() => { void connect() }} createLabel={t('repositories.actions.connect')} />}
+          emptyState={
+            // Both doors, not just the first one. "Connect GitHub" opens the App's *install* page,
+            // which is a dead end once the App is already installed: GitHub shows the configure
+            // screen instead of an OAuth consent, so no code comes back. The toolbar offers the
+            // existing-installation path, but the toolbar is not what an operator reads when the
+            // list is empty — and an empty list is exactly when the App is most likely installed
+            // already (a reset drops our rows; GitHub keeps the installation).
+            <EmptyState
+              variant="subtle"
+              size="lg"
+              icon={<Inbox className="size-7" aria-hidden />}
+              title={t('repositories.list.empty.title')}
+              description={t('repositories.list.empty.description')}
+              actions={<div className="flex flex-wrap items-center justify-center gap-2">
+                <Button type="button" onClick={() => { void connect() }}>
+                  <Plus className="size-4" aria-hidden />
+                  {t('repositories.actions.connect')}
+                </Button>
+                <Button asChild type="button" variant="outline">
+                  <Link href="/backend/repositories/connect-existing">{t('repositories.actions.connectExisting')}</Link>
+                </Button>
+              </div>}
+            />
+          }
         />
       </PageBody>
       {ConfirmDialogElement}
