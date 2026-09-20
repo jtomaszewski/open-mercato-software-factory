@@ -22,9 +22,11 @@ PR: #57
 
 ### Phase 1: Correct the audited behavior
 - [x] 1.1 Add regression coverage and implement the scoped correction.
-- [ ] 1.2 Validate, inspect desktop, review, and publish the focused PR.
+- [x] 1.2 Validate, inspect desktop, review, and publish the focused PR.
 
 ## Verification
-RED: four expected failures. GREEN: four component tests covering empty choices, linked choices, an accessible selector, and the unchanged versioned disconnection request. Generate, typecheck, lint, ds:check, all 299 tests and production build passed. The final wording correction has a fresh focused test pass and build. Live desktop QA of the project tab is pending because the audit account lacks repositories.link; permission has been requested. Existing options pagination still limits the picker to the first 50 repositories.
+RED: four expected failures. GREEN: four component tests covering empty choices, linked choices, an accessible selector, and the unchanged versioned disconnection request. Generate, typecheck, lint, ds:check, all 299 tests and production build passed. The final wording correction has a fresh focused test pass and build. Desktop QA at 1440px passed: empty registry, available selection with keyboard, disabled add before selection, linking as default, all listed repositories linked, default guidance, disconnection, registry navigation, and removal confirmation with cancel. Temporary fixtures were removed after testing. Existing options pagination still limits the picker to the first 50 repositories.
 
-Independent native primary review found no actionable issues at commit 84f397a71a740b1dfd00ab96a139d15fc28eb70f. Live desktop QA is pending.
+Independent native primary review found no actionable issues at commit 84f397a71a740b1dfd00ab96a139d15fc28eb70f. Desktop evidence is attached to PR #57.
+
+Latest main (140dfd8) adds repository overview translations without changing the reviewed project widget or its keys; a merge-tree compatibility check completed without conflicts. Live QA used the existing combined UI preview; no new upstream migrations or demo changes were applied.
