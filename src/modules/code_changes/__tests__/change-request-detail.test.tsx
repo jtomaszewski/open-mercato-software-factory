@@ -8,7 +8,10 @@ import type { ChangeRequestDto } from '../lib/changeRequests'
 const CHANGE_REQUEST_ID = '44444444-4444-4444-8444-444444444444'
 let grantedFeatures: string[] = []
 
-jest.mock('@open-mercato/shared/lib/i18n/context', () => ({ useT: () => (key: string, fallback?: string) => fallback ?? key }))
+jest.mock('@open-mercato/shared/lib/i18n/context', () => ({
+  useT: () => (key: string, fallback?: string) => fallback ?? key,
+  useLocale: () => 'en',
+}))
 jest.mock('@open-mercato/shared/security/features', () => ({ hasFeature: (features: string[] | undefined, feature: string) => (features ?? []).includes(feature) }))
 jest.mock('@open-mercato/ui/backend/BackendChromeProvider', () => ({ useBackendChrome: () => ({ payload: { grantedFeatures } }) }))
 jest.mock('next/navigation', () => ({ usePathname: () => '/backend/code/changes' }))

@@ -21,6 +21,8 @@ Code section  ─▶ /backend/code/changes            every change request, newe
 
 Decisions ─▶ POST /api/code_changes/change-requests/:id/approve   squash-merge ─▶ task Done
           ─▶ POST /api/code_changes/change-requests/:id/reject    close, with a reason ─▶ task Backlog
+Live      ─▶ GET  /api/code_changes/change-requests/:id/activity  the stage the run is at and what
+                                                                  its agents did, polled while live
 Task drawer ─▶ GET  /api/code_changes/tasks/:id/review   the PR's diff, checks and preview
             ─▶ POST /api/code_changes/tasks/:id/approve  routes to the change request's approve
 ```
@@ -71,6 +73,17 @@ assignee rule to become a policy first; that is the first thing to design when w
 on the table.
 
 ## Runs
+
+- While a run is in flight the detail page shows what the agent is doing (`lib/activity.ts`,
+  `components/ChangeRequestActivityCard.tsx`). Two sources, merged by `lib/activityFeed.ts`: the
+  persisted trace (`agent_spans` + `agent_tool_calls` of the runs on this run's workflow instance),
+  which the OpenCode runtime writes in ONE ingest when a session ends, and the
+  `agent_orchestrator.run.progress` broadcast, which arrives per tool call but only in browsers
+  that were already open. That broadcast is organization-scoped, so the merge renders a live line
+  only once the polled activity confirms its run belongs to this change request.
+- `lib/agentSteps.ts` maps a tool name onto what it MEANS (reading, editing, building, …). The
+  reader of a change request is the person who will approve it; `bash` is not an answer for them.
+  The raw tool and its command or file stay behind the card's "show commands" toggle.
 
 - The functions read the task from the engine's workflow instance (`lib/run.ts`: process →
   `{ taskId, delegationId }`), act as the workflow definition's execution principal and write the

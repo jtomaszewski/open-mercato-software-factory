@@ -9,6 +9,7 @@ import { Page, PageBody, PageHeader } from '@open-mercato/ui/backend/Page'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
 import { LoadingMessage, ErrorMessage, RecordNotFoundState } from '@open-mercato/ui/backend/detail'
 import { flash } from '@open-mercato/ui/backend/FlashMessages'
+import { useAppEvent } from '@open-mercato/ui/backend/injection/useAppEvent'
 import { apiCall, apiCallOrThrow } from '@open-mercato/ui/backend/utils/apiCall'
 import { Alert, AlertDescription } from '@open-mercato/ui/primitives/alert'
 import { Button } from '@open-mercato/ui/primitives/button'
@@ -24,6 +25,7 @@ import type { ChangeRequestDto } from '../lib/changeRequests'
 import { changeRequestChip } from '../lib/changeRequestPresentation'
 import type { TaskReview } from '../lib/review'
 import { buildRunTimeline, traceHref } from '../lib/runTimeline'
+import { ChangeRequestActivityCard } from './ChangeRequestActivityCard'
 
 type Loaded = { changeRequest: ChangeRequestDto; run: TaskRunDetail | null }
 
@@ -87,6 +89,8 @@ export function ChangeRequestDetail({ id }: { id: string }) {
   const [rejectOpen, setRejectOpen] = React.useState(false)
   const [reason, setReason] = React.useState('')
 
+  const reload = React.useCallback(() => setRevision((value) => value + 1), [])
+
   React.useEffect(() => {
     let cancelled = false
     async function load() {
@@ -98,6 +102,27 @@ export function ChangeRequestDetail({ id }: { id: string }) {
     void load()
     return () => { cancelled = true }
   }, [id, revision])
+
+  // A change request that is still being generated moves without anyone touching this page: the
+  // run writes its timeline as it goes. Re-read on the broadcast when there is one, and on a timer
+  // regardless — a process milestone is a workflow write, not a change-request transition, so it
+  // announces nothing this page could subscribe to.
+  const generating = data?.changeRequest.status === 'generating'
+
+  useAppEvent('code_changes.change_request.changed', (event) => {
+    if ((event.payload as { changeRequestId?: string } | undefined)?.changeRequestId === id) reload()
+  }, [id, reload])
+
+  useAppEvent('task_delegation.task.changed', (event) => {
+    const taskId = (event.payload as { taskId?: string } | undefined)?.taskId
+    if (taskId && taskId === data?.changeRequest.taskId) reload()
+  }, [data?.changeRequest.taskId, reload])
+
+  React.useEffect(() => {
+    if (!generating) return
+    const timer = setInterval(reload, 5000)
+    return () => clearInterval(timer)
+  }, [generating, reload])
 
   // The review hits GitHub, so it loads on its own and its absence degrades to "no diff shown"
   // rather than taking the page down with it.
@@ -125,13 +150,13 @@ export function ChangeRequestDetail({ id }: { id: string }) {
       flash(t(`code_changes.changeRequests.flash.${action}`), 'success')
       setRejectOpen(false)
       setReason('')
-      setRevision((value) => value + 1)
+      reload()
     } catch (error) {
       flash(error instanceof Error && error.message ? error.message : t(`code_changes.changeRequests.errors.${action}`), 'error')
     } finally {
       setSaving(false)
     }
-  }, [id, t])
+  }, [id, reload, t])
 
   if (state === 'loading') return <LoadingMessage label={t('code_changes.changeRequests.detail.loading')} />
   if (state === 'notFound') {
@@ -234,6 +259,12 @@ export function ChangeRequestDetail({ id }: { id: string }) {
             </Field>
           </dl>
         </Card>
+
+        <ChangeRequestActivityCard
+          changeRequestId={changeRequest.id}
+          expectActive={changeRequest.status === 'generating'}
+          onSettled={reload}
+        />
 
         {review?.files.length ? (
           <Card className="gap-3 py-4">
