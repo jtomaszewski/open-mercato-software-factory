@@ -101,5 +101,11 @@
   "code_changes.audit.changeRequest.reject": "Reject change request",
   "code_changes.workflow.startChangeRequest": "Open the change request",
   "code_changes.workflow.recordPullRequest": "Attach the pull request to the change request",
-  "code_changes.workflow.markFailed": "Mark the change request failed"
+  "code_changes.workflow.markFailed": "Mark the change request failed",
+  "code_changes.notifications.ready.title": "Change ready for your decision",
+  "code_changes.notifications.ready.body": "{title} is waiting to be approved or rejected.",
+  "code_changes.notifications.failed.title": "Change could not be prepared",
+  "code_changes.notifications.failed.body": "{title} — the agent did not finish: {reason}",
+  "code_changes.notifications.actions.review": "Review the change",
+  "notifications.categories.code_changes": "Code changes"
 }
