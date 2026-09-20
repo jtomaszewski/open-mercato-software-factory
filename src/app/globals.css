@@ -1153,3 +1153,16 @@ body[data-demo-feedback-fab="visible"] main {
 [data-ai-launcher-trigger-mobile] {
   display: none !important;
 }
+
+/* Chat and other rendered-markdown surfaces mark their body with `prose`, but the
+   Tailwind typography plugin is not installed, so Preflight leaves anchors looking
+   exactly like body text. Give markdown links the usual affordance — the assistant
+   links the task it just created, and an invisible link is an unclickable one. */
+.prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose a:hover {
+  text-decoration-thickness: 2px;
+}
