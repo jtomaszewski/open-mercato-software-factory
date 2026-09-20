@@ -4,7 +4,7 @@ import { createFakeStaff, taskRow } from '../../task_tools/__fixtures__/fake-sta
 
 const DEMO_PROJECT = {
   id: '11111111-1111-4111-8111-111111111111',
-  code: 'DEMO',
+  code: 'WWW',
   name: 'Demo',
   status: 'active',
 }
@@ -32,7 +32,7 @@ import aiTools, {
 function toolFake(options: { includeAgent?: boolean } = {}) {
   return createFakeStaff({
     projects: [DEMO_PROJECT],
-    tasks: [taskRow({ id: TASK_ID, reference: 'DEMO-1', time_project_id: DEMO_PROJECT.id })],
+    tasks: [taskRow({ id: TASK_ID, reference: 'WWW-1', time_project_id: DEMO_PROJECT.id })],
     handler: (request) => {
       if (request.method === 'GET' && request.path === '/task_delegation/agents') {
         return {
@@ -91,9 +91,9 @@ describe('website_publishing.request_change registry contract', () => {
       { title: 'Zmień stronę', instructions: 'Zmień pojemność.' },
       context(),
     )).resolves.toMatchObject({
-      recordId: 'new:DEMO',
+      recordId: 'new:WWW',
       entityType: 'staff:staff_time_task',
-      after: { project: 'DEMO', delegate: 'Developer' },
+      after: { project: 'WWW', delegate: 'Developer' },
     })
   })
 
@@ -104,7 +104,7 @@ describe('website_publishing.request_change registry contract', () => {
 })
 
 describe('website_publishing.request_change execution', () => {
-  it('creates a DEMO task, adds product context, and delegates through the guarded API', async () => {
+  it('creates a WWW task, adds product context, and delegates through the guarded API', async () => {
     process.env.APP_URL = 'http://localhost:55110/'
     const result = await tool().handler({
       title: 'Zmień zbiornik na stronie',
@@ -127,9 +127,9 @@ describe('website_publishing.request_change execution', () => {
     expect(fake.requests[3]?.body).toEqual({ taskId: TASK_ID, agentUserId: AGENT_USER_ID })
     expect(result).toEqual({
       taskId: TASK_ID,
-      reference: 'DEMO-1',
+      reference: 'WWW-1',
       projectId: DEMO_PROJECT.id,
-      projectCode: 'DEMO',
+      projectCode: 'WWW',
       delegationId: DELEGATION_ID,
       state: 'queued',
       href: `http://localhost:55110/backend/staff/time-tracking/projects/${DEMO_PROJECT.id}/board?task=${TASK_ID}`,
@@ -142,7 +142,7 @@ describe('website_publishing.request_change execution', () => {
     expect(fake.requests[2]?.body).toMatchObject({ description: 'Dodaj aktualny rok.' })
   })
 
-  it('always files on DEMO, ignoring a model-invented project name', async () => {
+  it('always files on WWW, ignoring a model-invented project name', async () => {
     await tool().handler({ project: 'website', title: 'Zmień stronę', instructions: 'Zmień stopkę.' }, context())
     expect(fake.requests[2]?.body).toMatchObject({ timeProjectId: DEMO_PROJECT.id })
   })

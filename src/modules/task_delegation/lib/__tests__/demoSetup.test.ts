@@ -47,7 +47,7 @@ it('creates the Internal customer, admin staff member, DEMO project and agent', 
     'staff.timesheets.time_project_members.assign',
   ])
   expect(execute.mock.calls[1]![1].input).toMatchObject({ ...scope, userId: 'admin-user', displayName: 'Norbert' })
-  expect(execute.mock.calls[2]![1].input).toMatchObject({ ...scope, code: 'DEMO', customerId: 'customer-1', ownerUserId: 'admin-user' })
+  expect(execute.mock.calls[2]![1].input).toMatchObject({ ...scope, code: 'WWW', customerId: 'customer-1', ownerUserId: 'admin-user' })
   // SPEC-008: the agent reads as a job title; the identifier is the roster's `developer`.
   expect(provision).toHaveBeenCalledWith(scope, expect.objectContaining({
     agentDefinitionId: 'developer',

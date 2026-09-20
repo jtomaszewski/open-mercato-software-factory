@@ -60,17 +60,19 @@ const { rows: links } = await verify.query(
   `select r.full_name from repositories_project_links l
      join repositories_repositories r on r.id = l.repository_id
      join staff_time_projects p on p.id = l.project_id
-    where p.code = 'DEMO' and r.deleted_at is null`,
+    where p.code = $1 and r.deleted_at is null`,
+  // Keep in step with DEMO_PROJECT_CODE in src/modules/task_delegation/lib/demoSetup.ts.
+  ['WWW'],
 )
 await verify.end()
 if (links.length) {
-  console.log(`[demo:reset] DEMO repository: ${links.map((row) => row.full_name).join(', ')}`)
+  console.log(`[demo:reset] WWW repository: ${links.map((row) => row.full_name).join(', ')}`)
 } else {
   const origin = process.env.APP_URL || `http://localhost:${process.env.PORT || process.env.CONDUCTOR_PORT || 3000}`
-  console.warn('[demo:reset] ⚠ no repository is linked to the DEMO project — scenes 3 and 3b will')
+  console.warn('[demo:reset] ⚠ no repository is linked to the WWW project — scenes 3 and 3b will')
   console.warn('[demo:reset]   create their board task and then fail at checkout.')
   console.warn(`[demo:reset]   Reconnect: ${origin}/backend/code/repositories → Repository settings`)
-  console.warn('[demo:reset]   → Connect GitHub, register the landing repo, link it to DEMO.')
+  console.warn('[demo:reset]   → Connect GitHub, register the landing repo, link it to WWW.')
   console.warn(`[demo:reset]   The GitHub App must list ${origin}/backend/repositories/connect as a`)
   console.warn('[demo:reset]   callback URL, or the consent redirect lands nowhere.')
 }

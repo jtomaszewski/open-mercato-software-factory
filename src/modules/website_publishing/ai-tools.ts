@@ -17,7 +17,7 @@ export const REQUEST_CHANGE_FEATURES = [
 ] as const
 
 // No project/repository selector: the demo has one configured website, so the server always
-// files the task on DEMO. Models otherwise invent project names ("website") that don't exist.
+// files the task on WWW. Models otherwise invent project names ("website") that don't exist.
 export const requestChangeInputSchema = z.object({
   title: z.string().trim().min(1).max(255).describe('Short title of the requested code or website change.'),
   instructions: z

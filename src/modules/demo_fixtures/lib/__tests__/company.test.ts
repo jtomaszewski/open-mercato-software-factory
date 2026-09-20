@@ -51,7 +51,7 @@ it('brands the organization and seeds the company around the catalog', async () 
   expect(calls.filter((id) => id === 'staff.timesheets.time_projects.create')).toHaveLength(DEMO_PROJECTS.length)
   expect(calls.filter((id) => id === 'staff.timesheets.tasks.create')).toHaveLength(DEMO_TASKS.length)
   // The DEMO board is task_delegation's; the company seed never creates it.
-  expect(execute.mock.calls.some(([, args]) => args.input.code === 'DEMO')).toBe(false)
+  expect(execute.mock.calls.some(([, args]) => args.input.code === 'WWW')).toBe(false)
   const order = execute.mock.calls.find(([id]) => id === 'sales.orders.create')![1].input
   expect(createAttachmentFromBuffer).toHaveBeenCalledWith(expect.objectContaining({ ...scope, entityId: 'directory.organization', recordId: scope.organizationId }))
   expect(order).toMatchObject({ ...scope, orderNumber: DEMO_OPEN_ORDER.orderNumber, statusEntryId: 'status-in_fulfillment' })

@@ -21,7 +21,7 @@ type SubscriberContext = {
 }
 
 /**
- * Scene 3b intake (SPEC-006): a fulfilled order becomes a DEMO board task delegated to the
+ * Scene 3b intake (SPEC-006): a fulfilled order becomes a WWW board task delegated to the
  * Software Engineer, whose run adds the customer as a reference on the website. Scope comes from
  * the event-bus options; the order is re-read, so an order reopened meanwhile is left alone.
  * Failures rethrow so the persistent event retries; the intake is idempotent per order.

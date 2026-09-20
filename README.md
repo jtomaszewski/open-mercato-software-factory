@@ -50,13 +50,13 @@ and the approve/reject decision on it), **Code → Code repositories**
 core example catalog (sneakers, haircuts).
 
 A reset wipes our record of the GitHub App installation — the connection, the registered
-repository and its link to `DEMO` — so the script ends by telling you whether one is linked.
+repository and its link to `WWW` — so the script ends by telling you whether one is linked.
 **Scenes 3 and 3b need it**: without a repository the intake still puts its task on the board and
 the coding run then dies at checkout.
 
 No personal access token is involved. The App (`om-software-factory`) stays installed on GitHub
 across resets, so reconnecting is one consent click: **Code → Code repositories → Repository
-settings → Connect GitHub**, register the landing repo, then link it to `DEMO` on the project
+settings → Connect GitHub**, register the landing repo, then link it to `WWW` on the project
 page. The run then uses a short-lived installation token scoped to that one repository.
 
 Two things to check if the consent redirect lands nowhere: the App must list
@@ -85,7 +85,7 @@ The `task_tools` module (SPEC-007) lets Claude
 Code or any MCP client work with the `staff` task board: `task_tools.list_projects`,
 `search_tasks`, `get_task`, `create_task` and `comment_task`. `yarn dev` serves them at
 `http://localhost:3001/mcp` (standalone: `yarn mercato ai_assistant mcp:serve-http --port 3001`).
-When the enterprise agent modules are enabled, `website_publishing.request_change` creates a `DEMO` task and
+When the enterprise agent modules are enabled, `website_publishing.request_change` creates a `WWW` task and
 delegates it to Developer; the existing Agent Orchestrator process then opens a **change request**
 and prepares the website PR. `code_changes.list_change_requests` / `get_change_request` answer
 whether it shipped, and `approve_change_request` / `reject_change_request` decide it.
