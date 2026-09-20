@@ -45,6 +45,24 @@ function gitHubAppFrom(ctx: CommandRuntimeContext): GitHubApp {
   return ctx.container.resolve<GitHubApp>(REPOSITORY_GITHUB_APP)
 }
 
+/**
+ * Where GitHub should send the consent back to: the origin this request arrived on, else the
+ * configured `APP_URL`. Each Conductor worktree serves on its own port, so the App carries
+ * several callback URLs and the right one is whichever origin the operator is actually using.
+ */
+function consentRedirectUri(ctx: CommandRuntimeContext): string | null {
+  const requestUrl = ctx.request?.url
+  const origin = (() => {
+    if (requestUrl) {
+      try { return new URL(requestUrl).origin } catch { /* fall through to APP_URL */ }
+    }
+    const configured = process.env.APP_URL?.trim()
+    if (!configured) return null
+    try { return new URL(configured).origin } catch { return null }
+  })()
+  return origin ? `${origin}/backend/repositories/connect` : null
+}
+
 function repositoryError(status: number, code: string): CrudHttpError {
   return new CrudHttpError(status, { code, error: `repositories.errors.${code}` })
 }
@@ -144,7 +162,11 @@ const startConnectionCommand: CommandHandler<StartConnectionInput, StartConnecti
       expiresAt: new Date(Date.now() + CONNECT_STATE_TTL_MS),
     }))
     await em.flush()
-    return { redirectUrl: input.installationId ? app.buildAuthorizeUrl(rawState) : app.buildInstallUrl(rawState) }
+    return {
+      redirectUrl: input.installationId
+        ? app.buildAuthorizeUrl(rawState, consentRedirectUri(ctx))
+        : app.buildInstallUrl(rawState),
+    }
   },
   buildLog({ ctx }) {
     return { actionLabel: 'repositories.audit.connection.start', resourceKind: 'repositories.connection', ...scopeLog(ctx) }
@@ -178,7 +200,9 @@ const completeConnectionCommand: CommandHandler<CompleteConnectionInput, Complet
       throw error
     }
     if (consent.kind === 'waiting') return { status: 'waiting' }
-    const grant = await gitHubAppFrom(ctx).verifyInstallationConsent(consent.installationId, consent.code)
+    // The same redirect_uri the authorize step sent, or GitHub refuses the exchange. The callback
+    // arrives on the origin that started the consent, so deriving it again here agrees.
+    const grant = await gitHubAppFrom(ctx).verifyInstallationConsent(consent.installationId, consent.code, consentRedirectUri(ctx))
     const connection = await em.transactional(async (tx) => {
       const locked = await tx.findOne(RepositoryConnectState, { ...stateWhere, id: state.id } as FilterQuery<RepositoryConnectState>, { lockMode: LockMode.PESSIMISTIC_WRITE })
       if (!locked) throw repositoryError(400, 'connectionStateExpired')
