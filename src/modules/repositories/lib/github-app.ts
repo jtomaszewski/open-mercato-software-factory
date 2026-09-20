@@ -25,6 +25,16 @@ export type GitHubAppConfig = {
 
 export type RepositoryToken = { token: string; fullName: string; expiresAt: string }
 
+/** The head commit of a repository's base branch — what "the version this repo is on" means here. */
+export type RepositoryHeadCommit = {
+  sha: string
+  /** First line of the commit message: what changed, in the words of whoever changed it. */
+  subject: string
+  authorName: string | null
+  committedAt: string | null
+  htmlUrl: string | null
+}
+
 export class GitHubAppError extends Error {
   constructor(readonly code: 'not_configured' | 'unavailable' | 'consent_refused' | 'not_granted' | 'invalid_response') {
     super(`GitHub App error: ${code}`)
@@ -43,6 +53,8 @@ export type GitHubApp = {
   listBranches(installationId: string, githubRepositoryId: string): Promise<string[]>
   /** An installation token that can reach only this repository (valid ~1 h). */
   repositoryToken(installationId: string, githubRepositoryId: string): Promise<RepositoryToken>
+  /** The newest commit on `branch`, or null when the branch has none we can read. */
+  headCommit(installationId: string, githubRepositoryId: string, branch: string): Promise<RepositoryHeadCommit | null>
 }
 
 function envValue(env: Record<string, string | undefined>, name: string): string | null {
@@ -72,6 +84,7 @@ function appJwt(appId: string, privateKey: string, nowSeconds: number): string {
 }
 
 type RawRepository = { id?: unknown; full_name?: unknown; default_branch?: unknown; permissions?: { push?: unknown; admin?: unknown } }
+type RawCommit = { sha?: unknown; html_url?: unknown; commit?: { message?: unknown; author?: { name?: unknown; date?: unknown } } }
 
 function toGranted(value: RawRepository): GrantedRepository {
   if (typeof value.id !== 'number' || typeof value.full_name !== 'string' || typeof value.default_branch !== 'string') {
@@ -227,6 +240,26 @@ export function createGitHubApp(
       const repository = issued.repositories.find((item) => String(item.id) === githubRepositoryId)
       if (!repository) throw new GitHubAppError('not_granted')
       return { token: issued.token, fullName: toGranted(repository).fullName, expiresAt: issued.expiresAt }
+    },
+    async headCommit(installationId, githubRepositoryId, branch) {
+      const { token } = await installationToken(installationId, [githubRepositoryId])
+      // Addressed by repository id, like every other read here: the full name can change under us,
+      // the id cannot.
+      const commits = await request<unknown>(
+        `${API_ORIGIN}/repositories/${encodeURIComponent(githubRepositoryId)}/commits?sha=${encodeURIComponent(branch)}&per_page=1`,
+        { token },
+      )
+      if (!Array.isArray(commits)) throw new GitHubAppError('invalid_response')
+      const head = commits[0] as RawCommit | undefined
+      if (!head || typeof head.sha !== 'string') return null
+      const message = typeof head.commit?.message === 'string' ? head.commit.message : ''
+      return {
+        sha: head.sha,
+        subject: message.split('\n', 1)[0] ?? '',
+        authorName: typeof head.commit?.author?.name === 'string' ? head.commit.author.name : null,
+        committedAt: typeof head.commit?.author?.date === 'string' ? head.commit.author.date : null,
+        htmlUrl: typeof head.html_url === 'string' ? head.html_url : null,
+      }
     },
   }
 }

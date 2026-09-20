@@ -67,6 +67,14 @@ export function createPrepareCheckoutFunction(deps: CodeChangeDeps = defaultDeps
     await bound.run('task_delegation.task.set_status', `${PREPARE_CHECKOUT_FUNCTION}:in_progress`, { status: 'in_progress' })
     return closeOnFailure(bound, PREPARE_CHECKOUT_FUNCTION, async () => {
       const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
+      // The change request exists from here on, so a run that dies mid-way is still visible as a
+      // change someone asked for and did not get, rather than as nothing at all.
+      await bound.run('code_changes.change_request.start', `${PREPARE_CHECKOUT_FUNCTION}:change_request`, {
+        projectId: bound.projectId,
+        title: bound.task.title,
+        repoFullName: github.repo,
+        baseBranch: github.baseBranch,
+      })
       const checkout = await deps.prepareCheckout(bound.task.id, github)
       logger.info('repository checked out for the agent', { taskId: bound.task.id, repo: github.repo, baseSha: checkout.baseSha })
       return {
@@ -93,6 +101,12 @@ export function createOpenPullRequestFunction(deps: CodeChangeDeps = defaultDeps
       const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
       const result = await deps.openPullRequest(bound.task, { ...change, summary: textArg(args.summary) }, github, textArg(args.agentLabel) || 'agent')
       await bound.run('task_delegation.task.link', `${OPEN_PULL_REQUEST_FUNCTION}:pr`, { kind: 'pr', ref: result.prLabel, url: result.prUrl })
+      await bound.run('code_changes.change_request.record_pull_request', `${OPEN_PULL_REQUEST_FUNCTION}:change_request`, {
+        number: result.prNumber,
+        url: result.prUrl,
+        branch: result.branch,
+        summary: textArg(args.summary) || null,
+      })
       await bound.run('task_delegation.task.set_status', `${OPEN_PULL_REQUEST_FUNCTION}:in_review`, { status: 'in_review' })
       await deps.removeCheckout(bound.task.id).catch((cleanupError: unknown) =>
         logger.warn('could not remove the checkout', { taskId: bound.task.id, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) }))

@@ -105,5 +105,7 @@
   "task_delegation.runBar.technical.agent": "Agent",
   "task_delegation.runBar.technical.empty": "No run details yet.",
   "task_delegation.errors.noAgentAvailable": "No agent is ready to take the task.",
-  "staff.time_tracking.board.summary.logged": ""
+  "staff.time_tracking.board.summary.logged": "",
+  "task_delegation.runs.missingTask": "Removed task",
+  "task_delegation.runs.errors.notFound": "Run not found."
 }

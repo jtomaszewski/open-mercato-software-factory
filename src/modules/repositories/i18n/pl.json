@@ -130,5 +130,20 @@
       "makeDefault": "Ustaw jako domyślne",
       "remove": "Usuń"
     }
-  }
+  },
+  "repositories.overview.title": "Repozytoria",
+  "repositories.overview.description": "Repozytoria, które zmieniają Twoi agenci, i wersja, na której każde stoi.",
+  "repositories.overview.loading": "Wczytuję repozytoria...",
+  "repositories.overview.settings": "Ustawienia repozytoriów",
+  "repositories.overview.version": "Aktualna wersja",
+  "repositories.overview.lastUpdate": "Ostatnia zmiana",
+  "repositories.overview.byWhenAuthor": "{when} · {author}",
+  "repositories.overview.unknownAuthor": "nieznany autor",
+  "repositories.overview.projects": "Projekty",
+  "repositories.overview.empty.title": "Nie podłączono żadnego repozytorium",
+  "repositories.overview.empty.description": "Podłącz repozytorium w ustawieniach, zanim przekażesz zmianę w kodzie agentowi.",
+  "repositories.overview.headError.unavailable": "Nie udało się połączyć z GitHubem.",
+  "repositories.overview.headError.repositoryUnavailable": "To repozytorium jest wyłączone albo dostęp został cofnięty.",
+  "repositories.overview.headError.not_granted": "Instalacja nie daje już dostępu do tego repozytorium.",
+  "repositories.overview.headError.not_configured": "Aplikacja GitHub nie jest skonfigurowana."
 }

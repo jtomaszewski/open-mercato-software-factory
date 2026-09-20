@@ -6,7 +6,7 @@ const REPO = 'jtomaszewski/hackaton-stal-zbiorniki-landing'
 const PR_URL = `https://github.com/${REPO}/pull/8`
 const execute = jest.fn<(...args: unknown[]) => Promise<unknown>>()
 const getPullRequest = jest.fn<(n: number) => Promise<unknown>>()
-const mergePullRequest = jest.fn<(n: number, sha: string) => Promise<void>>()
+const mergePullRequest = jest.fn<(n: number, sha: string) => Promise<{ sha: string | null }>>()
 let delegation: Record<string, unknown> | null
 let statusSlug: string
 let assigneeUserId: string
@@ -37,11 +37,11 @@ beforeEach(() => {
   assigneeUserId = 'marek'
   execute.mockReset().mockResolvedValue({ result: {} })
   getPullRequest.mockReset().mockResolvedValue({ number: 8, state: 'open', merged: false, htmlUrl: PR_URL, headSha: 'abc' })
-  mergePullRequest.mockReset().mockResolvedValue(undefined)
+  mergePullRequest.mockReset().mockResolvedValue({ sha: 'merge-sha' })
 })
 
 it('merges the PR at the head it checked and closes the task as Done', async () => {
-  await expect(approveTaskPullRequest(ctx(), 'task-1', githubFor)).resolves.toEqual({ taskId: 'task-1', prUrl: PR_URL, merged: true, alreadyMerged: false })
+  await expect(approveTaskPullRequest(ctx(), 'task-1', githubFor)).resolves.toEqual({ taskId: 'task-1', prUrl: PR_URL, merged: true, alreadyMerged: false, mergeCommitSha: 'merge-sha' })
   expect(mergePullRequest).toHaveBeenCalledWith(8, 'abc')
   expect(githubFor).toHaveBeenCalledWith('project-1')
   expect(execute).toHaveBeenCalledWith('staff.timesheets.tasks.status_change', expect.objectContaining({ input: { id: 'task-1', taskStatusId: 'done-id' } }))

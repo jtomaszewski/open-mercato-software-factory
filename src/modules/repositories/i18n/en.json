@@ -130,5 +130,21 @@
       "makeDefault": "Make default",
       "remove": "Remove"
     }
-  }
+  },
+  "repositories.overview.title": "Repositories",
+  "repositories.overview.description": "The repositories your agents change, and the version each one is on.",
+  "repositories.overview.loading": "Loading repositories...",
+  "repositories.overview.settings": "Repository settings",
+  "repositories.overview.version": "Current version",
+  "repositories.overview.lastUpdate": "Last update",
+  "repositories.overview.byWhenAuthor": "{when} · {author}",
+  "repositories.overview.unknownAuthor": "unknown author",
+  "repositories.overview.projects": "Projects",
+  "repositories.overview.empty.title": "No repositories connected",
+  "repositories.overview.empty.description": "Connect a repository in settings before handing a code change to an agent.",
+  "repositories.overview.headError.unavailable": "GitHub could not be reached.",
+  "repositories.overview.headError.repositoryUnavailable": "This repository is disabled or its access was revoked.",
+  "repositories.overview.headError.not_granted": "The installation no longer grants access to this repository.",
+  "repositories.overview.headError.not_configured": "The GitHub App is not configured.",
+  "repositories.list.loadError": "The repositories could not be loaded."
 }
