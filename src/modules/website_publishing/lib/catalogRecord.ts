@@ -7,7 +7,11 @@ import {
 
 export type Scope = { tenantId: string; organizationId: string }
 
-/** The „Od ręki” (in stock) category: a product created in it goes onto the DEMO board. */
+/**
+ * The „Od ręki” (in stock) category. It no longer decides whether a product reaches the website —
+ * every new product does — but the agent still reads the product's categories as record data, and
+ * the demo seeds this one.
+ */
 export const IN_STOCK_CATEGORY = 'od-reki'
 
 /** The catalog record the Developer agent gets as the source of truth for product data. */

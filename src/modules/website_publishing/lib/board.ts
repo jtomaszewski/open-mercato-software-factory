@@ -30,7 +30,7 @@ export function productTaskTitle(product: BoardProduct): string {
 export function productTaskDescription(product: BoardProduct, appUrl?: string | null): string {
   const base = appUrl ? appUrl.replace(/\/$/, '') : ''
   return [
-    `Nowy produkt „Od ręki” w katalogu: ${product.title}${product.sku ? ` (${product.sku})` : ''}.`,
+    `Nowy produkt w katalogu: ${product.title}${product.sku ? ` (${product.sku})` : ''}.`,
     '',
     `Produkt: ${base}/backend/catalog/products/${product.id}`,
     '',
