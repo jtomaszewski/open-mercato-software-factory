@@ -21,8 +21,8 @@ export const DEMO_SIDEBAR_VISIBLE_ITEMS = [
   '/backend/sales/orders',
   // The Code section: where the owner sees what the Developer proposed and decides it. The board
   // drawer can approve one change, but only the change it belongs to — this is the list.
+  // Repositories is a tab on that page rather than a second sidebar entry.
   '/backend/code/changes',
-  '/backend/code/repositories',
 ]
 
 // Groups shown whole, sub-items included: the factory's agents and the automations it runs on.
