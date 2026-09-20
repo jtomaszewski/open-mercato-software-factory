@@ -28,7 +28,7 @@ SPEC-001 zakłada, że możliwości agenta zależą od tego, jak dobrze da się 
 repo: testy, lokalne uruchomienie jedną komendą, CI, preview. Na demo nie ma jeszcze docelowego
 repo. Sceny 3 („katalog → strona”) i 4 („regulamin czeka na prawnika”) potrzebują strony, która:
 
-- wygląda jak strona producenta, bo jury ma uwierzyć w Marka;
+- wygląda jak strona producenta, bo jury ma uwierzyć w Norberta;
 - przyjmuje nowy produkt jako mały PR, który wygląda jak praca programisty, a nie edycja w CMS-ie.
   To demo fabryki oprogramowania;
 - ma preview dla każdego PR. Linkuje do niego ścieżka recenzji i prawnik otwiera je bez konta
@@ -254,7 +254,7 @@ obrazka, a strona nie używa cudzych zdjęć.
 | Agent doda do strony produktu import, skrypt albo `fetch` | `npm run lint` czerwony, jak wyżej |
 | Agent zapomni dopisać stronę do rejestru | test: liczba katalogów ≠ liczba adresów w sitemap, `site` czerwony |
 | Agent wpisze złą cenę spójnie w kodzie i na stronie | `site` zielony, `catalog-match` czerwony, brak waivera, zadanie czeka na developera z opisem niezgodności |
-| Produkt dodany w UI bez kategorii innej niż „Od ręki” albo bez pojemności w tytule, podtytule i `metadata` | run kończy się pytaniem do Marka, bez PR-a |
+| Produkt dodany w UI bez kategorii innej niż „Od ręki” albo bez pojemności w tytule, podtytule i `metadata` | run kończy się pytaniem do Norberta, bez PR-a |
 | Produkt w katalogu nie ma ceny | `priceNetPln: null`, strona pokazuje „Cena na zapytanie”; to częste przy zbiornikach na zamówienie |
 | Produkt w katalogu nie ma wymiarów (`ZDP-5000` przed sceną 2) | `dimensionsMm: null`, wiersz wymiarów znika z tabeli |
 | Zduplikowane SKU albo katalog ≠ `sku` | `site` czerwony |
