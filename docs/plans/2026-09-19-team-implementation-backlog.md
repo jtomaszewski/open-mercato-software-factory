@@ -12,7 +12,7 @@ Implementation paused at the owner's request on 2026-09-19. This document divide
 - Initial application reviews found material defects. Fixes have been made, including the last assignment-grace security finding and PUT transition correction, but **the final whole candidate has not been re-reviewed**.
 - User runtime databases are unchanged. Test environments have been stopped. The owner subsequently authorized publication of this unfinished checkpoint for team takeover. No merge, deployment or paid agent run occurred.
 
-Specifications remain authoritative: [tasks](../specs/SPEC-002-2026-09-18-tasks-module.md), [factory](../specs/SPEC-001-2026-09-18-agentic-software-factory.md), [execution/preview](../../.ai/specs/2026-09-19-agent-execution-and-preview.md), [delivery/recovery](../../.ai/specs/2026-09-19-instance-delivery-and-recovery.md), [infrastructure](../../.ai/specs/2026-09-19-instance-development-infrastructure.md), [website](../specs/SPEC-005-2026-09-19-stal-zbiorniki-www.md).
+Specifications remain authoritative: [tasks](../specs/SPEC-002-2026-09-18-tasks-module.md), [factory](../specs/SPEC-001-2026-09-18-agentic-software-factory.md), [execution/preview](../../.ai/specs/2026-09-19-agent-execution-and-preview.md), [delivery/recovery](../../.ai/specs/2026-09-19-instance-delivery-and-recovery.md), [infrastructure](../../.ai/specs/2026-09-19-instance-development-infrastructure.md), [website](../specs/SPEC-005-2026-09-19-metal-zbiorniki-www.md).
 
 ## Assignment map
 

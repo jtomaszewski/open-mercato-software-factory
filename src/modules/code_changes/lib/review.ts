@@ -14,7 +14,7 @@ export type TaskReview = {
 }
 
 /**
- * What Marek reviews in the task drawer (execution spec EX-P0): the task PR's changed files
+ * What Norbert reviews in the task drawer (execution spec EX-P0): the task PR's changed files
  * with their patches, the checks on its head commit and the preview deployment. Read through the
  * tasks delegation service, so the caller's task access applies; only PRs of the task project's
  * repository are read. Null when the task has no PR yet.

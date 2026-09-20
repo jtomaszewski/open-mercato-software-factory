@@ -1,15 +1,16 @@
-// The Stal-Zbiorniki company around the catalog: fictional customers, staff, projects and their
-// tasks, so the backend looks like a working business rather than an empty install. Customers and
-// projects follow the landing's realizations (hackaton-stal-zbiorniki-landing, lib/realizations.ts).
+// The Metal Zbiorniki company around the catalog: customers, staff, projects and their tasks,
+// so the backend looks like a working business rather than an empty install. Customers follow
+// the landing's realizations (hackaton-stal-zbiorniki-landing, lib/realizations.ts) and are real
+// companies named on metal-zbiorniki.pl; what they ordered is the demo's own data.
 // The DEMO board belongs to task_delegation's seed and scene 3; nothing here touches it.
 
-export const DEMO_COMPANY_NAME = 'Stal-Zbiorniki ERP'
-export const DEMO_COMPANY_LOGO_FILE = 'public/brand/stal-zbiorniki-logo.png'
+export const DEMO_COMPANY_NAME = 'Metal Zbiorniki'
+export const DEMO_COMPANY_LOGO_FILE = 'public/brand/metal-zbiorniki-logo.png'
 
 export const DEMO_CUSTOMERS = [
-  { key: 'brewery', displayName: 'Browar Rzemieślniczy Ostrów', industry: 'Browarnictwo', domain: 'browar-ostrow.example', lifecycleStage: 'customer', description: 'Dwa zbiorniki ZWP-2000 zasilające linię warzelną, łącznie 4000 l.' },
-  { key: 'water', displayName: 'Aqua Dolina - park wodny', industry: 'Rekreacja', domain: 'aqua-dolina.example', lifecycleStage: 'customer', description: 'Zbiornik ppoż. ZPPOZ-20 i dwa zbiorniki ZCH-3000. Odbiór techniczny przed przygotowaniem referencji.' },
-  { key: 'transport', displayName: 'Trans-Sud - baza transportowa', industry: 'Transport', domain: 'trans-sud.example', lifecycleStage: 'lead', description: 'Zapytanie o zbiornik dwupłaszczowy ZDP-5000 do własnej bazy transportowej. Parametry wymagają potwierdzenia.' },
+  { key: 'panels', displayName: 'Swiss Krono Polska', industry: 'Przemysł drzewny', domain: 'swisskrono.pl', lifecycleStage: 'customer', description: 'Dwa zbiorniki ZWP-5000 na wodę uzdatnioną dla zakładu płyt drewnopochodnych w Żarach, łącznie 10 000 l.' },
+  { key: 'chemicals', displayName: 'Euroservice Z.P.T.', industry: 'Chemia przemysłowa', domain: 'euroservice.com.pl', lifecycleStage: 'customer', description: 'Zbiornik ppoż. ZPPOZ-20 i dwa zbiorniki ZCH-3000. Odbiór techniczny przed przygotowaniem referencji.' },
+  { key: 'installer', displayName: 'Ekos Poznań', industry: 'Instalacje przemysłowe', domain: 'ekos.poznan.pl', lifecycleStage: 'lead', description: 'Zapytanie o zbiornik dwupłaszczowy ZDP-5000 na zaplecze budowy. Parametry wymagają potwierdzenia.' },
 ] as const
 
 export const DEMO_TEAMS = [
@@ -27,28 +28,29 @@ export const DEMO_PEOPLE = [
 ] as const
 
 export const DEMO_PROJECTS = [
-  { key: 'brewery', code: 'BROWAR', name: 'Browar Ostrów - dwa zbiorniki ZWP-2000', customer: 'brewery', description: 'Dwa zbiorniki na wodę technologiczną, łącznie 4000 l. Dokumentacja i obsługa po dostawie.', people: ['sales', 'quality', 'logistics'] },
-  { key: 'water', code: 'AQUA', name: 'Aqua Dolina - instalacja technologiczna', customer: 'water', description: 'ZPPOZ-20 i 2 x ZCH-3000. Odbiór, transport i przygotowanie materiałów referencyjnych.', people: ['engineer', 'quality', 'production', 'logistics'] },
+  { key: 'panels', code: 'KRONO', name: 'Swiss Krono - dwa zbiorniki ZWP-5000', customer: 'panels', description: 'Dwa zbiorniki na wodę uzdatnioną, łącznie 10 000 l. Dokumentacja i obsługa po dostawie.', people: ['sales', 'quality', 'logistics'] },
+  { key: 'chemicals', code: 'EUROSERV', name: 'Euroservice - instalacja technologiczna', customer: 'chemicals', description: 'ZPPOZ-20 i 2 x ZCH-3000. Odbiór, transport i przygotowanie materiałów referencyjnych.', people: ['engineer', 'quality', 'production', 'logistics'] },
 ] as const
 
 export const DEMO_TASKS = [
-  { project: 'brewery', status: 'backlog', person: 'sales', title: 'Zaplanować kontakt po dostawie do browaru', description: 'Uzyskać opinię o użytkowaniu dwóch ZWP-2000.' },
-  { project: 'brewery', status: 'in-progress', person: 'quality', title: 'Skompletować archiwum dokumentacji ZWP-2000', description: 'Zebrać karty dwóch zbiorników i protokół odbioru.' },
-  { project: 'brewery', status: 'in-review', person: 'sales', title: 'Sprawdzić opis realizacji Browar Ostrów', description: 'Dwa ZWP-2000, łącznie 4000 l, maj 2026. Przegląd treści przed publikacją.' },
-  { project: 'brewery', status: 'done', person: 'logistics', title: 'Zamknąć checklistę dostawy dwóch zbiorników', description: 'Dostawa i rozładunek potwierdzone przez klienta.' },
-  { project: 'water', status: 'backlog', person: 'logistics', title: 'Uzgodnić okno transportowe Aqua Dolina', description: 'ZPPOZ-20 wymaga zaplanowania rozładunku. Potwierdzić gotowość miejsca montażu przed wysyłką.' },
-  { project: 'water', status: 'in-progress', person: 'production', title: 'Przygotować komplet ZPPOZ-20 i dwóch ZCH-3000', description: 'Lista kompletacyjna dla zamówienia SZ-2026-0051.' },
-  { project: 'water', status: 'in-review', person: 'quality', title: 'Zweryfikować checklistę odbioru technicznego', description: 'Materiał, wymiary, króćce i komplet dokumentacji. Zakończenie wymaga akceptacji technologa.' },
-  { project: 'water', status: 'done', person: 'engineer', title: 'Uzgodnić zakres instalacji technologicznej', description: 'Zbiornik przeciwpożarowy 20 m³ oraz dwa zbiorniki chemiczne po 3000 l.' },
+  { project: 'panels', status: 'backlog', person: 'sales', title: 'Zaplanować kontakt po dostawie do Swiss Krono', description: 'Uzyskać opinię o użytkowaniu dwóch ZWP-5000.' },
+  { project: 'panels', status: 'in-progress', person: 'quality', title: 'Skompletować archiwum dokumentacji ZWP-5000', description: 'Zebrać karty dwóch zbiorników i protokół odbioru.' },
+  { project: 'panels', status: 'in-review', person: 'sales', title: 'Sprawdzić opis realizacji Swiss Krono', description: 'Dwa ZWP-5000, łącznie 10 000 l, luty 2026. Przegląd treści przed publikacją.' },
+  { project: 'panels', status: 'done', person: 'logistics', title: 'Zamknąć checklistę dostawy dwóch zbiorników', description: 'Dostawa i rozładunek potwierdzone przez klienta.' },
+  { project: 'chemicals', status: 'backlog', person: 'logistics', title: 'Uzgodnić okno transportowe Euroservice', description: 'ZPPOZ-20 wymaga zaplanowania rozładunku. Potwierdzić gotowość miejsca montażu przed wysyłką.' },
+  { project: 'chemicals', status: 'in-progress', person: 'production', title: 'Przygotować komplet ZPPOZ-20 i dwóch ZCH-3000', description: 'Lista kompletacyjna dla zamówienia MZ-2026-0051.' },
+  { project: 'chemicals', status: 'in-review', person: 'quality', title: 'Zweryfikować checklistę odbioru technicznego', description: 'Materiał, wymiary, króćce i komplet dokumentacji. Zakończenie wymaga akceptacji technologa.' },
+  { project: 'chemicals', status: 'done', person: 'engineer', title: 'Uzgodnić zakres instalacji technologicznej', description: 'Zbiornik przeciwpożarowy 20 m³ oraz dwa zbiorniki chemiczne po 3000 l.' },
 ] as const
 
-export const DEMO_WATER_ORDER = {
-  orderNumber: 'SZ-2026-0051',
-  // The kitting task on the AQUA board is in progress.
+export const DEMO_OPEN_ORDER = {
+  orderNumber: 'MZ-2026-0051',
+  customer: 'chemicals',
+  // The kitting task on the EUROSERV board is in progress.
   status: 'in_fulfillment',
   placedAt: '2026-09-01',
   expectedDeliveryAt: '2026-09-25',
-  comments: 'Aqua Dolina: komplet zbiorników do instalacji technologicznej.',
+  comments: 'Euroservice: komplet zbiorników do instalacji technologicznej.',
   lines: [
     { handle: 'zppoz-20', quantity: 1 },
     { handle: 'zch-3000', quantity: 2 },

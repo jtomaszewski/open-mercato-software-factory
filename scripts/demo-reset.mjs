@@ -23,7 +23,7 @@ if (!databaseUrl) {
 console.log(`[demo:reset] resetting ${new URL(databaseUrl).pathname.slice(1)} on ${new URL(databaseUrl).host}`)
 
 // Plain `init --reinstall` would also seed the core examples (fashion products, services).
-mercato('init', '--reinstall', '--no-examples', '--org=Stal-Zbiorniki ERP')
+mercato('init', '--reinstall', '--no-examples', '--org=Metal Zbiorniki')
 
 const client = new pg.Client({ connectionString: databaseUrl })
 await client.connect()
@@ -37,7 +37,7 @@ if (!rows[0]) {
 }
 const scope = ['--tenant', rows[0].tenant_id, '--org', rows[0].id]
 
-mercato('demo_fixtures', 'seed-stal-zbiorniki', ...scope)
+mercato('demo_fixtures', 'seed-metal-zbiorniki', ...scope)
 mercato('task_delegation', 'seed-demo', ...scope)
 mercato('website_publishing', 'ensure-process', ...scope)
 // The seed sets the organization logo through core's update command, whose query-index event

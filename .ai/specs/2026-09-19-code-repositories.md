@@ -357,7 +357,7 @@ Qualification runs time out after 15 minutes; a missing callback leaves `running
 - **Validation:** full gate + integration
 - **Exit gate:** DEMO project with two linked repositories: auto-select with default, required choice without, refusal when disabled.
 
-### Phase 4 — Move the Stal-Zbiorniki target into the registry
+### Phase 4 — Move the Metal Zbiorniki target into the registry
 
 - **Depends on:** Phase 3 and a qualified broker
 - **Outcome:** the D-038 website is a `static_site` repository row linked to its project; the config-file target is removed.

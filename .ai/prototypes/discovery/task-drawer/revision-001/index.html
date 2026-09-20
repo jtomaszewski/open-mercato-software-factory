@@ -268,7 +268,7 @@
       tasks: [
         { ref: 'WWW-12', title: 'Opublikuj stronę produktu ZWM-1500', col: 'in-review', assignee: 'p3', agent: 'a1', run: 'complete',
           created: '16 wrz', desc: ['Nowy zbiornik ZWM-1500 jest już w katalogu. Potrzebna strona produktu na www.', ['Dane techniczne z karty produktu', 'Zdjęcia z katalogu', 'Wersja polska i angielska']],
-          change: { pr: 10, files: 3, add: 212, del: 4, checks: 'green', preview: 'stal-zbiorniki.example/produkty/zwm-1500', previewTitle: 'Zbiornik ZWM-1500', previewText: 'Pojemność 1500 l · stal nierdzewna 1.4301 · atest PZH' },
+          change: { pr: 10, files: 3, add: 212, del: 4, checks: 'green', preview: 'metal-zbiorniki.example/produkty/zwm-1500', previewTitle: 'Zbiornik ZWM-1500', previewText: 'Pojemność 1500 l · stal nierdzewna 1.4301 · atest PZH' },
           timeline: [['Utworzone przez Jana Kowalskiego', '09:12'], ['Przekazane do Software Engineer', '09:14'], ['Plan: mała zmiana, bez projektu', '09:21'], ['Zmiana gotowa do zatwierdzenia', '09:58']],
           comments: [['Anna Nowak', '09:30', 'Zdjęcia są już w katalogu, można brać.']],
           subtasks: [], cost: '0,84 $', runId: 'run-7f2a' },
@@ -290,7 +290,7 @@
           timeline: [['Utworzone przez Annę Nowak', '09:30'], ['Przekazane do Software Engineer', '09:31'], ['Agent zakończył pracę z błędem', '09:38']], comments: [], subtasks: [], cost: '0,12 $', runId: 'run-c4d9' },
         { ref: 'WWW-10', title: 'Nowe logo w nagłówku', col: 'done', assignee: 'p3', agent: 'a1', run: 'published',
           created: '15 wrz', desc: ['Podmiana logo po rebrandingu.', []],
-          change: { pr: 8, files: 2, add: 14, del: 14, checks: 'green', merged: true, preview: 'stal-zbiorniki.example/', previewTitle: 'Stal-Zbiorniki', previewText: 'Strona startowa z nowym logo' },
+          change: { pr: 8, files: 2, add: 14, del: 14, checks: 'green', merged: true, preview: 'metal-zbiorniki.example/', previewTitle: 'Metal Zbiorniki', previewText: 'Strona startowa z nowym logo' },
           timeline: [['Utworzone przez Jana Kowalskiego', '15 wrz'], ['Przekazane do Software Engineer', '15 wrz'], ['Zatwierdzone i opublikowane', '16 wrz']], comments: [], subtasks: [], cost: '0,40 $', runId: 'run-11aa' },
       ],
       noPerm: false,
@@ -515,7 +515,7 @@
   function delegate(t) { t.agent = 'a1'; startRun(t); live('Przekazane agentowi Software Engineer'); renderAll(); }
   function removeAgent(t) { t.agent = null; t.run = null; t.col = 'backlog'; t.timeline.push(['Zadanie przejęte przez ' + (person(t.assignee) || {}).name, 'teraz']); live('Zadanie przejęte, agent zdjęty'); renderAll(); }
   function approvePlan(t) { t.run = 'running'; t.runMin = 1; t.timeline.push(['Plan zatwierdzony', 'teraz'], ['Agent buduje zmianę', 'teraz']); live('Plan zatwierdzony, agent buduje'); renderAll();
-    later(() => { if (t.run === 'running') { t.run = 'complete'; t.col = 'in-review'; t.change = { pr: 11, files: 2, add: 48, del: 0, checks: 'green', preview: 'stal-zbiorniki.example/oferta', previewTitle: 'Oferta i cennik orientacyjny', previewText: 'Tabela cen netto „od” dla modeli ZWM' }; t.timeline.push(['Zmiana gotowa do zatwierdzenia', 'teraz']); renderAll(); live('Zmiana gotowa do zatwierdzenia'); } }, 2500); }
+    later(() => { if (t.run === 'running') { t.run = 'complete'; t.col = 'in-review'; t.change = { pr: 11, files: 2, add: 48, del: 0, checks: 'green', preview: 'metal-zbiorniki.example/oferta', previewTitle: 'Oferta i cennik orientacyjny', previewText: 'Tabela cen netto „od” dla modeli ZWM' }; t.timeline.push(['Zmiana gotowa do zatwierdzenia', 'teraz']); renderAll(); live('Zmiana gotowa do zatwierdzenia'); } }, 2500); }
   function rejectPlan(t) {
     const reason = promptReason(t, 'Dlaczego odrzucasz plan? Agent dostanie ten powód.', (r) => { t.run = 'rejected'; t.failReason = r; t.col = 'backlog'; t.timeline.push(['Plan odrzucony: ' + r, 'teraz']); live('Plan odrzucony'); renderAll(); });
   }

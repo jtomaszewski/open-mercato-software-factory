@@ -8,7 +8,7 @@ import { Role } from '@open-mercato/core/modules/auth/data/entities'
 import { saveRoleSidebarPreference } from '@open-mercato/core/modules/auth/services/sidebarPreferencesService'
 
 /**
- * The pitch sidebar (SPEC-004): only the places Marek works in. Everything else stays
+ * The pitch sidebar (SPEC-004): only the places Norbert works in. Everything else stays
  * installed and reachable by URL; it is only hidden from the menu, as a role default that
  * Customize sidebar can edit or clear.
  *

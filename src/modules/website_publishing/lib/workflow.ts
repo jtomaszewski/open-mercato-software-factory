@@ -135,7 +135,7 @@ const websiteChange = defineWorkflow({
       }],
     },
     { stepId: PR_OPEN_MILESTONE, stepName: 'Website PR open', stepType: 'AUTOMATED', config: { milestone: PR_OPEN_MILESTONE } },
-    { stepId: 'end', stepName: 'In review', stepType: 'END', description: 'The PR waits for Marek’s approval.' },
+    { stepId: 'end', stepName: 'In review', stepType: 'END', description: 'The PR waits for Norbert’s approval.' },
   ] as const,
   transitions: [
     { transitionId: 't_settle', transitionName: 'Settle', fromStepId: 'start', toStepId: 'settle', trigger: 'auto', priority: 100 },
