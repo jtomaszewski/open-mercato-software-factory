@@ -1,6 +1,7 @@
 "use client"
 import * as React from 'react'
 import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { Page, PageBody, PageHeader } from '@open-mercato/ui/backend/Page'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
@@ -60,8 +61,12 @@ function FilePatch({ file }: { file: TaskReview['files'][number] }) {
  * One change request, with the decision on it.
  *
  * Three things a decision needs, in the order a person needs them: what was asked for and what
- * came back (summary, preview, checks), the decision itself, and only then the evidence — the
- * diff and how the agent got there, both folded away.
+ * came back (summary, checks), the decision itself, and only then the evidence — the diff and how
+ * the agent got there, both folded away.
+ *
+ * The preview is a header button rather than a metadata field: looking at the change is the step
+ * that earns the decision, so it sits with the buttons that make it, not among the facts about it.
+ * The pull request link is demoted to ghost so it does not compete with the preview.
  *
  * Approve and reject are the only writes here and both re-check everything server-side; this page
  * decides what to *offer*, never what is allowed. A change request that is not `open` offers
@@ -173,6 +178,12 @@ export function ChangeRequestDetail({ id }: { id: string }) {
         description={changeRequest.projectName ?? undefined}
         titleAction={<StatusBadge variant={chip.variant}>{t(chip.labelKey)}</StatusBadge>}
         actions={<div className="flex flex-wrap gap-2">
+          {review?.previewUrl ? <Button asChild variant="secondary" data-testid="change-request-preview">
+            <a href={review.previewUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink aria-hidden />
+              {t('code_changes.review.openPreview')}
+            </a>
+          </Button> : null}
           {decidable ? <>
             <Button disabled={saving} onClick={() => { void decide('approve') }}>
               {saving ? t('code_changes.changeRequests.actions.working') : t('code_changes.changeRequests.actions.approve')}
@@ -181,7 +192,7 @@ export function ChangeRequestDetail({ id }: { id: string }) {
               {t('code_changes.changeRequests.actions.reject')}
             </Button>
           </> : null}
-          {changeRequest.url ? <Button asChild variant="outline">
+          {changeRequest.url ? <Button asChild variant="ghost">
             <a href={changeRequest.url} target="_blank" rel="noopener noreferrer">{t('code_changes.changeRequests.actions.openProvider')}</a>
           </Button> : null}
           <Button asChild variant="ghost">
@@ -205,11 +216,6 @@ export function ChangeRequestDetail({ id }: { id: string }) {
             <Field label={t('code_changes.changeRequests.list.columns.repository')}>
               <span className="font-mono text-xs">{changeRequest.repoFullName}</span>
               <span className="text-muted-foreground"> · {changeRequest.baseBranch}</span>
-            </Field>
-            <Field label={t('code_changes.runs.detail.preview')}>
-              {review?.previewUrl
-                ? <a className="text-primary underline" href={review.previewUrl} target="_blank" rel="noopener noreferrer">{t('code_changes.review.preview')}</a>
-                : <span className="text-muted-foreground">—</span>}
             </Field>
             <Field label={t('code_changes.changeRequests.detail.checks')}>
               <StatusBadge variant={checksVariant}>{checksLabel}</StatusBadge>
