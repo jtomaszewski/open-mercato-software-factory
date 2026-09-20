@@ -3,7 +3,14 @@ import type { GitHubClient } from './github'
 
 export type DelegatedTask = { id: string; title: string; description: string | null }
 
-export type OpenedPullRequest = { prNumber: number; prUrl: string; prLabel: string; branch: string }
+export type OpenedPullRequest = {
+  prNumber: number
+  prUrl: string
+  prLabel: string
+  branch: string
+  /** The commit the pull request proposes — what a later approval merges at. */
+  headSha: string
+}
 
 /** What the agent's run left behind: the files it changed on the base it was given. */
 export type TaskChange = { baseSha: string; files: ChangedFile[]; summary: string }
@@ -48,5 +55,5 @@ export async function openTaskPullRequest(deps: PullRequestDeps, task: Delegated
   const commitSha = await deps.github.createCommit({ parentSha: change.baseSha, files: change.files, message: title })
   await deps.github.upsertBranch(branch, commitSha)
   const pr = await deps.github.createPullRequest({ title, body, head: branch })
-  return { prNumber: pr.number, prUrl: pr.htmlUrl, prLabel: `PR #${pr.number} · ${task.title.slice(0, 60)}`, branch }
+  return { prNumber: pr.number, prUrl: pr.htmlUrl, prLabel: `PR #${pr.number} · ${task.title.slice(0, 60)}`, branch, headSha: pr.headSha }
 }

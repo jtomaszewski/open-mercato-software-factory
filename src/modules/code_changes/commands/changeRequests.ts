@@ -5,6 +5,7 @@ import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { requireProcessAuthority } from '../../task_delegation/lib/processAuthority'
 import { requireFeature, requireTaskScope } from '../../task_delegation/lib/auth'
 import { ChangeRequest } from '../data/entities'
+import { emitChangeRequestEvent } from '../events'
 import { approveTaskPullRequest, rejectTaskPullRequest } from '../lib/approve'
 import { gitHubForTaskProject } from '../lib/github-source'
 
@@ -53,6 +54,29 @@ function scopeLog(ctx: CommandRuntimeContext) {
   return { tenantId: ctx.auth?.tenantId, organizationId: ctx.selectedOrganizationId ?? ctx.auth?.orgId }
 }
 
+/**
+ * Announces a transition: the specific event a subscriber acts on, then the generic one every
+ * open surface listens to. Emission never decides the outcome — the write already committed, and
+ * a listener that is down must not turn an approved change back into an open one.
+ */
+async function announce(
+  event: 'opened' | 'ready' | 'approved' | 'rejected' | 'failed',
+  entity: ChangeRequest,
+): Promise<void> {
+  const payload = {
+    changeRequestId: entity.id,
+    taskId: entity.taskId,
+    delegationId: entity.delegationId ?? null,
+    projectId: entity.projectId,
+    status: entity.status,
+    tenantId: entity.tenantId,
+    organizationId: entity.organizationId,
+  }
+  const options = { persistent: true, tenantId: entity.tenantId, organizationId: entity.organizationId }
+  await emitChangeRequestEvent(`code_changes.change_request.${event}`, payload, options)
+  await emitChangeRequestEvent('code_changes.change_request.changed', payload, options)
+}
+
 async function notFound(): Promise<CrudHttpError> {
   const { translate } = await resolveTranslations()
   return new CrudHttpError(404, {
@@ -91,6 +115,7 @@ const startCommand: CommandHandler<StartChangeRequestInput, ChangeRequestResult>
     })
     em.persist(entity)
     await em.flush()
+    await announce('opened', entity)
     return { id: entity.id, status: entity.status }
   },
   buildLog({ result, input, ctx }) {
@@ -123,6 +148,7 @@ const recordPullRequestCommand: CommandHandler<RecordPullRequestInput, ChangeReq
     entity.summary = input.summary ?? entity.summary ?? null
     entity.statusReason = null
     await em.flush()
+    if (entity.status === 'open') await announce('ready', entity)
     return { id: entity.id, status: entity.status }
   },
   buildLog({ result, input, ctx }) {
@@ -149,6 +175,7 @@ const markFailedCommand: CommandHandler<MarkFailedInput, ChangeRequestResult> = 
       entity.status = 'failed'
       entity.statusReason = input.reason.slice(0, 8000)
       await em.flush()
+      await announce('failed', entity)
     }
     return { id: entity.id, status: entity.status }
   },
@@ -180,7 +207,7 @@ async function recordDecision(
 }
 
 async function loadDecidable(ctx: CommandRuntimeContext, id: string): Promise<ChangeRequest> {
-  const scope = await requireFeature(ctx, 'task_delegation.delegate')
+  const scope = await requireFeature(ctx, 'code_changes.decide')
   const entity = await emFrom(ctx).findOne(ChangeRequest, { ...scopeFilter(scope), id, deletedAt: null })
   if (!entity) throw await notFound()
   if (entity.status !== 'open') {
@@ -205,6 +232,7 @@ const approveCommand: CommandHandler<DecideChangeRequestInput, ChangeRequestResu
       record.mergeCommitSha = merged.mergeCommitSha ?? record.mergeCommitSha ?? null
       record.statusReason = null
     })
+    await announce('approved', saved)
     return { id: saved.id, status: saved.status }
   },
   buildLog({ result, ctx }) {
@@ -228,6 +256,7 @@ const rejectCommand: CommandHandler<DecideChangeRequestInput, ChangeRequestResul
       record.status = 'rejected'
       record.statusReason = input.reason?.trim() ? input.reason.trim().slice(0, 8000) : null
     })
+    await announce('rejected', saved)
     return { id: saved.id, status: saved.status }
   },
   buildLog({ result, ctx }) {

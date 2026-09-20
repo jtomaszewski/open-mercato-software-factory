@@ -41,7 +41,37 @@ so a non-technical owner can act on it. GitHub calls it a pull request; the reco
   of scope for now. The transitions are commands precisely so those can be added without touching
   any of the preconditions.
 
+## Follow-up audit (2026-09-20)
+
+Reviewed the module against its siblings' conventions, the specs, and the i18n set.
+
+- [x] `acl.ts` — the module now owns `code_changes.view` / `code_changes.decide`; every surface was
+      gated on another module's features. The task-drawer pair requires both, because it acts on a
+      delegation as well as on a change.
+- [x] `setup.ts` — grants + workflow-command enablement; `__tests__/setup.test.ts` guards them.
+- [x] `events.ts` — `change_request.{opened,ready,approved,rejected,failed,changed}`. There was no
+      way to notice a change request move; our own drawer widget listened to another module's stream.
+- [x] `workflows.ts` — the three run commands registered as workflow-safe.
+- [x] `ai-tools.ts` — list / get / approve / reject. The catalog assistant is told never to claim a
+      change shipped without proof, and until now no tool could supply that proof.
+- [x] `api/openapi.ts` — one tag + error schema instead of six copies; response schemas added.
+- [x] `index.ts` — description rewritten, `staff` added to `requires`, `features` re-exported.
+- [x] **Bug:** `head_sha` and `repository_id` were columns nothing ever wrote. Threaded through.
+- [x] **Bug:** the Code tab bar pointed at `code_changes.runs.nav.title`, a key deleted in the
+      rename — a Polish user saw an English tab beside a Polish sidebar entry, silently.
+- [x] `.ai/specs/2026-09-20-change-requests.md` — the missing spec, written after the fact.
+- [x] Term collision resolved: `developer-task-intake.md` used "change request" for a task +
+      delegation. Supersession notes added there and on three other specs.
+- [x] Root `README.md` — module inventory named two renamed modules; `factory ensure-process` was
+      already `website_publishing ensure-process` in the script.
+
 ## Open
 
-- The migration is generated but **not applied**. `yarn mercato db migrate` (or the project's usual
-  path) is needed before the Code changes tab shows anything.
+- **AC-006: no integration coverage** for the list / approve / reject paths. Unit tests cover the
+  decision preconditions; the API and UI paths are not exercised.
+- **A workflow still cannot approve** — the assignee rule is hardcoded, so `approve`/`reject` are
+  deliberately not workflow-safe. Making autonomous approval possible means turning that rule into
+  a policy first.
+- `yarn mercato auth sync-role-acls` ends with an unrelated `Metadata for entity CustomerRole not
+  found` error *after* writing the role features. The grants land; the failure is in a later stage
+  and involves a module untouched here.

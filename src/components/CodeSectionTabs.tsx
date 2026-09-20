@@ -8,7 +8,7 @@ import { cn } from '@open-mercato/shared/lib/utils'
 export type CodeSectionTab = 'changes' | 'repositories'
 
 const TABS: { id: CodeSectionTab; href: string; labelKey: string; fallback: string }[] = [
-  { id: 'changes', href: '/backend/code/changes', labelKey: 'code_changes.runs.nav.title', fallback: 'Code changes' },
+  { id: 'changes', href: '/backend/code/changes', labelKey: 'code_changes.changeRequests.nav.title', fallback: 'Code changes' },
   { id: 'repositories', href: '/backend/code/repositories', labelKey: 'repositories.nav.title', fallback: 'Repositories' },
 ]
 

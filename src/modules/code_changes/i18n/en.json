@@ -91,5 +91,8 @@
   "code_changes.audit.changeRequest.recordPullRequest": "Attach pull request to change request",
   "code_changes.audit.changeRequest.markFailed": "Mark change request failed",
   "code_changes.audit.changeRequest.approve": "Approve change request",
-  "code_changes.audit.changeRequest.reject": "Reject change request"
+  "code_changes.audit.changeRequest.reject": "Reject change request",
+  "code_changes.workflow.startChangeRequest": "Open the change request",
+  "code_changes.workflow.recordPullRequest": "Attach the pull request to the change request",
+  "code_changes.workflow.markFailed": "Mark the change request failed"
 }

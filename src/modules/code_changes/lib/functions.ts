@@ -3,7 +3,7 @@ import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import type { ActivityContext } from '@open-mercato/core/modules/workflows/lib/activity-executor'
 import { GitHubClient, type GitHubConfig } from './github'
-import { resolveTaskGitHub } from './github-source'
+import { resolveTaskGitHub, type TaskGitHub } from './github-source'
 import { collectChanges, prepareCheckout, readCheckoutConfigFromEnv, removeCheckout, type CollectedChange, type PreparedCheckout } from './checkout'
 import { openTaskPullRequest, type DelegatedTask, type OpenedPullRequest, type TaskChange } from './pullRequest'
 import { bindRun, closeOnFailure, type Scope } from './run'
@@ -31,7 +31,7 @@ export type PreparedTask = {
 export type CodeChangeDeps = {
   resolveContainer: () => Promise<AwilixContainer>
   /** The task project's repository and token (registered repository, else the env). */
-  resolveGitHub: (container: AwilixContainer, scope: Scope, projectId: string) => Promise<GitHubConfig>
+  resolveGitHub: (container: AwilixContainer, scope: Scope, projectId: string) => Promise<TaskGitHub>
   prepareCheckout: (taskId: string, github: GitHubConfig) => Promise<PreparedCheckout>
   collectChanges: (taskId: string) => Promise<CollectedChange>
   removeCheckout: (taskId: string) => Promise<void>
@@ -74,6 +74,7 @@ export function createPrepareCheckoutFunction(deps: CodeChangeDeps = defaultDeps
         title: bound.task.title,
         repoFullName: github.repo,
         baseBranch: github.baseBranch,
+        repositoryId: github.repositoryId,
       })
       const checkout = await deps.prepareCheckout(bound.task.id, github)
       logger.info('repository checked out for the agent', { taskId: bound.task.id, repo: github.repo, baseSha: checkout.baseSha })
@@ -105,6 +106,7 @@ export function createOpenPullRequestFunction(deps: CodeChangeDeps = defaultDeps
         number: result.prNumber,
         url: result.prUrl,
         branch: result.branch,
+        headSha: result.headSha,
         summary: textArg(args.summary) || null,
       })
       await bound.run('task_delegation.task.set_status', `${OPEN_PULL_REQUEST_FUNCTION}:in_review`, { status: 'in_review' })

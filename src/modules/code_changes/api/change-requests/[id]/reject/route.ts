@@ -6,13 +6,14 @@ import { z } from 'zod'
 import { withTaskRoute } from '../../../../../task_delegation/api/route-context'
 import { changeRequestRejectSchema } from '../../../../data/validators'
 import type { ChangeRequestResult, DecideChangeRequestInput } from '../../../../commands/changeRequests'
+import { changeRequestDecisionSchema, codeChangesErrorSchema, codeChangesTag } from '../../../openapi'
 
 const paramsSchema = z.object({ id: z.string().uuid() })
 
-export const metadata = { POST: { requireAuth: true, requireFeatures: ['task_delegation.delegate'] } }
+export const metadata = { POST: { requireAuth: true, requireFeatures: ['code_changes.decide'] } }
 
 export async function POST(request: Request, route: { params: Promise<{ id: string }> }) {
-  return withTaskRoute(request, ['task_delegation.delegate'], async ({ commandContext, userId, tenantId, organizationId, userFeatures }) => {
+  return withTaskRoute(request, ['code_changes.decide'], async ({ commandContext, userId, tenantId, organizationId, userFeatures }) => {
     const { id } = paramsSchema.parse(await route.params)
     const { reason } = changeRequestRejectSchema.parse(await readJsonSafe(request, {}))
     const guards = await runRouteMutationGuards({
@@ -28,18 +29,17 @@ export async function POST(request: Request, route: { params: Promise<{ id: stri
   })
 }
 
-const errorSchema = z.object({ error: z.string(), code: z.string().optional() })
 export const openApi: OpenApiRouteDoc = {
-  tag: 'Code changes', summary: 'Reject a change request', methods: {
+  tag: codeChangesTag, summary: 'Reject a change request', methods: {
     POST: {
       summary: 'Close the change request without merging and return its task to the backlog (assignee only)',
       requestBody: { contentType: 'application/json', schema: changeRequestRejectSchema },
-      responses: [{ status: 200, description: 'Rejected', schema: z.object({ id: z.string().uuid(), status: z.literal('rejected') }) }],
+      responses: [{ status: 200, description: 'Rejected', schema: changeRequestDecisionSchema }],
       errors: [
-        { status: 403, description: 'Not the task assignee, or missing scope/feature', schema: errorSchema },
-        { status: 404, description: 'Not found or not accessible', schema: errorSchema },
-        { status: 409, description: 'Not open, not in review, or already merged', schema: errorSchema },
-        { status: 422, description: 'A reason is required', schema: errorSchema },
+        { status: 403, description: 'Not the task assignee, or missing scope/feature', schema: codeChangesErrorSchema },
+        { status: 404, description: 'Not found or not accessible', schema: codeChangesErrorSchema },
+        { status: 409, description: 'Not open, not in review, or already merged', schema: codeChangesErrorSchema },
+        { status: 422, description: 'A reason is required', schema: codeChangesErrorSchema },
       ],
     },
   },

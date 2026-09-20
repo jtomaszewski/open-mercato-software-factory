@@ -4,13 +4,14 @@ import type { OpenApiRouteDoc } from '@open-mercato/shared/lib/openapi'
 import { z } from 'zod'
 import { withTaskRoute } from '../../../../../task_delegation/api/route-context'
 import type { ChangeRequestResult, DecideChangeRequestInput } from '../../../../commands/changeRequests'
+import { changeRequestDecisionSchema, codeChangesErrorSchema, codeChangesTag } from '../../../openapi'
 
 const paramsSchema = z.object({ id: z.string().uuid() })
 
-export const metadata = { POST: { requireAuth: true, requireFeatures: ['task_delegation.delegate'] } }
+export const metadata = { POST: { requireAuth: true, requireFeatures: ['code_changes.decide'] } }
 
 export async function POST(request: Request, route: { params: Promise<{ id: string }> }) {
-  return withTaskRoute(request, ['task_delegation.delegate'], async ({ commandContext, userId, tenantId, organizationId, userFeatures }) => {
+  return withTaskRoute(request, ['code_changes.decide'], async ({ commandContext, userId, tenantId, organizationId, userFeatures }) => {
     const { id } = paramsSchema.parse(await route.params)
     const guards = await runRouteMutationGuards({
       container: commandContext.container, req: request,
@@ -25,16 +26,15 @@ export async function POST(request: Request, route: { params: Promise<{ id: stri
   })
 }
 
-const errorSchema = z.object({ error: z.string(), code: z.string().optional() })
 export const openApi: OpenApiRouteDoc = {
-  tag: 'Code changes', summary: 'Approve a change request', methods: {
+  tag: codeChangesTag, summary: 'Approve a change request', methods: {
     POST: {
       summary: 'Merge the change request and close its task as Done (assignee only)',
-      responses: [{ status: 200, description: 'Approved', schema: z.object({ id: z.string().uuid(), status: z.literal('approved') }) }],
+      responses: [{ status: 200, description: 'Approved', schema: changeRequestDecisionSchema }],
       errors: [
-        { status: 403, description: 'Not the task assignee, or missing scope/feature', schema: errorSchema },
-        { status: 404, description: 'Not found or not accessible', schema: errorSchema },
-        { status: 409, description: 'Not open, not in review, pull request closed, or GitHub refused the merge', schema: errorSchema },
+        { status: 403, description: 'Not the task assignee, or missing scope/feature', schema: codeChangesErrorSchema },
+        { status: 404, description: 'Not found or not accessible', schema: codeChangesErrorSchema },
+        { status: 409, description: 'Not open, not in review, pull request closed, or GitHub refused the merge', schema: codeChangesErrorSchema },
       ],
     },
   },

@@ -98,7 +98,7 @@ async function resolveNames(ctx: CommandRuntimeContext, scope: { tenantId: strin
  * never show a change to a project the caller cannot open on the board.
  */
 export async function listChangeRequests(ctx: CommandRuntimeContext, query: ChangeRequestQuery): Promise<ChangeRequestPage> {
-  const scope = await requireFeature(ctx, 'task_delegation.view')
+  const scope = await requireFeature(ctx, 'code_changes.view')
   const em = ctx.container.resolve<EntityManager>('em')
   const access = await resolveAccess(ctx, em, scope)
   const decryptScope = { tenantId: scope.tenantId, organizationId: scope.organizationId }
@@ -137,7 +137,7 @@ export async function listChangeRequests(ctx: CommandRuntimeContext, query: Chan
  * so the endpoint never confirms that one exists outside their access.
  */
 export async function readChangeRequest(ctx: CommandRuntimeContext, id: string): Promise<ChangeRequestDto> {
-  const scope = await requireFeature(ctx, 'task_delegation.view')
+  const scope = await requireFeature(ctx, 'code_changes.view')
   const em = ctx.container.resolve<EntityManager>('em')
   const decryptScope = { tenantId: scope.tenantId, organizationId: scope.organizationId }
   const { translate } = await resolveTranslations()
@@ -163,7 +163,7 @@ export async function readChangeRequest(ctx: CommandRuntimeContext, id: string):
  * through here is what keeps one approval from producing two different records of itself.
  */
 export async function findTaskChangeRequestId(ctx: CommandRuntimeContext, taskId: string): Promise<string | null> {
-  const scope = await requireFeature(ctx, 'task_delegation.view')
+  const scope = await requireFeature(ctx, 'code_changes.view')
   const entity = await ctx.container.resolve<EntityManager>('em').findOne(
     ChangeRequest,
     { tenantId: scope.tenantId, organizationId: scope.organizationId, taskId, deletedAt: null },

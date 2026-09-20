@@ -50,6 +50,24 @@ decision with different consequences and does not exist yet under any name.
 The run commands are idempotent per change request, because a workflow step may be replayed: a
 replay never starts a second change request and never rewrites a decision that has since been made.
 
+## Rights, events and tools
+
+| File | What it adds |
+|---|---|
+| `acl.ts` | `code_changes.view` and `code_changes.decide`. Deciding is its own right: "may hand work to an agent" (`task_delegation.delegate`) and "may merge it into a production repository" belong to different people. The task-drawer routes require both, because they act on a delegation *and* on a change. |
+| `setup.ts` | Grants `code_changes.*` to superadmin/admin and `code_changes.view` to employee, and enables the run commands as workflow steps. **Existing tenants need `yarn mercato auth sync-role-acls`** before anyone can open the Code section. |
+| `events.ts` | `code_changes.change_request.{opened,ready,approved,rejected,failed}` plus a client-broadcast `.changed`. Emitted after the write commits and never able to undo it. |
+| `workflows.ts` | Registers the three run commands as workflow-safe. `approve`/`reject` are deliberately absent — see below. |
+| `ai-tools.ts` | `list_change_requests`, `get_change_request` (the proof the catalog assistant needs before claiming a change shipped) and the two decisions, going through the same commands a click does. |
+
+### Why a workflow cannot approve yet
+
+`resolveDecision` requires the caller to be the task's accountable assignee, and a workflow
+principal never is. Offering `approve`/`reject` as workflow steps would advertise a step that
+always fails, so they are not registered. Autonomous or human-in-the-loop approval needs that
+assignee rule to become a policy first; that is the first thing to design when workflows come back
+on the table.
+
 ## Runs
 
 - The functions read the task from the engine's workflow instance (`lib/run.ts`: process →

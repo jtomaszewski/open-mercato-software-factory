@@ -91,5 +91,8 @@
   "code_changes.audit.changeRequest.recordPullRequest": "Podpięcie pull requesta do zgłoszenia",
   "code_changes.audit.changeRequest.markFailed": "Oznaczenie zgłoszenia jako nieudane",
   "code_changes.audit.changeRequest.approve": "Zatwierdzenie zgłoszenia zmiany",
-  "code_changes.audit.changeRequest.reject": "Odrzucenie zgłoszenia zmiany"
+  "code_changes.audit.changeRequest.reject": "Odrzucenie zgłoszenia zmiany",
+  "code_changes.workflow.startChangeRequest": "Otwórz zgłoszenie zmiany",
+  "code_changes.workflow.recordPullRequest": "Podepnij pull requesta do zgłoszenia",
+  "code_changes.workflow.markFailed": "Oznacz zgłoszenie jako nieudane"
 }

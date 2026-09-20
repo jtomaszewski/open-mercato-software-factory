@@ -1,6 +1,6 @@
 export const metadata = {
   requireAuth: true,
-  requireFeatures: ['task_delegation.view'],
+  requireFeatures: ['code_changes.view'],
   pageTitle: 'Code changes',
   pageTitleKey: 'code_changes.changeRequests.nav.title',
   pageGroup: 'Code',
