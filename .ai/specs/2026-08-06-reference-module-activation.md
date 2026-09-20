@@ -1,7 +1,7 @@
 # Reference Module Activation
 
 **Date**: 2026-08-06
-**Status**: Draft
+**Status**: Dormant — shipped with the scaffold and never entered delivery. Neither `example` nor `design_system` is registered in `src/modules.ts`, so no deliverable here has landed and Q-001 is still open. The app answered it in practice by building its own modules instead. Correct the feature ids before acting on this file: the tables below say `example.view` / `example.manage`, but `src/modules/example/acl.ts` gates the Todo surfaces on `example.todos.view` / `example.todos.manage`, and `example.manage` is an inert override probe nothing gates on.
 
 > Shipped with the scaffold. This is the covering specification for turning on the two reference modules this app already contains in source: the canonical `example` module and the installed `design_system` gallery. Requests to enable the Todo demo, expose the design-system gallery, or build the first app capability on top of either one are covered here — amend this file instead of writing a second specification.
 

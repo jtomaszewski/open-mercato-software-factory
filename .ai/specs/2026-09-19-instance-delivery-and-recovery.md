@@ -1,7 +1,7 @@
 # Candidate approval, instance delivery and recovery
 
 **Date**: 2026-09-19
-**Status**: Draft — self-instance scope superseded by D-043; see [code repositories](2026-09-19-code-repositories.md)
+**Status**: Draft, no DL phase started — self-instance scope superseded by D-043 and target enrollment by D-044/D-045; see [code repositories](2026-09-19-code-repositories.md). Note that a simpler approve-and-merge path already ships in `src/modules/code_changes/` (the module `factory` was split into `code_changes` + `website_publishing` in `4259a41`) and contradicts four still-live contracts here: it squash-merges instead of making a two-parent merge with tree readback, holds the merge credential in the app rather than an external executor, links the raw public Vercel preview URL rather than gating it behind Open Mercato auth (D-042), and publishes via `main` auto-deploy rather than promoting the exact tested deployment.
 **Scope**: Specification only. Consume a verified candidate; do not implement an agent runtime.
 **Companion**: [Agent execution and verified previews](2026-09-19-agent-execution-and-preview.md)
 **Decisions and sources**: [Package map](2026-09-19-instance-development-infrastructure.md), [accepted decisions](2026-09-19-instance-development-decisions.md)

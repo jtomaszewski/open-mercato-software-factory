@@ -1,6 +1,6 @@
 # SPEC-009: Assigned to: one picker for a person and an agent
 
-**Status**: Draft
+**Status**: Implemented (PR #26; TC-TASK-DELEGATION-003 still unrun against a seeded environment)
 **Owner**: HackOn team · **Date**: 2026-09-19 · **Tracker**: —
 **Parent**: [SPEC-002](./SPEC-002-2026-09-18-tasks-module.md), whose delegate command, delegation
 table and injected widgets this spec builds on and partly replaces.
@@ -283,3 +283,4 @@ AC-5 the picker, AC-6 the card, AC-7 the drawer takeover, AC-8 cross-surface ref
 | 2026-09-19 | Split out of the combined rename-plus-picker draft after a scope-cohesion review; this spec is the picker, the roster and the assign command, with the rename in SPEC-008. Decisions carried over: human keeps ownership, curated roster driving the process, today's mid-run rules kept, drawer taken over via the header injection spot plus a scoped DOM rule. |
 | 2026-09-19 | Names realigned to the `task_delegation` module id (#20 renamed `tasks`), and the assign command's two halves restated as ordered writes with compensation rather than one transaction, because `staff` 0.8.0 commits each of its commands separately. Implementation Status added; phases and acceptance IDs unchanged. |
 | 2026-09-19 | Phase 2 as built: the card's picker renders through the published `staff.time_task.board:card-badges` spot instead of a `staff.kanban_card` override (a `replace` would copy 435 lines of `KanbanCard` and falsify this spec's own "card unchanged" test); the drawer's old delegate section keeps the run's output and loses its controls; `Space` selects and `Enter` assigns, so picking a person and an agent stays one confirmation from the keyboard; the drawer tripwire is split into a unit pin of the installed markup plus the browser case. |
+| 2026-09-20 | Status advanced `Draft` → `Implemented`: the header was never moved when both phases were marked `verified` and PR #26 merged. Audit against the code confirmed all of AC-1…AC-8 on disk and green (`yarn jest src/modules/task_delegation`: 30 suites, 172 tests). The one open item is the browser case TC-TASK-DELEGATION-003, which the ephemeral run skipped for lack of a seeded task. |

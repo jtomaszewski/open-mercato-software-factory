@@ -1,7 +1,7 @@
 # Instance development: accepted decisions
 
 Date: 2026-09-19
-Status: accepted product decisions; technical contracts pending; target scope expanded by D-038 and narrowed by D-043
+Status: accepted product decisions; technical contracts pending; target scope expanded by D-038, narrowed by D-043 and further moved by D-044..D-047. No decision flatly contradicts the code any more; D-013 and D-047 are partly satisfied with named remainders, and SPEC-008 is now the document out of step — see Known drift at the end.
 
 These decisions were recorded during the specification interview. They describe the requested behavior, not existing implementation or permission to implement, deploy, or spend.
 
@@ -192,3 +192,17 @@ Add a generic `pr_only` profile kind: sandbox checks, one branch and PR, human m
 ## D-047
 
 The agent is named Developer (`developer`), replacing `factory` and "Open Mercato Developer".
+
+## Known drift (audit, 2026-09-20)
+
+Recorded from an evidence-based audit of every spec against the code, re-verified after `4259a41` split `factory` into `code_changes` + `website_publishing` and renamed the agent id, and after `cfc4908` added the `repositories` module. These are reconciliation items, not new decisions: no decision is withdrawn here, and nothing below authorizes a code change.
+
+**D-047 — identifier half satisfied, display name still open.** The delegatable agent id is now `developer` (`src/modules/task_delegation/lib/agentIdentity.ts:10`), carried into the roster (`lib/agentRoster.ts:27`), with `LEGACY_DEVELOPER_AGENT_IDS = ['factory']` matched but never provisioned (`agentIdentity.ts:17`). What D-047 still does not have: the user-visible name, which remains `Software Engineer` (`agentIdentity.ts:32`, `agentRoster.ts:29-30`, `task_delegation/i18n/{en,pl}.json:24`), and disabling the idle legacy `factory` principal. `agentIdentity.ts:29-30` records the split deliberately — the rename of the id is not the rename on screen.
+
+**SPEC-008 is now the document out of step, not the code.** [SPEC-008](../../docs/specs/SPEC-008-2026-09-19-software-engineer-rename.md) is still marked Implemented, and its "Out of scope — identifiers and internals" section freezes `FACTORY_AGENT_ID`, every `agentDefinitionId: 'factory'` comparison, `subscribers/start-factory.ts`, `FACTORY_COLUMNS` and "the whole `src/modules/factory/` module". All of those have since been renamed or deleted: `FACTORY_AGENT_ID` no longer exists, the subscriber is now `start-delegated-run`, and `src/modules/factory/` is gone. Only SPEC-008's user-visible half still matches reality. It needs an amendment or a superseded-by pointer.
+
+**D-013 — partly satisfied; no broker, and a PAT is still a live fallback.** A real GitHub App now issues short-lived repository-scoped installation tokens (`src/modules/repositories/lib/github-app.ts:44-45,68-71,120-121,225`), and that is the path taken whenever a task's project has a linked repository (`lib/repository-access.ts:44`, `src/modules/code_changes/lib/github-source.ts:17-25`), failing closed rather than falling back to another repo. Three things D-013 asked for are still missing: there is no broker — the App private key sits in app environment (`REPOSITORIES_GITHUB_APP_*`, `github-app.ts:54-59`), an accepted deviation recorded in the code-repositories spec; a long-lived PAT remains the operative credential for any project without a linked repository, with `FACTORY_GITHUB_TOKEN` still honoured through a legacy-name shim (`src/modules/code_changes/lib/github.ts:40-42,45-47`); and "the sandbox holds no merge or deploy credentials" is unverified, because no `internal/usability` endpoint exists.
+
+**D-042 — still contradicted.** Previews are to be reachable only by an authenticated Open Mercato user with task access. The task drawer still links the raw public Vercel deployment URL returned by `findPreviewUrl` (`src/modules/code_changes/lib/github.ts:177`, rendered as a plain `target="_blank"` anchor at `src/modules/code_changes/widgets/injection/task-approve/widget.client.tsx:111`). Unchanged by the split; only the path moved.
+
+**D-009 — still reversed.** The disposable per-run `om-developer-runner` container was built in `5ffb260` and removed in `67a838f`, which moved execution into the shared long-lived OpenCode sidecar. `docker/developer-runner/` does not exist; `docker/opencode/` does, now carrying `agents-local/website_publishing_developer.md`. The spec update that commit promised is still pending.
