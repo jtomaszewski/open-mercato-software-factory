@@ -27,7 +27,7 @@ się na żywo; uruchomienia kodujące startują przed pitchem, a na scenie pokaz
 | Scena | Forma | Zbudowane | Brakuje | Kto |
 |---|---|---|---|---|
 | 1. Hook | slajd | slajdy tytuł, hook i mapa w `public/pitch/` | — | demo owner |
-| 2. Poprawa rekordu | na żywo | katalog demo z błędnym `ZDP-5000` (`demo_fixtures`); tablica DEMO z delegowaniem do Factory (moduł `task_delegation`) | chat intake (SPEC-002), zmiany `record` w Caseload (SPEC-003) | tasks owner |
+| 2. Poprawa pojemności | na żywo | katalog demo z błędnym `ZDP-5000`; asystent katalogu i karta zatwierdzenia OM | narzędzie `catalog_corrections.correct_capacity` i próba zapisu 5200 l w danych oraz tekstach | demo owner |
 | 3. Katalog → strona | na żywo, uruchomienie przed pitchem | strona z produktami i „Od ręki” w repo landing; moduł `factory`: produkt w „Od ręki” → zadanie na tablicy DEMO delegowane do Factory → `factory.deliver` otwiera PR ze stroną, podpina go do zadania i przesuwa je do „In review” → „Zatwierdź i opublikuj” w szufladzie merguje PR i zamyka zadanie jako Done | stronę pisze agent Developer (OpenCode + Claude przez OpenRouter) w jednorazowym kontenerze, a szuflada pokazuje diff, checki i podgląd (EX-P0; próba 19.09: 144 s, 0,25 USD, `site` zielony); zostaje próba z kliknięciem Norberta na prawdziwym repo | process + runner owner |
 | 3b. Sprzedaż → referencja | na żywo, uruchomienie przed pitchem | klient Park of Poland i zamówienie `SO-2026-0042` w seedzie; strona „Realizacje” + „Zaufali nam” na `main` repo landing z realizacjami prawdziwych klientów jako referencjami wyjściowymi; ręczny PR #7 z wpisem Park of Poland otwarty jako fallback; fixture scrape'u | intake z `sales.order.updated`, researcher z `web_fetch`, runner (SPEC-006 Fazy 2–3) | jak wyżej |
 | 5. Co dalej | slajd | slajdy liczby z próby, co dalej, podziękowanie i 4 zapasowe na Q&A | nagranie `public/pitch/video/run.mp4` do slajdu B4 | demo owner |
@@ -52,7 +52,7 @@ and deploy” przy każdym merge'u, co pasuje do decyzji „klik Norberta” pon
 | Czas | Scena | Na ekranie | Dowodzi |
 |---|---|---|---|
 | 0:00–0:35 | **1. Hook** | Slajd: Norbert (4,2 mln zł przychodu, 25 pracowników, 3 handlowców, 0 programistów), jego strona, która jeszcze nie wie o wczorajszej sprzedaży, a dane firmy już w Open Mercato. Prezenter otwiera zdaniem „przedstawię wam mojego tatę”. | problemu, w jednej osobie |
-| 0:35–1:50 | **2. Poprawa rekordu** | Norbert na stronie produktu otwiera asystenta (⌘L): „ZDP-5000 ma 5200 l, nie 5000, i brakuje wymiarów”. Powstaje zadanie, delegowane. Caseload pokazuje jedną zmianę w *ZDP-5000*: pojemność i wymiary przed → po. Norbert zatwierdza, rekord się zmienia, szuflada zadania pokazuje `applied`. | plan przed działaniem; bramka człowieka; compare-and-set; nic ukrytego |
+| 0:35–1:50 | **2. Poprawa rekordu** | Norbert otwiera asystenta katalogu: „ZDP-5000 ma 5200 l, nie 5000. Popraw pojemność w danych produktu, nazwie i opisie. Pozostałe pola pozostaw bez zmian”. Karta zatwierdzenia pokazuje pojemność 5000 → 5200 l oraz odpowiadające jej zmiany nazwy i opisu. Norbert zatwierdza, następnie odświeża produkt i pokazuje zapisane dane. | propozycja przed zapisem; zatwierdzenie przez człowieka; spójna pojemność w danych i tekście |
 | 1:50–3:30 | **3. Katalog → strona** | Norbert dodaje *ZWM-1500 Zbiornik mobilny na wodę pitną 1500 l* z zaznaczonym „Od ręki”. Tablica pokazuje nowe zadanie, delegowane, z `catalog.product.created`. Przeskok do gotowego uruchomienia: sizer „small”, PR w repo strony, preview z nową kartą w „Od ręki”, zielone checki i `catalog-match`. **Norbert klika „zatwierdź”**, merge, strona na żywo pokazuje zbiornik, zadanie w `Done`. | wyzwalacz jest w systemie ewidencji, którego fabryki widzące tylko repo nie widzą; „done” sprawdzane względem danych |
 | 3:30–4:30 | **3b. Sprzedaż → referencja** | Handlowiec zmienia status zamówienia *Park of Poland (Suntago)* na *Fulfilled*. Tablica pokazuje zadanie z `sales.order.updated`. Przeskok do gotowego uruchomienia: artefakt researchera z logo Suntago i opisem pobranym z parkofpoland.com, PR z preview: logo Suntago obok browaru w „Zaufali nam”, karta w „Realizacje” z danymi z zamówienia. Norbert zatwierdza, strona na żywo. Jeśli jest czas: dwa zdjęcia przeciągnięte na zamówienie → drugi PR z galerią. | wyzwalacz w sprzedaży; fabryka wciąga do systemu dane z internetu, których tam nie było |
 | 4:30–5:00 | **5. Co dalej** | Jeden slajd: merge bez człowieka dla klas niskiego ryzyka (waiver) i ścieżka prawna (regulamin czeka na prawnika); zgoda klienta mailem wysyłanym i czytanym przez Open Mercato; InboxOps (mail z zapytaniem → zadanie); WordPress; koszt i ewaluacje na zadanie z orkiestratora. | że to uogólnia się poza kod |
@@ -73,13 +73,16 @@ zapasowe B1–B4: architektura, porównanie z Linear i Copilot, bezpieczeństwo,
 ### Na scenie
 
 - **Jedno okno przeglądarki, karty w tej kolejności:** slajdy · tablica zadań · produkt `ZDP-5000` ·
-  Caseload · formularz nowego produktu · PR ze sceny 3 · preview 3 · zamówienie `SO-2026-0042` ·
+  asystent katalogu z kartą zatwierdzenia · formularz nowego produktu · PR ze sceny 3 · preview 3 · zamówienie `SO-2026-0042` ·
   PR ze sceny 3b · preview 3b · strona na żywo. Żadnego wpisywania URL-i.
 - **Kto klika:** Norbert (sceny 2, 3, zatwierdzenia), handlowiec (status zamówienia w 3b). Prawnik
   nie występuje.
 - **Przed pitchem:** świeży tenant z `--no-examples` i seedem; uruchomienia kodujące scen 3 i 3b
-  odpalone i zakończone (PR-y otwarte, preview zielone, **niezmergowane**); zadanie ze sceny 2
-  jeszcze nie istnieje.
+  odpalone i zakończone (PR-y otwarte, preview zielone, **niezmergowane**); produkt `ZDP-5000`
+  ma 5000 l w danych, nazwie i opisie, a asystent katalogu nie ma oczekującej propozycji.
+- **Próba sceny 2:** na rekordzie testowym sprawdzić propozycję bez zapisu, anulowanie,
+  odrzucenie nieaktualnej propozycji i zatwierdzenie z ponownym odczytem 5200 l.
+  Scena nie używa zadania, Caseload ani statusu `applied`.
 - Mówimy „Norbert” i „zbiornik”, nigdy „encja”, „instancja workflow” ani „efektor”.
 - Każda scena kończy się widoczną zmianą stanu: kolumną, znaczkiem, stroną.
 
@@ -89,8 +92,8 @@ Każdy plan awaryjny zachowuje historię. Zmieniają się tylko sceny, których 
 
 | Jeśli to nie działa do zamrożenia w niedzielę o 11:00 | Scena | Zamiast tego |
 |---|---|---|
-| Chat intake (SPEC-002) | 2 | Norbert tworzy zadanie na tablicy ręcznie i je deleguje |
-| Zmiany `record` w Caseload (SPEC-003) | 2 | wyciąć scenę 2 i oddać czas scenie 3 |
+| Asystent katalogu nie przygotowuje propozycji | 2 | pokazać nagranie zweryfikowanego przebiegu; jeśli go nie ma, wyciąć scenę 2 i oddać czas scenie 3 |
+| Karta zatwierdzenia lub zapis korekty nie działa | 2 | nie omijać zatwierdzenia; pokazać nagranie albo wyciąć scenę 2 |
 | Intake z `catalog.product.created` | 3 | Norbert tworzy zadanie ręcznie z linkiem do produktu |
 | Runner nie otwiera PR-ów | 3, 3b | fallback runnera ze SPEC-001 (Claude Managed Agents); jeśli i on zawiedzie, PR zrobiony ręcznie przed pitchem (repo landing ma otwarte PR #4 z `ZWM-1500` i PR #7 z realizacją Park of Poland) i nagranie uruchomienia jako dowód |
 | `web_fetch` lub intake z zamówienia (SPEC-006) | 3b | researcher czyta `suntago.json` z fixtures; zadanie tworzone ręcznie; w ostateczności wyciąć 3b i oddać czas scenie 3 |
@@ -102,7 +105,8 @@ Każdy plan awaryjny zachowuje historię. Zmieniają się tylko sceny, których 
 Prawdopodobne pytania i odpowiedź w dwóch zdaniach na każde:
 
 - **„Co jeśli agent się myli?”** Proponuje, zanim działa. Norbert zatwierdza widok przed → po,
-  nieaktualna propozycja przechodzi w `conflict` zamiast nadpisywać, a zmianę rekordu można cofnąć.
+  a bramka zatwierdzenia odrzuca propozycję, jeśli rekord zmienił się od jej przygotowania.
+  Nie deklarujemy atomowej ochrony przed równoległym zapisem podczas samego wykonania.
   Kod wychodzi tylko jako PR z preview, który zatwierdza człowiek.
 - **„Czemu Norbert musi klikać? Miało być automatycznie.”** Dziś każdy merge to jedno kliknięcie
   na preview. Merge bez człowieka dla klas niskiego ryzyka (nowa strona produktu) jest zaprojektowany
@@ -167,7 +171,7 @@ Seedowane przez `demo_fixtures` (`src/modules/demo_fixtures/lib/stalZbiorniki.ts
 
 - Sześć kategorii: woda, paliwa, chemia, ppoż., urządzenia procesowe oraz **„Od ręki”**.
 - Siedem produktów z cenami netto w PLN, wagą, wymiarami w mm i parametrami w `metadata`.
-- **`ZDP-5000` jest błędny celowo**: 5000 l zamiast 5200 l, bez wymiarów. Scena 2 to poprawia.
+- **`ZDP-5000` jest błędny celowo**: 5000 l zamiast 5200 l, bez wymiarów. Scena 2 poprawia pojemność; wymiary pozostają bez zmian.
 - **`ZWM-1500` nie jest seedowany.** Norbert dodaje go na żywo w scenie 3, w formularzu nowego
   produktu: tytuł *Zbiornik mobilny na wodę pitną 1500 l*, podtytuł *Stal nierdzewna 1.4301,
   atest PZH*, SKU `ZWM-1500`, 11 900 PLN netto, kategorie „Zbiorniki na wodę pitną” i „Od ręki”.
@@ -201,6 +205,33 @@ realizacja to wpis w rejestrze i strona TSX, więc PR fabryki dodaje pliki, nie 
   (scena 3) albo z zamówieniem (scena 3b): teza „done sprawdzane względem danych”;
 - merge po kliknięciu Norberta; GitHub App fabryki nie merguje własnych PR-ów.
 
+## Zakres sceny 2 potwierdzony 2026-09-20
+
+Scena korzysta z istniejącego `catalog.merchandising_assistant`, `prepareMutation` i karty
+zatwierdzenia. Pełny przebieg zadanie -> Caseload -> `applied` ze SPEC-003 pozostaje poza tą
+prezentacją. Wymiary są wyłączone z korekty; brakujące dane nie są wymyślane.
+
+Moduł `catalog_corrections` dodaje wyłącznie narzędzie `catalog_corrections.correct_capacity`
+(`productId`, dodatnia całkowita `capacityLiters`) oraz rozszerzenie listy narzędzi i instrukcji
+asystenta. Narzędzie wymaga `catalog.products.view` i `catalog.products.manage` oraz kontekstu
+użytkownika, tenanta i organizacji. Korzysta z aktualnego rekordu, pokazuje snapshot przed/po
+z `updatedAt`, a po potwierdzeniu wywołuje istniejącą trasę i komendę katalogu. Zachowuje inne
+klucze metadata. Nie dodaje tabel, migracji, własnego ekranu ani zmiany polityki zatwierdzania.
+
+Istniejąca bramka OM odrzuca propozycję, jeżeli wersja rekordu zmieniła się przed kontrolą przy
+zatwierdzeniu. Nie jest to gwarancja atomowego compare-and-set: w OM 0.8.0 komenda
+`catalog.products.update` nie weryfikuje oczekiwanej wersji wewnątrz zapisu. Nie prezentujemy
+tej sceny jako dowodu odporności na równoczesny zapis między kontrolą a wykonaniem komendy.
+
+| Wymaganie | Powierzchnia i wzorzec | Test akceptacyjny |
+|---|---|---|
+| Dane i teksty mają tę samą pojemność | `ai-tools.ts`, wzorzec `src/modules/example/ai-tools.ts` (`ai.tool-pack`, emitted-example) | `catalog_corrections/__tests__/ai-tools.test.ts`: jedna aktualizacja katalogu, zachowane inne parametry |
+| Istniejący asystent proponuje korektę | `ai-agents.ts`, wzorzec `src/modules/example/ai-agents.ts` (`ai.agent-extension`, emitted-example) | `catalog_corrections/__tests__/ai-tools.test.ts`: przygotowanie bez zapisu, anulowanie, stale-version, potwierdzenie |
+| Zapis wymaga uprawnień i zakresu | bramka OM i scoped API runner | odmowa bez uprawnień/organizacji i dla produktu spoza zakresu |
+
+Próba prezentacyjna jest osobnym krokiem po testach deterministycznych: desktop, jeden produkt,
+jedna zaakceptowana korekta. Nie resetujemy bazy i nie powtarzamy już wykonanej korekty.
+
 ## Plan wdrożenia
 
 ### Faza 1: Dane i skrypt
@@ -220,8 +251,10 @@ realizacja to wpis w rejestrze i strona TSX, więc PR fabryki dodaje pliki, nie 
 
 ### Faza 3: Połączenie scen (z krokami 2–4 ze SPEC-001)
 
-7. Scena 2 end to end na seedowanym `ZDP-5000`. *Test:* zatwierdzenie → rekord ma 5200 l
-   i wymiary; szuflada pokazuje `applied`.
+7. Scena 2 end to end na seedowanym `ZDP-5000`. *Test:* przed zatwierdzeniem dane pozostają
+   bez zmian; po zatwierdzeniu `metadata.capacityLiters` wynosi 5200, nazwa i opis mówią
+   o 5200 l. SKU, wymiary, cena i pozostałe metadane pozostają bez zmian. Ponowne otwarcie
+   produktu potwierdza zapis. Anulowanie i zatwierdzenie nieaktualnej propozycji nic nie zapisują.
 8. Scena 3 end to end od dodania `ZWM-1500` w UI katalogu. *Test:* PR z preview, klik Norberta,
    strona na żywo pokazuje zbiornik, zadanie w `Done`. **Zrobione na jednorazowej instancji
    (19.09):** produkt → zadanie delegowane → PR (prawdziwe repo, PR #8, zamknięty) → „In review”

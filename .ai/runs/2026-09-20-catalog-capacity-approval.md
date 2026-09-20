@@ -31,9 +31,20 @@ The presentation uses the shorter assistant flow, not the future task/Caseload c
 
 ## Progress
 
+PR: #61
+
 ### Phase 1: Capacity correction
 
-- [ ] 1.1 Amend the presentation scope and acceptance criteria
-- [ ] 1.2 Implement and test the scoped approval-aware capacity tool
-- [ ] 1.3 Run discovery, full validation and deterministic integration verification
+- [x] 1.1 Amend the presentation scope and acceptance criteria
+- [x] 1.2 Implement and test the scoped approval-aware capacity tool
+- [x] 1.3 Run discovery, full validation and deterministic integration verification
 - [ ] 1.4 Complete independent review and PR handoff
+
+## Verification
+
+- Discovery, typecheck, lint, design-system check, 58 Jest suites / 325 tests and production build passed. Lint retains 10 pre-existing warnings outside this module.
+- Approval-bypass regression: the real shared `executeTool` returned success before the guard (RED), then rejected unapproved execution without reads/writes (GREEN). All 19 focused tests passed.
+- Deterministic local integration through the installed pending-action repository/executor and catalog API passed on a disposable product: preview without write, cancellation, stale-version rejection, confirmation storing 5200 in metadata and copy, unchanged SKU/dimensions/other metadata, replay without a second write, cleanup via the catalog delete command. No model call. Local credentials, fixture IDs and runtime logs remain outside Git.
+- The initial build could not use a node_modules symlink outside the Turbopack root. Installing locked dependencies in this worktree resolved the environment failure; the normal build command then passed.
+- Independent primary and security reviewers approved the corrected delta. The approval bypass and contradictory scene instructions identified in review were fixed and rechecked.
+- Browser/model rehearsal remains separate; passing deterministic integration is not a claim that a live model has completed the presentation scene.
