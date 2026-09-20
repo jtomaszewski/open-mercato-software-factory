@@ -30,7 +30,7 @@
       },
       "empty": {
         "title": "Brak repozytoriów",
-        "description": "Połącz GitHub, aby wybrać repozytoria dla projektów."
+        "description": "Połącz GitHub, aby wybrać repozytoria dla projektów. Jeśli aplikacja jest już zainstalowana na Twoim koncie, podłącz istniejącą instalację."
       },
       "success": {
         "disable": "Repozytorium wyłączone.",
