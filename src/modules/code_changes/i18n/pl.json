@@ -93,5 +93,11 @@
   "code_changes.audit.changeRequest.reject": "Odrzucenie zgłoszenia zmiany",
   "code_changes.workflow.startChangeRequest": "Otwórz zgłoszenie zmiany",
   "code_changes.workflow.recordPullRequest": "Podepnij pull requesta do zgłoszenia",
-  "code_changes.workflow.markFailed": "Oznacz zgłoszenie jako nieudane"
+  "code_changes.workflow.markFailed": "Oznacz zgłoszenie jako nieudane",
+  "code_changes.notifications.ready.title": "Zmiana czeka na Twoją decyzję",
+  "code_changes.notifications.ready.body": "{title} czeka na zatwierdzenie lub odrzucenie.",
+  "code_changes.notifications.failed.title": "Nie udało się przygotować zmiany",
+  "code_changes.notifications.failed.body": "{title} — agent nie dokończył pracy: {reason}",
+  "code_changes.notifications.actions.review": "Zobacz zmianę",
+  "notifications.categories.code_changes": "Zmiany w kodzie"
 }
