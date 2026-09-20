@@ -78,3 +78,14 @@ agent may edit it without a developer review.
   (`organization.logoUrl || await uploadLogo()`), so re-seeding onto a database that already
   holds the old brand updates the name but keeps the old logo. `yarn demo:reset` wipes first,
   so the documented path is unaffected.
+
+## Follow-up (2026-09-20)
+
+Database reset with `yarn demo:reset` and the app started on http://localhost:3000.
+Verified in the database: organization `Metal Zbiorniki` with a fresh logo attachment,
+orders `MZ-2026-0051` and `SO-2026-0042`, projects `KRONO` / `EUROSERV` / `DEMO`, and the
+seven catalog handles. The backend dashboard shows the wordmark and the three new customers.
+
+The landing's home page was then cut to hero / products / realizations / one-row footer, and
+all real contact data removed from the site (`COMPANY` keeps only the name, the tagline and a
+`.example` inquiry address). `lib/content.ts` is deleted. Same PR, title and body re-synced.
