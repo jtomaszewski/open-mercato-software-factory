@@ -54,7 +54,7 @@ const ONLY_WITH_ORDER: Record<string, unknown> = {
 const ONE_ATTEMPT = { maxAttempts: 1, initialIntervalMs: 5000, backoffCoefficient: 2, maxIntervalMs: 30000 }
 
 /**
- * `website_publishing.website_change`: a delegated DEMO task → a website PR (SPEC-004 scene 3,
+ * `website_publishing.website_change`: a delegated WWW task → a website PR (SPEC-004 scene 3,
  * SPEC-006 scene 3b). Input is `{ taskId, delegationId }` only; the functions derive everything
  * else. `code_changes` owns the checkout and the PR; this module adds the records the task links,
  * the Researcher for a realization and the Developer that edits the site.

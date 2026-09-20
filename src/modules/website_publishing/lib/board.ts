@@ -68,7 +68,7 @@ type BoardTask = {
 }
 
 /**
- * Puts a task on the DEMO board and delegates it to the Software Engineer, which starts
+ * Puts a task on the WWW board and delegates it to the Software Engineer, which starts
  * `website_publishing.website_change` (task_delegation's start-delegated-run subscriber). Acts as the DEMO project owner,
  * who becomes the accountable assignee. Idempotent per record: an existing task linking the
  * record is reused, and an active delegation is left alone.

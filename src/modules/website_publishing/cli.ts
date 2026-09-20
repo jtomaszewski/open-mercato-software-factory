@@ -10,7 +10,7 @@ const USAGE = [
   '  mercato website_publishing publish-product --product <productId> --tenant <tenantId> --org <organizationId>',
   '  mercato website_publishing ensure-process --tenant <tenantId> --org <organizationId>',
   '',
-  '  publish-product  puts the product on the DEMO board as a task delegated to the Software Engineer (the workers run it).',
+  '  publish-product  puts the product on the WWW board as a task delegated to the Software Engineer (the workers run it).',
   `  ensure-process   creates ${WEBSITE_CHANGE_PROCESS} and its workflow for a tenant seeded before this module existed.`,
 ].join('\n')
 

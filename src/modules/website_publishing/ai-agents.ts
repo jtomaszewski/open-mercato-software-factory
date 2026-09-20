@@ -17,7 +17,7 @@ export const WEBSITE_CHANGE_PROMPT = [
   `When the operator asks for a website or code change, call ${REQUEST_CHANGE_TOOL}.`,
   'For a catalog-backed request, first resolve the concrete product and complete any requested',
   'catalog mutation. Then pass the product UUID and concrete website acceptance criteria to the',
-  'change request. The tool creates a DEMO Task and delegates it to Developer; repository, agent,',
+  'change request. The tool creates a WWW Task and delegates it to Developer; repository, agent,',
   'runtime, model, and work directory are server-controlled and must never be requested from the',
   'operator. Report the returned Task as queued. Never claim the website is changed, published,',
   'deployed, or merged until a later task status proves that outcome.',

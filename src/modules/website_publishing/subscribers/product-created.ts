@@ -22,7 +22,7 @@ type SubscriberContext = {
 }
 
 /**
- * Scene 3 intake (SPEC-004): a product created in „Od ręki” becomes a DEMO board task delegated
+ * Scene 3 intake (SPEC-004): a product created in „Od ręki” becomes a WWW board task delegated
  * to the Software Engineer; the delegation starts `website_publishing.website_change`. Scope comes only from the event-bus
  * options the emitter attached. The seeder writes through the entity manager and never emits
  * this event. Failures rethrow so the persistent event retries; the intake is idempotent.

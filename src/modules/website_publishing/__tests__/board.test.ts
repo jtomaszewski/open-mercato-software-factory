@@ -47,7 +47,7 @@ describe('order ↔ task link', () => {
     expect(readOrderIdFromTask(productTaskDescription(product))).toBeNull()
   })
 
-  it('opens one delegated DEMO task per order and reuses it on a repeated intake', async () => {
+  it('opens one delegated WWW task per order and reuses it on a repeated intake', async () => {
     const first = await openOrderTask(container(), scope, order)
     expect(execute.mock.calls[0]![1].input).toMatchObject({ title: 'Realizacja: Park of Poland (Suntago) — SO-2026-0042' })
     expect(first).toMatchObject({ status: 'delegated', created: true })
@@ -61,7 +61,7 @@ describe('order ↔ task link', () => {
 })
 
 describe('openProductTask', () => {
-  it('creates the DEMO task and delegates it to the Software Engineer as the project owner', async () => {
+  it('creates the WWW task and delegates it to the Software Engineer as the project owner', async () => {
     const result = await openProductTask(container(), scope, product)
     expect(execute.mock.calls.map(([id]) => id)).toEqual(['staff.timesheets.tasks.create', 'task_delegation.task.delegate'])
     expect(execute.mock.calls[0]![1].input).toMatchObject({ ...scope, timeProjectId: 'project-1', title: 'Opublikuj stronę produktu ZWM-1500' })

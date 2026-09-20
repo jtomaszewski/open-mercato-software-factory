@@ -21,7 +21,12 @@ export type TaskDelegationDemoResult = {
 }
 
 export const DEMO_CUSTOMER_NAME = 'Internal'
-export const DEMO_PROJECT_CODE = 'DEMO'
+/**
+ * The project the website work lands on. Named for what it is — the site — because its code is
+ * what the board prints on every task reference ("WWW-1"), in front of the audience.
+ */
+export const DEMO_PROJECT_CODE = 'WWW'
+export const DEMO_PROJECT_NAME = 'www'
 
 type AgentPrincipalService = {
   resolve(scope: TaskDelegationDemoScope, agentDefinitionId: string): Promise<{ userId: string } | null>
@@ -89,7 +94,7 @@ export async function seedTaskDelegationDemo(
   let projectId = await firstId(qe, 'staff:staff_time_project', { code: DEMO_PROJECT_CODE }, scope)
   if (!projectId) {
     const { result } = await bus.execute<Record<string, unknown>, { timeProjectId: string }>('staff.timesheets.time_projects.create', {
-      input: { ...scope, name: 'Demo', code: DEMO_PROJECT_CODE, customerId, ownerUserId: adminUserId }, ctx,
+      input: { ...scope, name: DEMO_PROJECT_NAME, code: DEMO_PROJECT_CODE, customerId, ownerUserId: adminUserId }, ctx,
     })
     projectId = result.timeProjectId
     if (staffMemberId) {
