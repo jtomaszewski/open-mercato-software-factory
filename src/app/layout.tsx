@@ -11,7 +11,7 @@ import { DevRuntimeDiagnosticsBanner } from '@open-mercato/ui/backend/dev/DevRun
 import { DevRuntimeReporter } from '@open-mercato/ui/backend/dev/DevRuntimeReporter'
 
 export const metadata: Metadata = {
-  title: 'Open Mercato',
+  title: 'Metal Zbiorniki ERP',
   description: 'AI-supportive, modular ERP foundation for product & service companies',
   icons: {
     icon: '/open-mercato.svg',
