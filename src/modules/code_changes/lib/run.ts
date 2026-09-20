@@ -97,6 +97,13 @@ export async function closeOnFailure<T>(bound: BoundRun, functionName: string, w
       .catch((closeError: unknown) => logger.error('could not close the failed task', {
         taskId: bound.task.id, error: closeError instanceof Error ? closeError.message : String(closeError),
       }))
+    // Best effort, and deliberately after the task close: the task is the record people act on,
+    // the change request is the record they read afterwards. A run that failed before its change
+    // request was started simply has none to mark.
+    await bound.run('code_changes.change_request.mark_failed', `${functionName}:change_request_failed`, { reason: reason.slice(0, 8000) })
+      .catch((markError: unknown) => logger.warn('could not mark the change request failed', {
+        taskId: bound.task.id, error: markError instanceof Error ? markError.message : String(markError),
+      }))
     throw error
   }
 }

@@ -72,7 +72,7 @@ export function deriveTaskRunState(delegation: TaskDelegation, process: ProcessI
  * The projects the caller may act on, resolved through staff's own access resolver rather than
  * through a membership table of ours.
  */
-async function resolveAccess(ctx: CommandRuntimeContext, em: EntityManager, scope: TaskScope): Promise<{ canManageAll: boolean; projectIds: string[] }> {
+export async function resolveAccess(ctx: CommandRuntimeContext, em: EntityManager, scope: TaskScope): Promise<{ canManageAll: boolean; projectIds: string[] }> {
   const accessResolver = ctx.container.resolve<TimeTrackingAccessResolver>('timeTrackingAccessResolver')
   const canManageAll = await ctx.container.resolve<{ userHasAllFeatures: (id: string, f: string[], s: { tenantId: string; organizationId: string }) => Promise<boolean> }>('rbacService')
     .userHasAllFeatures(scope.userId, ['staff.timesheets.projects.manage'], scope)
@@ -80,6 +80,34 @@ async function resolveAccess(ctx: CommandRuntimeContext, em: EntityManager, scop
     em, tenantId: scope.tenantId, organizationId: scope.organizationId, userId: scope.userId,
     canManageAll, assignmentGraceDays: await readTaskAssignmentGraceDays(ctx, scope.tenantId),
   })
+}
+
+/**
+ * One delegation as every surface reads it. Shared by the drawer's per-task read and the runs list
+ * so a run can never describe itself differently in two places.
+ *
+ * `runState` is `null` when the orchestrator could not be read: the delegation still exists, and
+ * the caller decides how to say "not visibly started" rather than inventing progress.
+ */
+export function toDelegationDto(delegation: TaskDelegation, deps: {
+  delegateName: string
+  process: ProcessInstance | null
+  processReadsAvailable: boolean
+  now: Date
+}): TaskDelegationDto {
+  return {
+    id: delegation.id,
+    delegateUserId: delegation.delegateUserId,
+    delegateName: deps.delegateName,
+    releasedAt: delegation.releasedAt?.toISOString() ?? null,
+    updatedAt: delegation.updatedAt.toISOString(),
+    startedAt: delegation.createdAt.toISOString(),
+    processInstanceId: delegation.processInstanceId ?? null,
+    links: delegation.links,
+    outcome: delegation.outcome ?? null,
+    closeReason: delegation.closeReason ?? null,
+    runState: deps.processReadsAvailable ? deriveTaskRunState(delegation, deps.process, deps.now) : null,
+  }
 }
 
 export function createTaskDelegationService({ em }: { em: EntityManager }): TaskDelegationService {
@@ -141,19 +169,12 @@ export function createTaskDelegationService({ em }: { em: EntityManager }): Task
           taskUpdatedAt: new Date(task.updated_at).toISOString(),
           assigneeStaffMemberId: task.assignee_staff_member_id ?? null,
           assigneeName: task.assignee_staff_member_id ? memberNames.get(task.assignee_staff_member_id) ?? null : null,
-          delegation: delegation ? {
-            id: delegation.id,
-            delegateUserId: delegation.delegateUserId,
+          delegation: delegation ? toDelegationDto(delegation, {
             delegateName: userById.get(delegation.delegateUserId)?.name ?? userById.get(delegation.delegateUserId)?.email ?? translate('task_delegation.delegate.missingAgent', 'Unavailable agent'),
-            releasedAt: delegation.releasedAt?.toISOString() ?? null,
-            updatedAt: delegation.updatedAt.toISOString(),
-            startedAt: delegation.createdAt.toISOString(),
-            processInstanceId: delegation.processInstanceId ?? null,
-            links: delegation.links,
-            outcome: delegation.outcome ?? null,
-            closeReason: delegation.closeReason ?? null,
-            runState: processReadsAvailable ? deriveTaskRunState(delegation, delegation.processInstanceId ? processById.get(delegation.processInstanceId) ?? null : null, now) : null,
-          } : null,
+            process: delegation.processInstanceId ? processById.get(delegation.processInstanceId) ?? null : null,
+            processReadsAvailable,
+            now,
+          }) : null,
         }
       })
     },

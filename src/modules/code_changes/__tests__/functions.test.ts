@@ -41,7 +41,7 @@ const prepare = createPrepareCheckoutFunction(deps)
 const openPr = createOpenPullRequestFunction(deps)
 const context = { workflowInstance: { id: 'wf-1', definitionId: 'def-1', ...scope }, workflowContext: {} } as never
 const identity = { taskId: 'task-1', delegationId: 'delegation-1', processInstanceId: 'process-1' }
-const site = { token: 'app-token', repo: 'o/site', baseBranch: 'main', apiUrl: 'https://api.github.com' }
+const site = { token: 'app-token', repo: 'o/site', baseBranch: 'main', apiUrl: 'https://api.github.com', repositoryId: 'repo-1' }
 const calls = () => execute.mock.calls.map(([id, args]) => [id, args.input])
 
 beforeEach(() => {
@@ -51,7 +51,7 @@ beforeEach(() => {
   deps.prepareCheckout.mockReset().mockResolvedValue({ baseSha: 'base-sha', workDir: '/home/opencode/work/tasks/task-1' })
   deps.collectChanges.mockReset().mockResolvedValue({ baseSha: 'base-sha', files: [{ path: 'app/a.tsx', content: 'x' }] })
   deps.removeCheckout.mockReset().mockResolvedValue(undefined)
-  deps.openPullRequest.mockReset().mockResolvedValue({ prNumber: 7, prUrl: 'https://github.com/o/r/pull/7', prLabel: 'PR #7 · ZWM-1500', branch: 'developer/task-task-1' })
+  deps.openPullRequest.mockReset().mockResolvedValue({ prNumber: 7, prUrl: 'https://github.com/o/r/pull/7', prLabel: 'PR #7 · ZWM-1500', branch: 'developer/task-task-1', headSha: 'head-sha' })
   findOne.mockReset().mockImplementation(async (_em, entity, where) => {
     if (entity === ProcessInstance) return where.workflowInstanceId === 'wf-1' ? { id: 'process-1', input: { taskId: 'task-1', delegationId: 'delegation-1' } } : null
     if (entity === WorkflowDefinition) return { id: 'def-1' }
@@ -61,7 +61,13 @@ beforeEach(() => {
 
 it('prepare: moves the bound task to In progress and checks out its project repository', async () => {
   const input = await prepare({}, context)
-  expect(calls()).toEqual([['task_delegation.task.set_status', { ...identity, stepId: `${PREPARE_CHECKOUT_FUNCTION}:in_progress`, status: 'in_progress' }]])
+  expect(calls()).toEqual([
+    ['task_delegation.task.set_status', { ...identity, stepId: `${PREPARE_CHECKOUT_FUNCTION}:in_progress`, status: 'in_progress' }],
+    ['code_changes.change_request.start', {
+      ...identity, stepId: `${PREPARE_CHECKOUT_FUNCTION}:change_request`,
+      projectId: 'project-1', title: 'Opublikuj stronę produktu ZWM-1500', repoFullName: 'o/site', baseBranch: 'main', repositoryId: 'repo-1',
+    }],
+  ])
   expect(execute.mock.calls[0]![1].ctx.auth.sub).toBe('principal-1')
   expect(deps.resolveGitHub).toHaveBeenCalledWith(expect.anything(), scope, 'project-1')
   expect(deps.prepareCheckout).toHaveBeenCalledWith('task-1', site)
@@ -74,11 +80,14 @@ it('prepare: moves the bound task to In progress and checks out its project repo
 it('prepare: a clone failure closes the task with the reason', async () => {
   deps.prepareCheckout.mockRejectedValue(new Error('Cannot clone o/site: network'))
   await expect(prepare({}, context)).rejects.toThrow('Cannot clone')
-  expect(calls().map(([id, input]) => [id, (input as { status: string }).status])).toEqual([
-    ['task_delegation.task.set_status', 'in_progress'],
-    ['task_delegation.task.set_status', 'failed'],
+  expect(calls().map(([id]) => id)).toEqual([
+    'task_delegation.task.set_status',
+    'code_changes.change_request.start',
+    'task_delegation.task.set_status',
+    'code_changes.change_request.mark_failed',
   ])
-  expect((execute.mock.calls[1]![1].input as { reason: string }).reason).toContain('Cannot clone')
+  expect((execute.mock.calls[2]![1].input as { reason: string }).reason).toContain('Cannot clone')
+  expect((execute.mock.calls[3]![1].input as { reason: string }).reason).toContain('Cannot clone')
 })
 
 it('open PR: commits the collected change with the agent summary, links the PR, moves the task to review and removes the checkout', async () => {
@@ -92,6 +101,10 @@ it('open PR: commits the collected change with the agent summary, links the PR, 
   )
   expect(calls()).toEqual([
     ['task_delegation.task.link', { ...identity, stepId: `${OPEN_PULL_REQUEST_FUNCTION}:pr`, kind: 'pr', ref: 'PR #7 · ZWM-1500', url: 'https://github.com/o/r/pull/7' }],
+    ['code_changes.change_request.record_pull_request', {
+      ...identity, stepId: `${OPEN_PULL_REQUEST_FUNCTION}:change_request`,
+      number: 7, url: 'https://github.com/o/r/pull/7', branch: 'developer/task-task-1', headSha: 'head-sha', summary: 'Dodałem stronę.',
+    }],
     ['task_delegation.task.set_status', { ...identity, stepId: `${OPEN_PULL_REQUEST_FUNCTION}:in_review`, status: 'in_review' }],
   ])
   expect(deps.removeCheckout).toHaveBeenCalledWith('task-1')
@@ -109,7 +122,10 @@ it('open PR: an empty change closes the task as failed and keeps the checkout fo
   await expect(openPr({}, context)).rejects.toThrow('without changing any file')
   expect(deps.openPullRequest).not.toHaveBeenCalled()
   expect(deps.removeCheckout).not.toHaveBeenCalled()
-  expect(calls()).toEqual([['task_delegation.task.set_status', { ...identity, stepId: `${OPEN_PULL_REQUEST_FUNCTION}:failed`, status: 'failed', reason: 'The agent finished without changing any file.' }]])
+  expect(calls()).toEqual([
+    ['task_delegation.task.set_status', { ...identity, stepId: `${OPEN_PULL_REQUEST_FUNCTION}:failed`, status: 'failed', reason: 'The agent finished without changing any file.' }],
+    ['code_changes.change_request.mark_failed', { ...identity, stepId: `${OPEN_PULL_REQUEST_FUNCTION}:change_request_failed`, reason: 'The agent finished without changing any file.' }],
+  ])
 })
 
 it('refuses a workflow instance with no bound delegation', async () => {

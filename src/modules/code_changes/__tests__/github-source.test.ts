@@ -15,13 +15,13 @@ function container(forProject?: (input: unknown) => Promise<unknown>) {
 it('uses the project repository and its App token when one is linked', async () => {
   const forProject = jest.fn(async (_input: unknown) => ({ repositoryId: 'r', fullName: 'acme/site', baseBranch: 'develop', token: 'ghs_app' }))
   await expect(resolveTaskGitHub(container(forProject), scope, 'project-1', env)).resolves.toEqual({
-    token: 'ghs_app', repo: 'acme/site', baseBranch: 'develop', apiUrl: 'https://api.github.com',
+    token: 'ghs_app', repo: 'acme/site', baseBranch: 'develop', apiUrl: 'https://api.github.com', repositoryId: 'r',
   })
   expect(forProject).toHaveBeenCalledWith({ ...scope, projectId: 'project-1' })
 })
 
 it('falls back to the env repo and token when the project has no linked repository', async () => {
-  const expected = { token: 'env-token', repo: 'env/site', baseBranch: 'main', apiUrl: 'https://api.github.com' }
+  const expected = { token: 'env-token', repo: 'env/site', baseBranch: 'main', apiUrl: 'https://api.github.com', repositoryId: null }
   await expect(resolveTaskGitHub(container(async () => null), scope, 'project-1', env)).resolves.toEqual(expected)
   await expect(resolveTaskGitHub(container(), scope, 'project-1', env)).resolves.toEqual(expected)
   // `.env` files written before the module was renamed still say FACTORY_*.

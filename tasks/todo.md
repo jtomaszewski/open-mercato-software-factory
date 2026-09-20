@@ -1,117 +1,77 @@
-# Rebrand the demo company: Metal Zbiorniki → Metal Zbiorniki
+# Code section: change requests + repositories
 
-Source of truth: https://metal-zbiorniki.pl/ (real company, Full Stack House client —
-case study at https://www.fullstack.house/pl/results/metal-zbiorniki).
+## What was built
 
-Decisions taken with the user:
-- real client logos downloaded from the live site,
-- real contact data (address, phones, NIP/REGON/KRS), no demo disclaimer,
-- landing repo gets a branch + PR (Vercel preview).
+A **Code** section in the backend nav with two tabs:
 
-## Brand facts
+- **Code changes** (`/backend/code/changes`) — every change request, newest first; detail at
+  `/backend/code/changes/:id` with approve / reject.
+- **Repositories** (`/backend/code/repositories`) — one card per registered repository: the version
+  its base branch is on, its last update (what, when, by whom), its linked projects, and a link to
+  the existing repository settings screen.
 
-| | |
-|---|---|
-| Name | Metal Zbiorniki sp. z o.o. |
-| Tagline | Zbiorniki stalowe na miarę |
-| Since | 2008 |
-| Address | ul. Powstańców Wielkopolskich 1, 63-200 Jarocin |
-| Phone / e-mail | +48 600 427 656 · biuro@metal-zbiorniki.pl |
-| Projects | +48 783 380 935 · projekty@metal-zbiorniki.pl |
-| Office | +48 570 062 851 · sekretariat@metal-zbiorniki.pl |
-| IDs | NIP 6172227419 · REGON 526472938 · KRS 0001060186 |
-| Primary | `#274086` · dark `#16244b` · light `#829eea` · pale `#eef2fa` · ink `#333` |
-| Type | Open Sans (400/600/700), no condensed display face |
-| Logo | concentric arcs + wordmark, `#283e89`/`#a9a9aa`; white variant = `brightness-0 invert` |
+And the concept behind the list: a **change request** — one proposed change to a repository, named
+so a non-technical owner can act on it. GitHub calls it a pull request; the record is ours.
 
-## Phase 1 — landing site (~/src/jt/hackaton-stal-zbiorniki-landing)
+## Done
 
-- [x] Branch `rebrand/metal-zbiorniki`
-- [x] `public/images/logo.svg` + favicon; drop the `SZ` monogram
-- [x] `app/globals.css` — brand palette tokens, white page, Open Sans
-- [x] `app/layout.tsx` — Open Sans, metadata
-- [x] `lib/product.ts` — `COMPANY` → real data (+ the three contact desks)
-- [x] `components/site-header.tsx` — white header, real logo, blue uppercase nav
-- [x] `components/site-footer.tsx` — navy footer, contact desks, NIP/REGON/KRS
-- [x] `app/page.tsx` — hero, industry cards, "Zaufali nam" band, certs, od-ręki, CTA, opinie, FAQ
-- [x] `lib/realizations.ts` — real clients
-- [x] `public/logos/**` — real client logos, delete the fictional ones
-- [x] `components/product-card.tsx`, `product-page.tsx`, `realization-page.tsx` — restyle
-- [x] `app/regulamin/page.tsx`, `app/realizacje`, `app/od-reki` — copy + company name
-- [x] `tests/site.spec.ts`, `AGENTS.md`, `README.md`
-- [x] `npm run lint && npm run typecheck && npm run build && npm test`
-- [x] Push + PR
+- [x] `code_changes/data/entities.ts` — `ChangeRequest` (+ migration `Migration20260920033819`)
+- [x] `code_changes/commands/changeRequests.ts` — start / record_pull_request / mark_failed
+      (run-authorized) and approve / reject (person-authorized)
+- [x] `code_changes/lib/approve.ts` — shared precondition resolver; `rejectTaskPullRequest` added
+- [x] `code_changes/lib/github.ts` — `closePullRequest`, merge returns the merge commit
+- [x] `code_changes/lib/changeRequests.ts` — list / read / find-for-task
+- [x] `code_changes/lib/functions.ts`, `lib/run.ts` — the run opens, fills and fails its change request
+- [x] API — `GET /api/code_changes/change-requests`, `GET .../:id`, `POST .../:id/approve`,
+      `POST .../:id/reject`; the task-drawer approve now routes through the same command
+- [x] `repositories/lib/github-app.ts` — `headCommit`; `GET /api/repositories/overview`
+- [x] UI — `ChangeRequestsTable`, `ChangeRequestDetail`, `RepositoriesOverview`,
+      `src/components/CodeSectionTabs.tsx`
+- [x] `task_delegation/lib/runsQuery.ts` — the run behind a change request (milestones + task writes)
+- [x] i18n en + pl; `backend.nav.code`
+- [x] Tests for the new units; `code_changes` suite updated
+- [x] `yarn generate && yarn typecheck && yarn lint && yarn ds:check && yarn test && yarn build`
 
-## Phase 2 — ERP demo fixtures (this repo)
+## Not done, deliberately
 
-- [x] `public/brand/metal-zbiorniki-logo.png` from the real SVG
-- [x] `lib/companyStory.ts` — name, logo, customers matching the new realizations, order `MZ-…`
-- [x] `lib/stalZbiorniki.ts` → `lib/metalZbiorniki.ts` (+ symbols, CLI command, callers, tests)
-- [x] Agent prompts: `src/modules/website_publishing/agents/**`, `docker/opencode/agents*/`
-- [x] `README.md`, module READMEs, `demo_fixtures/index.ts` description
-- [x] `yarn generate && yarn typecheck && yarn lint && yarn test`
+- **Revert** — the user marked it with a "?", and reverting a published change is a different
+  decision with different consequences (a new commit on the base branch). Nothing pretends to
+  support it.
+- **Workflows over the actions** (autonomous approve, human-in-the-loop routing) — explicitly out
+  of scope for now. The transitions are commands precisely so those can be added without touching
+  any of the preconditions.
 
-## Review
+## Follow-up audit (2026-09-20)
 
-Both repos rebranded, both gates green.
+Reviewed the module against its siblings' conventions, the specs, and the i18n set.
 
-**Landing site** — [PR #14](https://github.com/jtomaszewski/hackaton-stal-zbiorniki-landing/pull/14)
-on `rebrand/metal-zbiorniki`. `npm run lint`, `typecheck`, `build`, `test` (6/6) pass.
-The home page now runs the real site's section order: hero, industries, the customer logo
-strip + UDT/PED/PZH approvals, the offer list, the catalog, the quote CTA, testimonials, FAQ.
-New `lib/content.ts` holds that copy under change class `content`, so the factory's content
-agent may edit it without a developer review.
+- [x] `acl.ts` — the module now owns `code_changes.view` / `code_changes.decide`; every surface was
+      gated on another module's features. The task-drawer pair requires both, because it acts on a
+      delegation as well as on a change.
+- [x] `setup.ts` — grants + workflow-command enablement; `__tests__/setup.test.ts` guards them.
+- [x] `events.ts` — `change_request.{opened,ready,approved,rejected,failed,changed}`. There was no
+      way to notice a change request move; our own drawer widget listened to another module's stream.
+- [x] `workflows.ts` — the three run commands registered as workflow-safe.
+- [x] `ai-tools.ts` — list / get / approve / reject. The catalog assistant is told never to claim a
+      change shipped without proof, and until now no tool could supply that proof.
+- [x] `api/openapi.ts` — one tag + error schema instead of six copies; response schemas added.
+- [x] `index.ts` — description rewritten, `staff` added to `requires`, `features` re-exported.
+- [x] **Bug:** `head_sha` and `repository_id` were columns nothing ever wrote. Threaded through.
+- [x] **Bug:** the Code tab bar pointed at `code_changes.runs.nav.title`, a key deleted in the
+      rename — a Polish user saw an English tab beside a Polish sidebar entry, silently.
+- [x] `.ai/specs/2026-09-20-change-requests.md` — the missing spec, written after the fact.
+- [x] Term collision resolved: `developer-task-intake.md` used "change request" for a task +
+      delegation. Supersession notes added there and on three other specs.
+- [x] Root `README.md` — module inventory named two renamed modules; `factory ensure-process` was
+      already `website_publishing ensure-process` in the script.
 
-**ERP** — `yarn generate`, `typecheck`, `lint`, `ds:check`, `test` (295/295), `build` pass.
-`lib/stalZbiorniki.ts` is now `lib/metalZbiorniki.ts`, `seed-metal-zbiorniki` is
-`seed-metal-zbiorniki` (`scripts/demo-reset.mjs` follows), `DEMO_WATER_ORDER` is
-`DEMO_OPEN_ORDER` and carries its own `customer` key instead of a literal in `company.ts`.
+## Open
 
-**Left as is on purpose**
-
-- The GitHub repo name `hackaton-stal-zbiorniki-landing`, its Vercel URL and
-  `code_changes` `DEFAULT_REPO` — renaming the repo would break the factory's checkout.
-- `docs/specs/SPEC-00*.md` filenames and bodies — the historical design record.
-- The catalog SKUs (ZWP/ZDP/ZCH/ZPPOZ/MX). Scene 2 corrects `ZDP-5000` and scene 3 adds
-  `ZWM-1500`; renaming them would break both.
-- `seedMetalZbiornikiCompany` still keeps an existing `logoUrl` rather than replacing it
-  (`organization.logoUrl || await uploadLogo()`), so re-seeding onto a database that already
-  holds the old brand updates the name but keeps the old logo. `yarn demo:reset` wipes first,
-  so the documented path is unaffected.
-
-## Follow-up (2026-09-20)
-
-Database reset with `yarn demo:reset` and the app started on http://localhost:3000.
-Verified in the database: organization `Metal Zbiorniki` with a fresh logo attachment,
-orders `MZ-2026-0051` and `SO-2026-0042`, projects `KRONO` / `EUROSERV` / `DEMO`, and the
-seven catalog handles. The backend dashboard shows the wordmark and the three new customers.
-
-The landing's home page was then cut to hero / products / realizations / one-row footer, and
-all real contact data removed from the site (`COMPANY` keeps only the name, the tagline and a
-`.example` inquiry address). `lib/content.ts` is deleted. Same PR, title and body re-synced.
-
-## Follow-up 2 (2026-09-20) — the rest of the repo
-
-The rebrand had only touched code and the website. This pass took everything else.
-
-- **Persona.** `Marek` → `Norbert` across the specs, the pitch deck, `code_changes`,
-  `website_publishing`, `demo_fixtures` and the demo tests. The real owner of Metal Zbiorniki
-  is Norbert Tomaszewski (KRS 0001060186), so the persona now matches the company.
-  Left alone: `Marek Wiśniewski` in `.ai/prototypes/discovery/task-drawer` — an unrelated
-  assignee fixture in a discovery prototype, not the demo persona.
-- **Specs renamed.** `SPEC-004-2026-09-18-demo-stal-zbiorniki.md` →
-  `…-demo-metal-zbiorniki.md`, `SPEC-005-2026-09-19-stal-zbiorniki-www.md` →
-  `…-metal-zbiorniki-www.md`, with every link in `docs/`, `.ai/`, `README.md` and the landing
-  repo's `README.md` / `AGENTS.md` following.
-- **Spec bodies.** The "fictional company" framing is gone from SPEC-004 and SPEC-005: the
-  company, its clients and Park of Poland are real, the site publishes no contact data, and the
-  catalog plus who-ordered-what stay demo data. SPEC-005's page table now describes the
-  four-section home page. A dated row appended to the changelog of SPEC-004, SPEC-005 and
-  SPEC-006.
-- **Pitch deck** (`public/pitch/index.html`): Norbert, Metal Zbiorniki sp. z o.o., Jarocin
-  instead of "pod Wrocławiem", and `img/site-od-reki.png` recaptured from the rebranded site so
-  both annotation stamps still land on the right cards.
-- **`scripts/demo-reset.mjs`**: `init --org=Metal Zbiorniki`.
-
-Revenue, order count and headcount on the hook slide (28 mln zł, 400+, 35 osób) stay as they
-were — no public figures exist for the company, so those numbers are illustrative.
+- **AC-006: no integration coverage** for the list / approve / reject paths. Unit tests cover the
+  decision preconditions; the API and UI paths are not exercised.
+- **A workflow still cannot approve** — the assignee rule is hardcoded, so `approve`/`reject` are
+  deliberately not workflow-safe. Making autonomous approval possible means turning that rule into
+  a policy first.
+- `yarn mercato auth sync-role-acls` ends with an unrelated `Metadata for entity CustomerRole not
+  found` error *after* writing the role features. The grants land; the failure is in a later stage
+  and involves a module untouched here.

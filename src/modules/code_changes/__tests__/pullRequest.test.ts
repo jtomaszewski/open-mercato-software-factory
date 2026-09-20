@@ -25,7 +25,7 @@ it('commits the agent’s files on the exact base it was given and opens one PR 
   expect(body).toContain('agent Developer')
   expect(body).toContain('`old.ts` (usunięty)')
   expect(body).toContain('http://localhost:3000/backend/staff/time-tracking')
-  expect(result).toEqual({ prNumber: 9, prUrl: 'https://github.com/o/site/pull/9', prLabel: `PR #9 · ${task.title}`, branch: taskBranch(task.id) })
+  expect(result).toEqual({ prNumber: 9, prUrl: 'https://github.com/o/site/pull/9', prLabel: `PR #9 · ${task.title}`, branch: taskBranch(task.id), headSha: 'commit-sha' })
 })
 
 it('falls back to a generic description when the agent gave no summary', async () => {

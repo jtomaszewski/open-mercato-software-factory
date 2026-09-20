@@ -6,6 +6,8 @@
 **Companion**: [Agent execution and verified previews](2026-09-19-agent-execution-and-preview.md)
 **Decisions and sources**: [Package map](2026-09-19-instance-development-infrastructure.md), [accepted decisions](2026-09-19-instance-development-decisions.md)
 
+
+> **Superseded in part (2026-09-20):** the approval surface described below as `/backend/tasks/{taskId}/runs` shipped instead as the change-request detail at `/backend/code/changes/[id]`, backed by a persisted `code_changes.ChangeRequest` with a stored approve/reject decision. See [`2026-09-20-change-requests.md`](./2026-09-20-change-requests.md). The run/preview design below is otherwise unbuilt and unchanged.
 ## TLDR
 
 An authorized human reviews a verified candidate inside Open Mercato and gives one final approval for merge and deployment. An executor outside the application serializes changes to that instance, verifies the Git result, safely drains the application, and deploys the exact image already tested in preview. For a registered static website, it promotes the exact tested staged deployment instead; a coordinated price task then applies its approved catalog change. Failure restores the previous compatible application image, prepares an unmerged revert PR, and blocks further deployments until reconciliation.

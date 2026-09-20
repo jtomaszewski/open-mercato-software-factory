@@ -191,8 +191,17 @@ export class GitHubClient {
    * Squash-merges the PR at exactly `headSha`, so a commit pushed after the approval is never
    * merged unseen. GitHub refuses (405/409) while required checks are red or the head moved.
    */
-  async mergePullRequest(number: number, headSha: string): Promise<void> {
-    await this.request('PUT', this.repoPath(`/pulls/${number}/merge`), { merge_method: 'squash', sha: headSha })
+  async mergePullRequest(number: number, headSha: string): Promise<{ sha: string | null }> {
+    const merged = await this.request<{ sha?: string }>('PUT', this.repoPath(`/pulls/${number}/merge`), { merge_method: 'squash', sha: headSha })
+    return { sha: merged?.sha ?? null }
+  }
+
+  /**
+   * Closes the PR without merging. The branch is left alone: a rejected change stays inspectable,
+   * and deleting a branch is not something a reject decision should silently do.
+   */
+  async closePullRequest(number: number): Promise<void> {
+    await this.request('PATCH', this.repoPath(`/pulls/${number}`), { state: 'closed' })
   }
 }
 

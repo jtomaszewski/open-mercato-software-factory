@@ -3,10 +3,14 @@ import type { ModuleInfo } from '@open-mercato/shared/modules/registry'
 export const metadata: ModuleInfo = {
   name: 'code_changes',
   title: 'Code changes',
-  version: '0.1.0',
+  version: '0.2.0',
   description:
-    'Turns a delegated board task into a pull request on its project repository: workflow functions that check the repository out for the coding agent and open the PR from its changes, and the task-drawer panel that reviews and approves (merges) it.',
+    'Owns the change request: one proposed change to a repository, from the agent run that produces it to the person who approves or rejects it. Workflow functions check the project repository out and open the pull request; the Code section lists every change request and decides it; the task-drawer panel decides the same change from the board.',
   author: 'HackOn team',
   license: 'MIT',
-  requires: ['workflows', 'task_delegation'],
+  // `repositories` is deliberately absent: `lib/github-source.ts` resolves it through a guarded
+  // `hasRegistration` check and falls back to the environment, so the module works without it.
+  requires: ['workflows', 'task_delegation', 'staff'],
 }
+
+export { features } from './acl'

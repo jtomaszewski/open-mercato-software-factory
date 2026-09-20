@@ -6,6 +6,8 @@
 **Companion**: [Instance delivery and recovery](2026-09-19-instance-delivery-and-recovery.md)
 **Decisions and sources**: [Package map](2026-09-19-instance-development-infrastructure.md), [accepted decisions](2026-09-19-instance-development-decisions.md)
 
+
+> **Superseded in part (2026-09-20):** the approval surface described below as `/backend/tasks/{taskId}/runs` shipped instead as the change-request detail at `/backend/code/changes/[id]`, backed by a persisted `code_changes.ChangeRequest` with a stored approve/reject decision. See [`2026-09-20-change-requests.md`](./2026-09-20-change-requests.md). The run/preview design below is otherwise unbuilt and unchanged.
 ## TLDR
 
 An authorized user delegates an existing staff task to Open Mercato Developer for either the hosting instance or a registered external website repository. Agent Orchestrator coordinates a separate OpenCode coding environment, independent review, tests, a PR, and an authenticated preview. The OCI/self-instance profile below is extended by the explicit external static-site sections; shared scope, budget, journal and approval invariants apply to both. The result is a versioned, immutable candidate with evidence that the delivery capability can consume. This capability never merges or deploys the hosting instance.

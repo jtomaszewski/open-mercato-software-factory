@@ -9,6 +9,13 @@ so the names below now read: `factory.request_change` → `website_publishing.re
 `website_publishing.developer`, the `start-factory` subscriber → `start-delegated-run`, and the
 agent principal id `factory` → `developer` (the old id is still accepted). The design is unchanged.
 
+**Terminology superseded (2026-09-20):** this spec uses "change request" for *a staff task plus its
+active delegation*. Since [`2026-09-20-change-requests.md`](./2026-09-20-change-requests.md) that
+name belongs to a persisted `code_changes.ChangeRequest` — the proposed change itself, which the run
+produces *from* the task this spec files. Read every "change request" below as **"change intake"**:
+what this tool creates is the request for work, not the proposed change. The two are one-to-one in
+practice but they are different records with different owners and different life cycles.
+
 ## TLDR
 
 Add one approval-aware `factory.request_change` AI/MCP tool. It creates a scoped staff task in a
@@ -72,7 +79,8 @@ commands, agent IDs, providers, or models.
 
 | Term / invariant | Precise meaning or rule | Source of truth | Failure behavior |
 |---|---|---|---|
-| Change request | One newly created staff task plus its active Developer delegation | `staff` + `task_delegation` | Return a typed error; never claim execution started |
+| Change intake (called "change request" throughout this spec — see the terminology note above) | One newly created staff task plus its active Developer delegation | `staff` + `task_delegation` | Return a typed error; never claim execution started |
+| Change request (since 2026-09-20) | The proposed change the run produces from that task — **not** this spec's subject | `code_changes.ChangeRequest` | See `2026-09-20-change-requests.md` |
 | Developer | Enabled principal whose frozen definition ID is `factory` | Agent Orchestrator principal registry | Refuse before task creation when unavailable |
 | Execution | Existing `factory.deliver` process started by the persistent delegation event | Agent Orchestrator | Existing retry/stalled-run behavior applies |
 | Product context | Optional syntactically valid UUID encoded as the canonical backend product link in task instructions | Catalog read during workflow preparation | Missing/invisible record yields `record: null`; instructions remain authoritative |

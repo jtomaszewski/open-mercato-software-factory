@@ -3,7 +3,7 @@ import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import type { ActivityContext } from '@open-mercato/core/modules/workflows/lib/activity-executor'
 import { GitHubClient, type GitHubConfig } from './github'
-import { resolveTaskGitHub } from './github-source'
+import { resolveTaskGitHub, type TaskGitHub } from './github-source'
 import { collectChanges, prepareCheckout, readCheckoutConfigFromEnv, removeCheckout, type CollectedChange, type PreparedCheckout } from './checkout'
 import { openTaskPullRequest, type DelegatedTask, type OpenedPullRequest, type TaskChange } from './pullRequest'
 import { bindRun, closeOnFailure, type Scope } from './run'
@@ -31,7 +31,7 @@ export type PreparedTask = {
 export type CodeChangeDeps = {
   resolveContainer: () => Promise<AwilixContainer>
   /** The task project's repository and token (registered repository, else the env). */
-  resolveGitHub: (container: AwilixContainer, scope: Scope, projectId: string) => Promise<GitHubConfig>
+  resolveGitHub: (container: AwilixContainer, scope: Scope, projectId: string) => Promise<TaskGitHub>
   prepareCheckout: (taskId: string, github: GitHubConfig) => Promise<PreparedCheckout>
   collectChanges: (taskId: string) => Promise<CollectedChange>
   removeCheckout: (taskId: string) => Promise<void>
@@ -67,6 +67,15 @@ export function createPrepareCheckoutFunction(deps: CodeChangeDeps = defaultDeps
     await bound.run('task_delegation.task.set_status', `${PREPARE_CHECKOUT_FUNCTION}:in_progress`, { status: 'in_progress' })
     return closeOnFailure(bound, PREPARE_CHECKOUT_FUNCTION, async () => {
       const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
+      // The change request exists from here on, so a run that dies mid-way is still visible as a
+      // change someone asked for and did not get, rather than as nothing at all.
+      await bound.run('code_changes.change_request.start', `${PREPARE_CHECKOUT_FUNCTION}:change_request`, {
+        projectId: bound.projectId,
+        title: bound.task.title,
+        repoFullName: github.repo,
+        baseBranch: github.baseBranch,
+        repositoryId: github.repositoryId,
+      })
       const checkout = await deps.prepareCheckout(bound.task.id, github)
       logger.info('repository checked out for the agent', { taskId: bound.task.id, repo: github.repo, baseSha: checkout.baseSha })
       return {
@@ -93,6 +102,13 @@ export function createOpenPullRequestFunction(deps: CodeChangeDeps = defaultDeps
       const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
       const result = await deps.openPullRequest(bound.task, { ...change, summary: textArg(args.summary) }, github, textArg(args.agentLabel) || 'agent')
       await bound.run('task_delegation.task.link', `${OPEN_PULL_REQUEST_FUNCTION}:pr`, { kind: 'pr', ref: result.prLabel, url: result.prUrl })
+      await bound.run('code_changes.change_request.record_pull_request', `${OPEN_PULL_REQUEST_FUNCTION}:change_request`, {
+        number: result.prNumber,
+        url: result.prUrl,
+        branch: result.branch,
+        headSha: result.headSha,
+        summary: textArg(args.summary) || null,
+      })
       await bound.run('task_delegation.task.set_status', `${OPEN_PULL_REQUEST_FUNCTION}:in_review`, { status: 'in_review' })
       await deps.removeCheckout(bound.task.id).catch((cleanupError: unknown) =>
         logger.warn('could not remove the checkout', { taskId: bound.task.id, error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) }))
