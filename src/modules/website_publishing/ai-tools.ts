@@ -77,7 +77,7 @@ const requestChangeTool: AiToolDefinition = defineAiTool<unknown, RequestChangeR
   name: REQUEST_CHANGE_TOOL,
   displayName: 'Request a Developer change',
   description:
-    'Create a staff task and delegate it to Developer. Use after the user confirms a code or website change. The server chooses the configured repository and Agent Orchestrator starts the existing website change process; never claim the change is already published. Returns the queued task reference and board link.',
+    'Create a staff task and delegate it to Developer. Use after the user confirms a code or website change. The server chooses the configured repository and Agent Orchestrator starts the existing website change process; never claim the change is already published. Returns the queued task reference and `href`, a board link that opens the task card — report the reference as a markdown link to it.',
   tags: ['write', 'website', 'tasks', 'developer'],
   isMutation: true,
   isDestructive: false,
