@@ -25,7 +25,7 @@ export function productTaskTitle(product: BoardProduct): string {
 /**
  * The task body carries the catalog link. It is the only product reference the website run
  * reads back (`readProductIdFromTask`), so a task a person creates by hand with the same link
- * works too (SPEC-004 fallback: „Marek tworzy zadanie ręcznie z linkiem do produktu”).
+ * works too (SPEC-004 fallback: „Norbert tworzy zadanie ręcznie z linkiem do produktu”).
  */
 export function productTaskDescription(product: BoardProduct, appUrl?: string | null): string {
   const base = appUrl ? appUrl.replace(/\/$/, '') : ''

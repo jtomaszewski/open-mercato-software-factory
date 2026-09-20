@@ -69,7 +69,7 @@ the change class requires (an engineer, a lawyer, both, or none by policy).
 - **Team lead** opens the board → sees every task by status, assignee and delegate, with the process
   instance, cost so far and the pending decision linked.
 - **Business owner** (e.g. the steel-tank manufacturer of the demo,
-  [SPEC-004](./SPEC-004-2026-09-18-demo-stal-zbiorniki.md), running sales, catalog and staff in Open Mercato, with
+  [SPEC-004](./SPEC-004-2026-09-18-demo-metal-zbiorniki.md), running sales, catalog and staff in Open Mercato, with
   the company website's repo connected as a project) adds a product in the catalog → a task
   "publish a product page" appears on the board, already delegated to the agent → a preview link
   to approve, then the page live. They never read a diff; a change that needs an engineer or a
@@ -595,7 +595,7 @@ daily cost caps live in the dispatcher.
 | Workflow JSON, process definition, milestones and transition conditions, seeded from the module's `setup.ts`; the start subscriber | medium | process owner |
 | Eight agents, three WSFF template skills, repo and task read tools | medium | agent author |
 | Runner container and its two endpoints | medium | runner engineer |
-| A target repo with one feature request and one seeded Sentry-shaped event; the demo script and the demo company's catalog ([SPEC-004](./SPEC-004-2026-09-18-demo-stal-zbiorniki.md)) | small | demo owner |
+| A target repo with one feature request and one seeded Sentry-shaped event; the demo script and the demo company's catalog ([SPEC-004](./SPEC-004-2026-09-18-demo-metal-zbiorniki.md)) | small | demo owner |
 | Eval assertions on the sizer and slicer; the correction walkthrough | small | evals owner |
 
 Core has no generic inbound-webhook endpoint (only `communication_channels` provider hooks), so
@@ -656,8 +656,8 @@ autonomous throughput. Same machinery, different economic claim.
 A domain is a good second target when three things hold: the system of record is one we run,
 tasks originate as events in it, and "done" checks against data rather than opinion.
 
-The persona that makes this concrete is the **business owner**: a manufacturer (in the demo, Marek
-of Stal-Zbiorniki, a steel-tank maker; SPEC-004) who runs sales,
+The persona that makes this concrete is the **business owner**: a manufacturer (in the demo, Norbert
+of Metal Zbiorniki, a steel-tank maker; SPEC-004) who runs sales,
 catalog and staff in Open Mercato and connects the company website's repo as a project. From one
 board they delegate both kinds of work, and the valuable tasks cross the line: a new product in
 the catalog becomes a product page; a drop in a product's sales becomes a proposed landing-page
@@ -1010,7 +1010,7 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
   app, while the coding bot stays unable to merge. Confirm rulesets can express this per PR rather
   than per branch. Resolves: before the first waiver is enabled. The demo site takes the simple
   form, one ruleset on `main` with a bypass for the merge App and a required approval that the
-  coding bot cannot give itself ([SPEC-005](./SPEC-005-2026-09-19-stal-zbiorniki-www.md)).
+  coding bot cannot give itself ([SPEC-005](./SPEC-005-2026-09-19-metal-zbiorniki-www.md)).
 - **Preview hosting and cost.** SPEC-003 keeps previews on the runner VM behind a per-project
   cap. Still open: hand off to the repo's own preview environments where they exist. Resolves:
   when the first real target is wired.
@@ -1031,6 +1031,6 @@ side without framing it as a race (SuperPlane's velocity tab), goes on the board
 | 2026-09-18 | `tasks` module moved to SPEC-002: human assignee plus agent delegate, trigger renamed to `task_delegation.task.delegated`, projects as records. |
 | 2026-09-18 | Tasks, projects, the board and comments now come from the core `staff` module (SPEC-002 rebuilt on it); `tasks` keeps delegation, the guard and the workflow-safe commands; configuration keys on the project id. |
 | 2026-09-18 | Non-code effects and run visibility moved to SPEC-003: `factory.operator`, the `non_code` branch through one effector function with compare-and-set, catalog-correction and support-reply scenarios, action rows in the review map, the runner manifest and progress events. |
-| 2026-09-18 | Demo storyline and company moved to SPEC-004 (Stal-Zbiorniki, a steel-tank manufacturer); catalog-correction example now ZDP-5000. |
+| 2026-09-18 | Demo storyline and company moved to SPEC-004 (Metal Zbiorniki, a steel-tank manufacturer); catalog-correction example now ZDP-5000. |
 | 2026-09-19 | Demo target site (SPEC-005): waiver merged by a second App via a ruleset bypass; `factory/catalog-match` status as a waiver condition; repo-hosted previews. |
 | 2026-09-19 | First slice built as the app module `factory` (SPEC-004 scene 3): a persistent subscriber on `catalog.product.created` starts the `Factory: publish product page` process (manual trigger only, idempotency `product:<id>`), whose code workflow opens the website PR through an `EXECUTE_FUNCTION` and declares the PR as the process outcome. Two 0.8.0 findings: a step never waits for its own async activities and keeps their output on the step instance, while transition activities park and merge `<activityId>_result`; the catalog create form writes prices after the product exists, so the effector waits 10 s. |

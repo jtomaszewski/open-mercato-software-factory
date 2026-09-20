@@ -1,4 +1,4 @@
-# Rebrand the demo company: Stal-Zbiorniki → Metal Zbiorniki
+# Rebrand the demo company: Metal Zbiorniki → Metal Zbiorniki
 
 Source of truth: https://metal-zbiorniki.pl/ (real company, Full Stack House client —
 case study at https://www.fullstack.house/pl/results/metal-zbiorniki).
@@ -63,7 +63,7 @@ New `lib/content.ts` holds that copy under change class `content`, so the factor
 agent may edit it without a developer review.
 
 **ERP** — `yarn generate`, `typecheck`, `lint`, `ds:check`, `test` (295/295), `build` pass.
-`lib/stalZbiorniki.ts` is now `lib/metalZbiorniki.ts`, `seed-stal-zbiorniki` is
+`lib/stalZbiorniki.ts` is now `lib/metalZbiorniki.ts`, `seed-metal-zbiorniki` is
 `seed-metal-zbiorniki` (`scripts/demo-reset.mjs` follows), `DEMO_WATER_ORDER` is
 `DEMO_OPEN_ORDER` and carries its own `customer` key instead of a literal in `company.ts`.
 
@@ -89,3 +89,29 @@ seven catalog handles. The backend dashboard shows the wordmark and the three ne
 The landing's home page was then cut to hero / products / realizations / one-row footer, and
 all real contact data removed from the site (`COMPANY` keeps only the name, the tagline and a
 `.example` inquiry address). `lib/content.ts` is deleted. Same PR, title and body re-synced.
+
+## Follow-up 2 (2026-09-20) — the rest of the repo
+
+The rebrand had only touched code and the website. This pass took everything else.
+
+- **Persona.** `Marek` → `Norbert` across the specs, the pitch deck, `code_changes`,
+  `website_publishing`, `demo_fixtures` and the demo tests. The real owner of Metal Zbiorniki
+  is Norbert Tomaszewski (KRS 0001060186), so the persona now matches the company.
+  Left alone: `Marek Wiśniewski` in `.ai/prototypes/discovery/task-drawer` — an unrelated
+  assignee fixture in a discovery prototype, not the demo persona.
+- **Specs renamed.** `SPEC-004-2026-09-18-demo-stal-zbiorniki.md` →
+  `…-demo-metal-zbiorniki.md`, `SPEC-005-2026-09-19-stal-zbiorniki-www.md` →
+  `…-metal-zbiorniki-www.md`, with every link in `docs/`, `.ai/`, `README.md` and the landing
+  repo's `README.md` / `AGENTS.md` following.
+- **Spec bodies.** The "fictional company" framing is gone from SPEC-004 and SPEC-005: the
+  company, its clients and Park of Poland are real, the site publishes no contact data, and the
+  catalog plus who-ordered-what stay demo data. SPEC-005's page table now describes the
+  four-section home page. A dated row appended to the changelog of SPEC-004, SPEC-005 and
+  SPEC-006.
+- **Pitch deck** (`public/pitch/index.html`): Norbert, Metal Zbiorniki sp. z o.o., Jarocin
+  instead of "pod Wrocławiem", and `img/site-od-reki.png` recaptured from the rebranded site so
+  both annotation stamps still land on the right cards.
+- **`scripts/demo-reset.mjs`**: `init --org=Metal Zbiorniki`.
+
+Revenue, order count and headcount on the hook slide (28 mln zł, 400+, 35 osób) stay as they
+were — no public figures exist for the company, so those numbers are illustrative.

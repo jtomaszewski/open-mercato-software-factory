@@ -23,7 +23,7 @@ if (!databaseUrl) {
 console.log(`[demo:reset] resetting ${new URL(databaseUrl).pathname.slice(1)} on ${new URL(databaseUrl).host}`)
 
 // Plain `init --reinstall` would also seed the core examples (fashion products, services).
-mercato('init', '--reinstall', '--no-examples', '--org=Stal-Zbiorniki ERP')
+mercato('init', '--reinstall', '--no-examples', '--org=Metal Zbiorniki')
 
 const client = new pg.Client({ connectionString: databaseUrl })
 await client.connect()

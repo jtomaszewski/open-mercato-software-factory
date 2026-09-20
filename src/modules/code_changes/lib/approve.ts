@@ -16,7 +16,7 @@ async function refuse(status: number, code: string, key: string, fallback: strin
 }
 
 /**
- * Marek's „zatwierdź” (SPEC-004 scene 3): merges the PR the delegated run linked on the task and
+ * Norbert's „zatwierdź” (SPEC-004 scene 3): merges the PR the delegated run linked on the task and
  * closes the task as Done. Every precondition is checked before the merge, because the merge is
  * the one step that cannot be undone: task access, an active delegation with a PR on the
  * project's site repo, the task In review, and the caller as its accountable assignee. The
