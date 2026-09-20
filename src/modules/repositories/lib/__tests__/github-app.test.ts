@@ -53,6 +53,40 @@ describe('GitHub App client', () => {
     expect(grant.accountLogin).toBe('acme')
   })
 
+  it('sends the consent back to the origin that started it, and repeats it in the exchange', async () => {
+    const redirect = 'http://localhost:55220/backend/repositories/connect'
+    const authorize = new URL(app.buildAuthorizeUrl('state-1', redirect))
+    expect(authorize.searchParams.get('redirect_uri')).toBe(redirect)
+    expect(authorize.searchParams.get('state')).toBe('state-1')
+
+    routes.unshift(
+      (url) => url === 'https://github.com/login/oauth/access_token' ? { body: { access_token: 'gho_user' } } : undefined,
+      (url) => url.startsWith('https://api.github.com/user/installations/99/repositories')
+        ? { body: { repositories: [repo(42, 'acme/site', { push: true })] } }
+        : undefined,
+    )
+    await app.verifyInstallationConsent('99', 'code', redirect)
+    const exchange = requests.find((call) => call.url === 'https://github.com/login/oauth/access_token')!
+    // GitHub answers `redirect_uri_mismatch` when the exchange omits a redirect_uri the
+    // authorize step sent, and the consent click is then wasted.
+    expect(JSON.parse(String(exchange.init.body)).redirect_uri).toBe(redirect)
+  })
+
+  it('omits redirect_uri entirely when no origin is known, rather than sending an empty one', async () => {
+    expect(new URL(app.buildAuthorizeUrl('state-1')).searchParams.has('redirect_uri')).toBe(false)
+    expect(new URL(app.buildAuthorizeUrl('state-1', null)).searchParams.has('redirect_uri')).toBe(false)
+
+    routes.unshift(
+      (url) => url === 'https://github.com/login/oauth/access_token' ? { body: { access_token: 'gho_user' } } : undefined,
+      (url) => url.startsWith('https://api.github.com/user/installations/99/repositories')
+        ? { body: { repositories: [repo(42, 'acme/site', { push: true })] } }
+        : undefined,
+    )
+    await app.verifyInstallationConsent('99', 'code')
+    const exchange = requests.find((call) => call.url === 'https://github.com/login/oauth/access_token')!
+    expect(JSON.parse(String(exchange.init.body))).not.toHaveProperty('redirect_uri')
+  })
+
   it('refuses consent for an installation the user cannot see', async () => {
     routes.unshift((url) => url === 'https://github.com/login/oauth/access_token' ? { body: { access_token: 'gho_user' } } : undefined)
     await expect(app.verifyInstallationConsent('99', 'code')).rejects.toEqual(new GitHubAppError('consent_refused'))
