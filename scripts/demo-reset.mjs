@@ -37,7 +37,7 @@ if (!rows[0]) {
 }
 const scope = ['--tenant', rows[0].tenant_id, '--org', rows[0].id]
 
-mercato('demo_fixtures', 'seed-stal-zbiorniki', ...scope)
+mercato('demo_fixtures', 'seed-metal-zbiorniki', ...scope)
 mercato('task_delegation', 'seed-demo', ...scope)
 mercato('website_publishing', 'ensure-process', ...scope)
 // The seed sets the organization logo through core's update command, whose query-index event

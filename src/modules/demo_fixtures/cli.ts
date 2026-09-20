@@ -1,13 +1,13 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { ModuleCli } from '@open-mercato/shared/modules/registry'
 import { createRequestContainer } from '@open-mercato/shared/lib/di/container'
-import { seedStalZbiornikiDemo } from './lib/stalZbiorniki'
-import { seedStalZbiornikiCompany } from './lib/company'
+import { seedMetalZbiornikiDemo } from './lib/metalZbiorniki'
+import { seedMetalZbiornikiCompany } from './lib/company'
 import { applyDemoSidebar } from './lib/demoSidebar'
 import { seedTaskDelegationDemo } from '../task_delegation/lib/demoSetup'
 import { DEVELOPER_AGENT_DISPLAY_NAME } from '../task_delegation/lib/agentIdentity'
 
-const USAGE = 'Usage: mercato demo_fixtures seed-stal-zbiorniki --tenant <tenantId> --org <organizationId>'
+const USAGE = 'Usage: mercato demo_fixtures seed-metal-zbiorniki --tenant <tenantId> --org <organizationId>'
 
 function readFlag(args: string[], ...names: string[]): string | undefined {
   for (let i = 0; i < args.length; i++) {
@@ -18,12 +18,12 @@ function readFlag(args: string[], ...names: string[]): string | undefined {
   return undefined
 }
 
-// For a demo instance initialised with `--no-examples`: seeds only the Stal-Zbiorniki
+// For a demo instance initialised with `--no-examples`: seeds only the Metal Zbiorniki
 // demo data (catalog, the Park of Poland customer and its order, the DEMO task board, the company
 // branding, staff and projects), without core's furniture examples. Also trims the sidebar to the
 // pitch's working places.
 const seedDemo: ModuleCli = {
-  command: 'seed-stal-zbiorniki',
+  command: 'seed-metal-zbiorniki',
   async run(rest) {
     const tenantId = readFlag(rest, 'tenant', 'tenantId')
     const organizationId = readFlag(rest, 'org', 'organizationId')
@@ -33,16 +33,16 @@ const seedDemo: ModuleCli = {
     }
     const container = await createRequestContainer()
     const em = container.resolve('em') as EntityManager
-    const result = await seedStalZbiornikiDemo(em, container, { tenantId, organizationId })
+    const result = await seedMetalZbiornikiDemo(em, container, { tenantId, organizationId })
     const created = (flag: boolean) => (flag ? 'created' : 'already present')
     console.log(
-      `Stal-Zbiorniki (org=${organizationId}, tenant=${tenantId}): ${result.products} products created, ` +
+      `Metal Zbiorniki (org=${organizationId}, tenant=${tenantId}): ${result.products} products created, ` +
         `customer Park of Poland ${created(result.customer)}, order SO-2026-0042 ${created(result.order)}`,
     )
     // The board scenes delegate tasks on the DEMO project to the `developer` agent (SPEC-004).
     const board = await seedTaskDelegationDemo(container, { tenantId, organizationId })
     console.log(`Task board: DEMO project ${board.projectId}, ${DEVELOPER_AGENT_DISPLAY_NAME} agent ${board.agentUserId ?? 'skipped (orchestrator disabled)'}`)
-    const company = await seedStalZbiornikiCompany(container, { tenantId, organizationId })
+    const company = await seedMetalZbiornikiCompany(container, { tenantId, organizationId })
     console.log(`Company: ${company.created} records created, branding ${company.branded ? 'applied' : 'already present'}`)
     const sidebar = await applyDemoSidebar(em, container, { tenantId })
     console.log(`Sidebar: ${sidebar.hiddenItems} items hidden for roles ${sidebar.roles.join(', ')}`)

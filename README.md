@@ -13,7 +13,7 @@ Design: [`docs/specs/SPEC-001-2026-09-18-agentic-software-factory.md`](docs/spec
 | Path | What |
 |---|---|
 | `/` | Standalone Open Mercato 0.8 app ([`create-mercato-app`](https://docs.openmercato.com/customization/standalone-app), empty preset) with the enterprise `agent_orchestrator` module enabled |
-| `src/modules/` | Our modules: `tasks` (the task board, the factory's intake), `factory` (agents, process definitions, webhooks), `demo_fixtures` (the demo company's catalog, [SPEC-004](docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md)), `task_tools` (MCP tools for the `staff` task board) |
+| `src/modules/` | Our modules: `tasks` (the task board, the factory's intake), `factory` (agents, process definitions, webhooks), `demo_fixtures` (the Metal Zbiorniki catalog, company and branding, [SPEC-004](docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md)), `task_tools` (MCP tools for the `staff` task board) |
 | `docs/agent-orchestrator.md` | How the upstream Agent Orchestrator works (architecture brief) |
 | `docs/specs/` | Specs |
 | `AGENTS.md` | Agent rules (Open Mercato's standalone-app harness); `CLAUDE.md` points to it |
@@ -43,11 +43,11 @@ Useful pages: **Agent Orchestrator → Playground** (`/backend/playground`), **C
 
 `corepack yarn demo:reset` wipes the database in `.env` `DATABASE_URL` and seeds the
 [SPEC-004](docs/specs/SPEC-004-2026-09-18-demo-stal-zbiorniki.md) demo: `init --reinstall
---no-examples`, then `demo_fixtures seed-stal-zbiorniki`, `task_delegation seed-demo` and
+--no-examples`, then `demo_fixtures seed-metal-zbiorniki`, `task_delegation seed-demo` and
 `factory ensure-process`. Plain `yarn reinstall` is not the same: it also seeds the core
 example catalog (sneakers, haircuts).
 
-`seed-stal-zbiorniki` also trims the sidebar to the pitch's working places, as a default for
+`seed-metal-zbiorniki` also trims the sidebar to the pitch's working places, as a default for
 every role in the tenant: Projekty › Zadania, Katalog › Produkty i usługi, Sprzedaż › Szanse
 sprzedaży, Zamówienia, Klienci, and the whole Agenci and Automatyzacje groups. Hidden pages still
 open by URL. To get the full menu back, clear the role default in Customize sidebar

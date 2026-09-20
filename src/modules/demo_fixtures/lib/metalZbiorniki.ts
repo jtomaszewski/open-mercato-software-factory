@@ -27,9 +27,10 @@ import {
 import type { SalesCalculationService } from '@open-mercato/core/modules/sales/services/salesCalculationService'
 
 /**
- * Demo data of Stal-Zbiorniki Sp. z o.o., the fictional steel-tank manufacturer the demo
- * runs on (SPEC-004): the catalog, plus one customer with one fulfilled-in-reality order
- * (SPEC-006). Data, not UI copy: texts are Polish because the company is.
+ * Demo data of Metal Zbiorniki sp. z o.o., the steel-tank manufacturer the demo runs on
+ * (SPEC-004): the catalog, plus one customer with one fulfilled-in-reality order (SPEC-006).
+ * The company is real (metal-zbiorniki.pl); its catalog here is the demo's own data. Data,
+ * not UI copy: texts are Polish because the company is.
  *
  * `ZDP-5000` is wrong on purpose — its real capacity is 5200 l and its dimensions are
  * empty. That is the record the owner corrects live (SPEC-004 scene 2). The mobile tank
@@ -61,7 +62,7 @@ type ProductSeed = {
 
 const VAT_RATE = 23
 
-export const STAL_ZBIORNIKI_CATEGORIES: CategorySeed[] = [
+export const METAL_ZBIORNIKI_CATEGORIES: CategorySeed[] = [
   { slug: 'woda-pitna', name: 'Zbiorniki na wodę pitną', description: 'Zbiorniki ze stali nierdzewnej z atestem PZH.' },
   { slug: 'paliwa', name: 'Zbiorniki na paliwa i oleje', description: 'Zbiorniki dwupłaszczowe naziemne i podziemne.' },
   { slug: 'chemia', name: 'Zbiorniki na chemikalia', description: 'Zbiorniki ze stali kwasoodpornej.' },
@@ -70,7 +71,7 @@ export const STAL_ZBIORNIKI_CATEGORIES: CategorySeed[] = [
   { slug: 'od-reki', name: 'Od ręki', description: 'Gotowe zbiorniki dostępne z magazynu.' },
 ]
 
-export const STAL_ZBIORNIKI_PRODUCTS: ProductSeed[] = [
+export const METAL_ZBIORNIKI_PRODUCTS: ProductSeed[] = [
   {
     handle: 'zwp-2000',
     sku: 'ZWP-2000',
@@ -171,7 +172,7 @@ function money(value: number): string {
 async function ensureCategories(em: EntityManager, scope: DemoSeedScope): Promise<Map<string, CatalogProductCategory>> {
   const map = new Map<string, CatalogProductCategory>()
   const now = new Date()
-  for (const seed of STAL_ZBIORNIKI_CATEGORIES) {
+  for (const seed of METAL_ZBIORNIKI_CATEGORIES) {
     let record = await em.findOne(CatalogProductCategory, { ...scope, slug: seed.slug })
     if (!record) {
       record = em.create(CatalogProductCategory, {
@@ -202,14 +203,14 @@ async function ensureCategories(em: EntityManager, scope: DemoSeedScope): Promis
 }
 
 /**
- * Seeds the Stal-Zbiorniki catalog into one tenant/organization. Idempotent by product
+ * Seeds the Metal Zbiorniki catalog into one tenant/organization. Idempotent by product
  * handle: existing products are left untouched, so a corrected `ZDP-5000` stays corrected
  * across re-runs. Returns the number of products created.
  *
  * Writes through the entity manager, like core's own catalog example seeder, so seeding
  * emits no `catalog.product.created` and never wakes the factory.
  */
-export async function seedStalZbiorniki(em: EntityManager, scope: DemoSeedScope): Promise<number> {
+export async function seedMetalZbiorniki(em: EntityManager, scope: DemoSeedScope): Promise<number> {
   const regularKind = await em.findOne(CatalogPriceKind, { tenantId: scope.tenantId, code: 'regular', deletedAt: null })
   if (!regularKind) {
     throw new Error('Missing catalog price kind "regular"; run `yarn mercato seed:defaults --module catalog` first.')
@@ -217,10 +218,10 @@ export async function seedStalZbiorniki(em: EntityManager, scope: DemoSeedScope)
 
   const existing = await em.find(CatalogProduct, {
     ...scope,
-    handle: { $in: STAL_ZBIORNIKI_PRODUCTS.map((product) => product.handle) },
+    handle: { $in: METAL_ZBIORNIKI_PRODUCTS.map((product) => product.handle) },
   })
   const existingHandles = new Set(existing.map((product) => product.handle))
-  const missing = STAL_ZBIORNIKI_PRODUCTS.filter((product) => !existingHandles.has(product.handle))
+  const missing = METAL_ZBIORNIKI_PRODUCTS.filter((product) => !existingHandles.has(product.handle))
   if (!missing.length) return 0
 
   const categories = await ensureCategories(em, scope)
@@ -582,7 +583,7 @@ export async function seedSuntagoOrder(
 
   const lineSnapshots = SUNTAGO_ORDER.lines.map((line) => {
     const product = productsByHandle.get(line.handle)!
-    const seed = STAL_ZBIORNIKI_PRODUCTS.find((candidate) => candidate.handle === line.handle)!
+    const seed = METAL_ZBIORNIKI_PRODUCTS.find((candidate) => candidate.handle === line.handle)!
     const unitPriceNet = seed.netPricePln
     const unitPriceGross = unitPriceNet * (1 + VAT_RATE / 100)
     return {
@@ -646,7 +647,7 @@ export async function seedSuntagoOrder(
     expectedDeliveryAt: null,
     comments: SUNTAGO_ORDER.comments,
     internalNotes: null,
-    metadata: { seed: 'demo_fixtures.stal-zbiorniki' },
+    metadata: { seed: 'demo_fixtures.metal-zbiorniki' },
     subtotalNetAmount: amount(totals.subtotalNetAmount),
     subtotalGrossAmount: amount(totals.subtotalGrossAmount),
     discountTotalAmount: amount(totals.discountTotalAmount),
@@ -743,15 +744,15 @@ export async function seedSuntagoOrder(
 }
 
 /**
- * The whole Stal-Zbiorniki demo: catalog, then the Park of Poland customer, then its order.
+ * The whole Metal Zbiorniki demo: catalog, then the Park of Poland customer, then its order.
  * Each step is idempotent on its own, so a partial earlier run is completed, never redone.
  */
-export async function seedStalZbiornikiDemo(
+export async function seedMetalZbiornikiDemo(
   em: EntityManager,
   container: AppContainer,
   scope: DemoSeedScope,
 ): Promise<DemoSeedResult> {
-  const products = await seedStalZbiorniki(em, scope)
+  const products = await seedMetalZbiorniki(em, scope)
   const customer = await seedParkOfPoland(em, scope)
   const calculationService = container.resolve<SalesCalculationService>('salesCalculationService')
   const order = await seedSuntagoOrder(em, calculationService, scope, customer)

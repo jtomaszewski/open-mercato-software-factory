@@ -1,144 +1,80 @@
-# Spike: the Developer agent runs inside the orchestrator's OpenCode sidecar
+# Rebrand the demo company: Stal-Zbiorniki → Metal Zbiorniki
 
-Goal: the coding run is an orchestrator agent run (visible on /backend/agents, Traces, the process
-activity trail, cost per run), not a docker call the orchestrator never sees. Same shape as today
-(checkout → agent edits → diff → PR), moved into the sidecar's file sandbox. Reverses D-009.
+Source of truth: https://metal-zbiorniki.pl/ (real company, Full Stack House client —
+case study at https://www.fullstack.house/pl/results/metal-zbiorniki).
 
-## Plan
+Decisions taken with the user:
+- real client logos downloaded from the live site,
+- real contact data (address, phones, NIP/REGON/KRS), no demo disclaimer,
+- landing repo gets a branch + PR (Vercel preview).
 
-- [x] Sidecar image: node 22 + git + npm on the pinned OpenCode base (`docker/opencode/Dockerfile`)
-- [x] `entrypoint.sh`: `OM_OPENCODE_BASH_ENABLED` turns the global `bash` tool on (agents still gate it)
-- [x] `docker-compose.yml`: build the local image, pass the flag
-- [x] File agent `factory.developer` (`src/modules/factory/agents/developer/{AGENT,OUTCOME}.md`,
-      `files: true`, `filesBash: true`, outcome `research { summary }`)
-- [x] `lib/checkout.ts`: clone the site into `<workspace root>/factory/<taskId>` (git dir outside the
-      sandbox), collect the diff after the run, clean up. Reuses the runner helpers.
-- [x] `factory.deliver_product` workflow: settle → prepare_checkout (function) → develop
-      (INVOKE_AGENT factory.developer) → open PR (function) → end
-- [x] `di.ts`: register `factory.prepare_checkout`; `developer.ts` opens the PR from collected files
-- [x] Remove `runner.ts`'s docker path + `docker/developer-runner`; update tests
-- [x] `yarn generate`, build + start the sidecar (`--profile agents`), restart dev with the env
-- [x] Run a DEMO task end to end; verify the run on /backend/agents, Traces, the process page
-- [ ] Spec update (SPEC-001 decision, execution spec EX-P0 note, README) — after the run works
+## Brand facts
 
-## Verification
+| | |
+|---|---|
+| Name | Metal Zbiorniki sp. z o.o. |
+| Tagline | Zbiorniki stalowe na miarę |
+| Since | 2008 |
+| Address | ul. Powstańców Wielkopolskich 1, 63-200 Jarocin |
+| Phone / e-mail | +48 600 427 656 · biuro@metal-zbiorniki.pl |
+| Projects | +48 783 380 935 · projekty@metal-zbiorniki.pl |
+| Office | +48 570 062 851 · sekretariat@metal-zbiorniki.pl |
+| IDs | NIP 6172227419 · REGON 526472938 · KRS 0001060186 |
+| Primary | `#274086` · dark `#16244b` · light `#829eea` · pale `#eef2fa` · ink `#333` |
+| Type | Open Sans (400/600/700), no condensed display face |
+| Logo | concentric arcs + wordmark, `#283e89`/`#a9a9aa`; white variant = `brightness-0 invert` |
 
-- `yarn test` for factory + task_delegation; `yarn typecheck`; `yarn lint`
-- A real run: task → PR opened; the run row exists with tool calls and cost; the task links the PR
+## Phase 1 — landing site (~/src/jt/hackaton-stal-zbiorniki-landing)
 
-## Review (2026-09-19)
+- [x] Branch `rebrand/metal-zbiorniki`
+- [x] `public/images/logo.svg` + favicon; drop the `SZ` monogram
+- [x] `app/globals.css` — brand palette tokens, white page, Open Sans
+- [x] `app/layout.tsx` — Open Sans, metadata
+- [x] `lib/product.ts` — `COMPANY` → real data (+ the three contact desks)
+- [x] `components/site-header.tsx` — white header, real logo, blue uppercase nav
+- [x] `components/site-footer.tsx` — navy footer, contact desks, NIP/REGON/KRS
+- [x] `app/page.tsx` — hero, industry cards, "Zaufali nam" band, certs, od-ręki, CTA, opinie, FAQ
+- [x] `lib/realizations.ts` — real clients
+- [x] `public/logos/**` — real client logos, delete the fictional ones
+- [x] `components/product-card.tsx`, `product-page.tsx`, `realization-page.tsx` — restyle
+- [x] `app/regulamin/page.tsx`, `app/realizacje`, `app/od-reki` — copy + company name
+- [x] `tests/site.spec.ts`, `AGENTS.md`, `README.md`
+- [x] `npm run lint && npm run typecheck && npm run build && npm test`
+- [x] Push + PR
 
-- Run on task DEMO-5 (ZWM-1500): 94 s, 20 tool calls, all bash inside the sandbox, npm ci/lint/
-  typecheck/build green, outcome submitted → PR #10 on the landing repo, task In review.
-- Two 0.8.0 gaps found and worked around (see the factory README): the package's file-agent
-  loader ignores the app manifest, and the CLI renders every agent file with write/edit/bash deny.
-- The run principal needs `agent_orchestrator.agents.run` for the agent's MCP outcome submit.
-- Open: spec update (D-009 reversal), cost/tokens on the run are null for the OpenCode runtime,
-  the process page's activity trail, drawer link to the run.
+## Phase 2 — ERP demo fixtures (this repo)
 
----
-
-# Demo scenario validation
-
-## Plan
-
-- [x] Identify the documented first demo scenario and the supported reseed/start commands.
-- [x] Reseed the app and start the documented local environment.
-- [ ] Walk the complete first scenario in the browser and capture screenshots at key states.
-  Blocked: no Browser surface is available, and Scene 2's chat intake/Caseload record-change
-  path is not implemented.
-- [x] Record the result, evidence, and any blockers here.
-
-## Verification
-
-- ✅ The app readiness check succeeded after reseeding.
-- ❌ The documented scenario cannot complete because the chat intake and Caseload record-change
-  path are not implemented.
-- ❌ No screenshots were captured because the Conductor browser runtime had no available browser.
+- [x] `public/brand/metal-zbiorniki-logo.png` from the real SVG
+- [x] `lib/companyStory.ts` — name, logo, customers matching the new realizations, order `MZ-…`
+- [x] `lib/stalZbiorniki.ts` → `lib/metalZbiorniki.ts` (+ symbols, CLI command, callers, tests)
+- [x] Agent prompts: `src/modules/website_publishing/agents/**`, `docker/opencode/agents*/`
+- [x] `README.md`, module READMEs, `demo_fixtures/index.ts` description
+- [x] `yarn generate && yarn typecheck && yarn lint && yarn test`
 
 ## Review
 
-- `corepack yarn demo:reset` completed and seeded seven products, the DEMO project, Park of
-  Poland order, and Factory process.
-- `scripts/conductor-run.sh` started the app at `http://localhost:55110`; migrations were current
-  and readiness succeeded.
-- Live authenticated API evidence confirmed `ZDP-5000` has `capacityLiters: 5000` and no
-  dimensions, matching the Scene 2 starting state; the DEMO board has zero tasks.
-- `BASE_URL=http://localhost:55110 PW_CAPTURE_SCREENSHOTS=1 corepack yarn test:integration
-  --retries=0`: two authentication tests passed; the task-drawer UI case skipped because the
-  reset intentionally creates no task.
-- The Conductor browser runtime reported no available browser, so no useful UI screenshot or
-  recording could be captured.
-- Scene 2 is not runnable end to end in this revision: SPEC-004 still lists chat intake and
-  Caseload record changes as missing, and `task_tools` says its tools are only allow-listable by
-  an in-app agent later.
+Both repos rebranded, both gates green.
 
----
+**Landing site** — [PR #14](https://github.com/jtomaszewski/hackaton-stal-zbiorniki-landing/pull/14)
+on `rebrand/metal-zbiorniki`. `npm run lint`, `typecheck`, `build`, `test` (6/6) pass.
+The home page now runs the real site's section order: hero, industries, the customer logo
+strip + UDT/PED/PZH approvals, the offer list, the catalog, the quote CTA, testimonials, FAQ.
+New `lib/content.ts` holds that copy under change class `content`, so the factory's content
+agent may edit it without a developer review.
 
-# Developer task intake tool
+**ERP** — `yarn generate`, `typecheck`, `lint`, `ds:check`, `test` (295/295), `build` pass.
+`lib/stalZbiorniki.ts` is now `lib/metalZbiorniki.ts`, `seed-stal-zbiorniki` is
+`seed-metal-zbiorniki` (`scripts/demo-reset.mjs` follows), `DEMO_WATER_ORDER` is
+`DEMO_OPEN_ORDER` and carries its own `customer` key instead of a literal in `company.ts`.
 
-## Plan
+**Left as is on purpose**
 
-- [x] Record the approved demo intake contract in a focused spec.
-- [x] Add an approval-aware `factory.request_change` AI/MCP tool that creates a scoped staff task
-      and delegates it to the existing Developer principal.
-- [x] Extend the Catalog Merchandising Assistant with the tool and teach OpenCode clients when to
-      use it and how to report queued work.
-- [x] Generate discovery output and run focused plus broad validation.
-- [x] Reseed/restart the demo, exercise the first scenario in the browser, and capture evidence.
-- [x] Review the final diff and commit the completed slice.
-
-## Verification
-
-- `yarn test`: 39 suites / 209 tests green; `yarn lint`: 0 errors; `yarn typecheck`: clean apart
-  from the live Developer checkout under `.mercato/opencode-work/` (tsconfig includes it mid-run).
-- Live chat (superadmin, Catalog Merchandising Assistant): "ZWP-5000 ma teraz 5200 l … na naszej
-  stronie WWW" → approval card (DEMO, Developer, product id) → Confirm → task DEMO-1 created and
-  delegated → `factory.developer` run finished `ok` in the sidecar.
-- PR step failed: `FACTORY_GITHUB_TOKEN` is empty in this worktree's `.env`.
-
-## Review
-
-- Live run exposed two bugs the mocks hid: the model invented `project: "website"` (input
-  dropped; server always files on DEMO), and the in-process runner returned no projects for a
-  super admin because it sends no selected-org cookie (fixed by `task_tools/lib/scoped-runner.ts`,
-  also used by `task_tools`; lesson recorded).
-- After approval the chat only shows "Action applied"; the task reference isn't shown back
-  (installed pending-action flow gives the model no follow-up turn).
-
----
-
-# Repository registry only (trimmed PR #43)
-
-Goal: add GitHub repos through OM (GitHub App) and let the factory get its GitHub token from the
-App instead of `gh auth token` → `FACTORY_GITHUB_TOKEN`. The Developer agent flow on main
-(sidecar OpenCode, local checkout, diff → PR, in-app approve) stays as is.
-
-Decisions (user, 2026-09-19): no qualification; broker optional → GitHub App calls in-app; new PR.
-
-## Plan
-
-- [x] `repositories` module from #43, trimmed: connections (GitHub App install + OAuth consent),
-      register / edit base branch / disable / enable / remove, project links + default.
-      Drop: kind/profile, qualification, broker transport, internal callback routes, outbox,
-      replay table, recovery worker/schedule.
-- [x] `lib/github-app.ts`: App JWT, installation grant, consent verify, branches, and a
-      repo-scoped installation token (contents + pull_requests write) for the factory.
-- [x] Fresh migration for the trimmed tables.
-- [x] Factory: resolve `{ repo, baseBranch, token }` from the task project's default linked repo;
-      fall back to `FACTORY_SITE_REPO` + `FACTORY_GITHUB_TOKEN`. Clone with the token (private repos).
-- [x] Review/approve read the PR from the delegation's repo (PR URL), token from the same source.
-- [x] Tests for token resolution, repo selection, App client, authenticated clone; README/.env.example/spec note.
-
-## Verification
-
-- `yarn generate && yarn typecheck && yarn lint && yarn test`
-- Manual: connect the App, register the Stal-Zbiorniki repo, link to the demo project, run a task.
-
-## Review (2026-09-19)
-
-- `yarn generate`, `yarn typecheck`, `yarn lint` (0 errors), `yarn test` (46 suites / 228 tests), `yarn build` pass.
-  `yarn ds:check` reports only the two findings already on main (`BackendHeaderChrome.tsx`).
-- Migration `Migration20260919180625_repositories` creates only the 4 `repositories_*` tables; not applied.
-- Not exercised live: GitHub App connect, register, and a task run with an App token (needs the App
-  env + migration applied).
+- The GitHub repo name `hackaton-stal-zbiorniki-landing`, its Vercel URL and
+  `code_changes` `DEFAULT_REPO` — renaming the repo would break the factory's checkout.
+- `docs/specs/SPEC-00*.md` filenames and bodies — the historical design record.
+- The catalog SKUs (ZWP/ZDP/ZCH/ZPPOZ/MX). Scene 2 corrects `ZDP-5000` and scene 3 adds
+  `ZWM-1500`; renaming them would break both.
+- `seedMetalZbiornikiCompany` still keeps an existing `logoUrl` rather than replacing it
+  (`organization.logoUrl || await uploadLogo()`), so re-seeding onto a database that already
+  holds the old brand updates the name but keeps the old logo. `yarn demo:reset` wipes first,
+  so the documented path is unaffected.
