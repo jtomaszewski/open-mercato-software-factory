@@ -3,6 +3,8 @@ import * as React from 'react'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
+import { hasFeature } from '@open-mercato/shared/security/features'
+import { useBackendChrome } from '@open-mercato/ui/backend/BackendChromeProvider'
 import { Page, PageBody, PageHeader } from '@open-mercato/ui/backend/Page'
 import { SectionHeader } from '@open-mercato/ui/backend/SectionHeader'
 import { LoadingMessage, ErrorMessage, RecordNotFoundState } from '@open-mercato/ui/backend/detail'
@@ -21,9 +23,9 @@ import { CodeSectionTabs } from '@/components/CodeSectionTabs'
 import type { ChangeRequestDto } from '../lib/changeRequests'
 import { changeRequestChip } from '../lib/changeRequestPresentation'
 import type { TaskReview } from '../lib/review'
+import { buildRunTimeline, traceHref } from '../lib/runTimeline'
 
 type Loaded = { changeRequest: ChangeRequestDto; run: TaskRunDetail | null }
-type TimelineEntry = { at: string; label: string; detail?: string | null }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="min-w-0">
@@ -74,6 +76,9 @@ function FilePatch({ file }: { file: TaskReview['files'][number] }) {
  */
 export function ChangeRequestDetail({ id }: { id: string }) {
   const t = useT()
+  const { payload } = useBackendChrome()
+  const canViewTrace = hasFeature(payload?.grantedFeatures, 'agent_orchestrator.trace.view')
+  const canViewProcess = hasFeature(payload?.grantedFeatures, 'agent_orchestrator.processes.view')
   const [data, setData] = React.useState<Loaded | null>(null)
   const [state, setState] = React.useState<'loading' | 'ready' | 'notFound' | 'error'>('loading')
   const [review, setReview] = React.useState<TaskReview | null>(null)
@@ -105,29 +110,10 @@ export function ChangeRequestDetail({ id }: { id: string }) {
     return () => { cancelled = true }
   }, [data?.changeRequest.taskId, revision])
 
-  const timeline = React.useMemo<TimelineEntry[]>(() => {
-    const run = data?.run
-    if (!run) return []
-    const entries: TimelineEntry[] = [
-      { at: run.delegation.startedAt, label: t('code_changes.runs.timeline.delegated') },
-      ...(run.process?.milestones ?? []).map((milestone) => ({
-        at: milestone.at,
-        label: t(`code_changes.runs.milestone.${milestone.key}`, milestone.key),
-        detail: t('code_changes.runs.timeline.milestone'),
-      })),
-      // Labelled by what the write did, not by the step id: step ids carry function names and
-      // instance uuids, which say nothing to a reader and change whenever a workflow is renamed.
-      ...run.steps.map((step) => ({
-        at: step.at,
-        label: step.status
-          ? `${t('code_changes.runs.step.status')} → ${t(`code_changes.runs.taskStatus.${step.status}`, step.status)}`
-          : t(`code_changes.runs.step.${step.commandId}`, step.commandId),
-        detail: step.stepId,
-      })),
-    ]
-    if (run.delegation.releasedAt) entries.push({ at: run.delegation.releasedAt, label: t('code_changes.runs.timeline.released'), detail: run.delegation.closeReason })
-    return entries.sort((a, b) => a.at.localeCompare(b.at))
-  }, [data?.run, t])
+  const timeline = React.useMemo(
+    () => buildRunTimeline(data?.run, t, { canViewTrace }),
+    [data?.run, t, canViewTrace],
+  )
 
   const decide = React.useCallback(async (action: 'approve' | 'reject', body?: unknown) => {
     setSaving(true)
@@ -169,6 +155,21 @@ export function ChangeRequestDetail({ id }: { id: string }) {
   const checksVariant = failing.length ? 'error' : pending.length || !review?.checks.length ? 'neutral' : 'success'
   const additions = review?.files.reduce((sum, file) => sum + file.additions, 0) ?? 0
   const deletions = review?.files.reduce((sum, file) => sum + file.deletions, 0) ?? 0
+  // The newest invocation is the one a reader is asking about — what the agent is doing now, or
+  // what it last did. Older ones stay reachable from their own timeline rows.
+  const lastAgentRun = run?.agentRuns?.length ? run.agentRuns[run.agentRuns.length - 1] : null
+  const timelineActions = [
+    lastAgentRun && canViewTrace
+      ? <Button key="trace" asChild size="sm" variant="ghost">
+        <Link href={traceHref(lastAgentRun.id)} data-testid="change-request-open-trace">{t('code_changes.runs.detail.openTrace')}</Link>
+      </Button>
+      : null,
+    run?.process && canViewProcess
+      ? <Button key="process" asChild size="sm" variant="ghost">
+        <Link href={`/backend/processes/${run.process.id}`}>{t('code_changes.runs.detail.openProcess')}</Link>
+      </Button>
+      : null,
+  ].filter(Boolean)
 
   return (
     <Page>
@@ -249,9 +250,7 @@ export function ChangeRequestDetail({ id }: { id: string }) {
               <SectionHeader
                 title={t('code_changes.runs.detail.timeline')}
                 count={timeline.length}
-                action={run?.process ? <Button asChild size="sm" variant="ghost">
-                  <Link href={`/backend/processes/${run.process.id}`}>{t('code_changes.runs.detail.openProcess')}</Link>
-                </Button> : undefined}
+                action={timelineActions.length ? <div className="flex flex-wrap items-center gap-1">{timelineActions}</div> : undefined}
               />
             </div>
             <ol className="space-y-2 px-6" data-testid="change-request-timeline">
@@ -259,7 +258,8 @@ export function ChangeRequestDetail({ id }: { id: string }) {
                 <li key={`${entry.at}-${index}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-border pb-2 last:border-b-0 last:pb-0">
                   <span className="w-40 shrink-0 text-xs tabular-nums text-muted-foreground">{formatDisplayDateTime(entry.at) ?? entry.at}</span>
                   <span className="text-sm">{entry.label}</span>
-                  {entry.detail ? <span className="text-xs text-muted-foreground">{entry.detail}</span> : null}
+                  {entry.detail ? <span className="min-w-0 break-words text-xs text-muted-foreground">{entry.detail}</span> : null}
+                  {entry.href ? <Link className="text-xs text-primary underline" href={entry.href}>{entry.hrefLabel}</Link> : null}
                 </li>
               ))}
             </ol>

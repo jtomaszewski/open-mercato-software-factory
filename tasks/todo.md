@@ -75,3 +75,26 @@ Reviewed the module against its siblings' conventions, the specs, and the i18n s
 - `yarn mercato auth sync-role-acls` ends with an unrelated `Metadata for entity CustomerRole not
   found` error *after* writing the role features. The grants land; the failure is in a later stage
   and involves a module untouched here.
+
+## Follow-up: the agent's trace, linked (2026-09-20)
+
+„Szczegóły techniczne” led to `/backend/processes/:id`, whose activity trace is built from agent
+*proposals* — and this workflow raises none (the Researcher returns `research`, the Developer an
+`artifact`, and `invokeAgentForWorkflow` only creates a proposal for the proposal kind). So the one
+page that was supposed to explain the run said „no agent activity recorded yet”, while the runs
+themselves — with every tool call, prompt and timing — sat unlinked under `/backend/traces/:runId`.
+
+- [x] `task_delegation/lib/runsQuery.ts` — `agentRuns` on the run detail: agent, status, timing and
+      error of every invocation. Correlated by `ProcessInstance.workflowInstanceId`, NOT by the
+      process row id — two different uuids; filtering on the latter matches no run at all.
+- [x] `code_changes/lib/runTimeline.ts` — the timeline build extracted from the component and given
+      agent rows, each linking its own trace. Duration omitted while a run is still going.
+- [x] `ChangeRequestDetail` — „Ślad agenta” beside „Szczegóły techniczne”, pointing at the newest
+      invocation; both gated on the feature the target page requires, so neither is a dead link.
+- [x] i18n en + pl; unit tests for the correlation, the timeline and the rendered links.
+
+## Open (trace link)
+
+- The board drawer's own „Szczegóły techniczne” still lists only `delegation.links`, so it shows a
+  PR but no trace. Same data would have to reach `toDelegationDto`.
+- Cost and tokens are null for the OpenCode runtime, so the rows carry duration only.

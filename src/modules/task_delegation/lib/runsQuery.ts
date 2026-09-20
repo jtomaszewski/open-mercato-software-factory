@@ -6,7 +6,7 @@ import { resolveTranslations } from '@open-mercato/shared/lib/i18n/server'
 import { createLogger } from '@open-mercato/shared/lib/logger'
 import type { QueryEngine } from '@open-mercato/shared/lib/query/types'
 import { User } from '@open-mercato/core/modules/auth/data/entities'
-import { ProcessInstance } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
+import { AgentRun, ProcessInstance } from '@open-mercato/enterprise/modules/agent_orchestrator/data/entities'
 import { TaskDelegation, TaskProcessWrite } from '../data/entities'
 import { requireFeature } from './auth'
 import { resolveAccess, toDelegationDto, type TaskDelegationDto } from './delegationService'
@@ -31,6 +31,23 @@ export type TaskRunMilestone = { key: string; at: string }
  */
 export type TaskRunStep = { stepId: string; commandId: string; at: string; status: string | null }
 
+/**
+ * One agent invocation the run made, as a reader needs it: which agent, how it ended, how long it
+ * took — and the id its trace is at (`/backend/traces/<id>`), which is the only place the tool
+ * calls and the model's reasoning can be read.
+ */
+export type TaskRunAgentRun = {
+  id: string
+  agentId: string
+  status: string
+  /** The workflow step that invoked the agent; null on a run that belongs to no step. */
+  stepId: string | null
+  startedAt: string
+  completedAt: string | null
+  latencyMs: number | null
+  errorMessage: string | null
+}
+
 export type TaskRunProcess = {
   id: string
   status: string
@@ -49,6 +66,8 @@ export type TaskRunDetail = TaskRunSubject & {
   /** Null when the orchestrator is absent or the run never reached a process instance. */
   process: TaskRunProcess | null
   steps: TaskRunStep[]
+  /** The agent invocations of this run, oldest first; empty when the orchestrator is unreadable. */
+  agentRuns: TaskRunAgentRun[]
 }
 
 type TaskRead = { id: string; title: string; description: string | null; time_project_id: string }
@@ -77,6 +96,52 @@ async function readProcesses(
       error: error instanceof Error ? error.message : String(error),
     })
     return null
+  }
+}
+
+/**
+ * The agent invocations of one execution, oldest first.
+ *
+ * Correlated by the WORKFLOW instance the run carries (`agent_runs.workflow_instance_id`), which
+ * is the orchestrator's `ProcessInstance.workflowInstanceId` — not the process row's own id, a
+ * different uuid that matches no run.
+ *
+ * Read from the orchestrator instead of recorded as a delegation link, because a link would only
+ * ever be written by a step that succeeded: the run a reader most needs the trace of is the one
+ * that failed or is still going. Fail-soft for the same reason `readProcesses` is — the story of
+ * how the change was made never keeps the change itself off the page.
+ */
+async function readAgentRuns(
+  ctx: CommandRuntimeContext,
+  em: EntityManager,
+  scope: { tenantId: string; organizationId: string },
+  workflowInstanceId: string | null | undefined,
+): Promise<TaskRunAgentRun[]> {
+  if (!workflowInstanceId || !hasOrchestrator(ctx)) return []
+  try {
+    const runs = await findWithDecryption(
+      em,
+      AgentRun,
+      { ...scope, workflowInstanceId, deletedAt: null },
+      { orderBy: { createdAt: 'asc' } },
+      scope,
+    )
+    return runs.map((run) => ({
+      id: run.id,
+      agentId: run.agentId,
+      status: run.status,
+      stepId: run.stepId ?? null,
+      startedAt: run.createdAt.toISOString(),
+      completedAt: run.completedAt ? new Date(run.completedAt).toISOString() : null,
+      latencyMs: run.latencyMs ?? null,
+      errorMessage: run.errorMessage ?? null,
+    }))
+  } catch (error) {
+    logger.warn('optional agent runs unavailable', {
+      organizationId: scope.organizationId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return []
   }
 }
 
@@ -142,6 +207,9 @@ export async function readTaskRun(ctx: CommandRuntimeContext, delegationId: stri
   ])
   const task = tasks.items[0] ?? null
   const process = delegation.processInstanceId ? processes?.get(delegation.processInstanceId) ?? null : null
+  // Second hop by necessity: the process row is what carries the workflow instance the agent runs
+  // are keyed by, so it has to be read before them.
+  const agentRuns = await readAgentRuns(ctx, em, decryptScope, process?.workflowInstanceId)
 
   return {
     taskId: delegation.taskId,
@@ -173,5 +241,6 @@ export async function readTaskRun(ctx: CommandRuntimeContext, delegationId: stri
       at: write.createdAt.toISOString(),
       status: statusOf(write.result),
     })),
+    agentRuns,
   }
 }
