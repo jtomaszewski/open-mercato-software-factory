@@ -45,9 +45,14 @@ export class GitHubAppError extends Error {
 export type GitHubApp = {
   isConfigured(): boolean
   buildInstallUrl(state: string): string
-  buildAuthorizeUrl(state: string): string
+  /**
+   * `redirectUri` sends the consent back to the origin that started it. Without it GitHub falls
+   * back to the App's configured callback URL — the first one, when several are registered — so
+   * every worktree but one would lose the return trip.
+   */
+  buildAuthorizeUrl(state: string, redirectUri?: string | null): string
   /** Exchanges the OAuth code and keeps only repositories the consenting user can push to. */
-  verifyInstallationConsent(installationId: string, code: string): Promise<InstallationGrant & { authorizedRepositoryIds: string[] }>
+  verifyInstallationConsent(installationId: string, code: string, redirectUri?: string | null): Promise<InstallationGrant & { authorizedRepositoryIds: string[] }>
   /** The installation's current repositories, narrowed to the ones consented at connect time. */
   getInstallationGrant(installationId: string, authorizedRepositoryIds: readonly string[]): Promise<InstallationGrant>
   listBranches(installationId: string, githubRepositoryId: string): Promise<string[]>
@@ -180,16 +185,22 @@ export function createGitHubApp(
       url.searchParams.set('state', state)
       return url.toString()
     },
-    buildAuthorizeUrl(state) {
+    buildAuthorizeUrl(state, redirectUri) {
       const url = new URL(`${WEB_ORIGIN}/login/oauth/authorize`)
       url.searchParams.set('client_id', readConfig().clientId)
       url.searchParams.set('state', state)
+      // GitHub rejects a redirect_uri that is not registered on the App, so this only ever
+      // narrows the choice between callback URLs the App already trusts.
+      if (redirectUri) url.searchParams.set('redirect_uri', redirectUri)
       return url.toString()
     },
-    async verifyInstallationConsent(installationId, code) {
+    async verifyInstallationConsent(installationId, code, redirectUri) {
       const config = readConfig()
       const exchanged = await request<{ access_token?: unknown }>(`${WEB_ORIGIN}/login/oauth/access_token`, {
-        method: 'POST', accept: 'application/json', body: { client_id: config.clientId, client_secret: config.clientSecret, code },
+        // The exchange must repeat the redirect_uri the authorize step used, or GitHub answers
+        // `redirect_uri_mismatch` and the consent is wasted.
+        method: 'POST', accept: 'application/json',
+        body: { client_id: config.clientId, client_secret: config.clientSecret, code, ...(redirectUri ? { redirect_uri: redirectUri } : {}) },
       })
       if (typeof exchanged.access_token !== 'string' || !exchanged.access_token) throw new GitHubAppError('consent_refused')
       let writable: RawRepository[]
