@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 
+import { AiChatShortcutBridge } from '@/components/AiChatShortcutBridge'
+
 type AiAssistantIntegrationComponent = React.ComponentType<{
   tenantId: string | null
   organizationId: string | null
@@ -45,6 +47,7 @@ export function AiAssistantShellIntegration({
   return (
     <IntegrationComponent tenantId={tenantId} organizationId={organizationId}>
       {children}
+      <AiChatShortcutBridge />
     </IntegrationComponent>
   )
 }
