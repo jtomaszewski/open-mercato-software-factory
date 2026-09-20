@@ -51,7 +51,7 @@ and deploy” przy każdym merge'u, co pasuje do decyzji „klik Norberta” pon
 
 | Czas | Scena | Na ekranie | Dowodzi |
 |---|---|---|---|
-| 0:00–0:35 | **1. Hook** | Slajd: Norbert (realizacje od 2008, ~20 osób, 3 handlowców, UDT i PZH, 0 programistów), jego strona, która jeszcze nie wie o wczorajszej sprzedaży, a dane firmy już w Open Mercato. Prezenter otwiera zdaniem „przedstawię wam mojego tatę — właściciela małej firmy produkcyjnej”. | problemu, w jednej osobie |
+| 0:00–0:35 | **1. Hook** | Slajd: Norbert (4,2 mln zł przychodu, 25 pracowników, 3 handlowców, 0 programistów), jego strona, która jeszcze nie wie o wczorajszej sprzedaży, a dane firmy już w Open Mercato. Prezenter otwiera zdaniem „przedstawię wam mojego tatę”. | problemu, w jednej osobie |
 | 0:35–1:50 | **2. Poprawa rekordu** | Norbert na stronie produktu otwiera asystenta (⌘L): „ZDP-5000 ma 5200 l, nie 5000, i brakuje wymiarów”. Powstaje zadanie, delegowane. Caseload pokazuje jedną zmianę w *ZDP-5000*: pojemność i wymiary przed → po. Norbert zatwierdza, rekord się zmienia, szuflada zadania pokazuje `applied`. | plan przed działaniem; bramka człowieka; compare-and-set; nic ukrytego |
 | 1:50–3:30 | **3. Katalog → strona** | Norbert dodaje *ZWM-1500 Zbiornik mobilny na wodę pitną 1500 l* z zaznaczonym „Od ręki”. Tablica pokazuje nowe zadanie, delegowane, z `catalog.product.created`. Przeskok do gotowego uruchomienia: sizer „small”, PR w repo strony, preview z nową kartą w „Od ręki”, zielone checki i `catalog-match`. **Norbert klika „zatwierdź”**, merge, strona na żywo pokazuje zbiornik, zadanie w `Done`. | wyzwalacz jest w systemie ewidencji, którego fabryki widzące tylko repo nie widzą; „done” sprawdzane względem danych |
 | 3:30–4:30 | **3b. Sprzedaż → referencja** | Handlowiec zmienia status zamówienia *Park of Poland (Suntago)* na *Fulfilled*. Tablica pokazuje zadanie z `sales.order.updated`. Przeskok do gotowego uruchomienia: artefakt researchera z logo Suntago i opisem pobranym z parkofpoland.com, PR z preview: logo Suntago obok browaru w „Zaufali nam”, karta w „Realizacje” z danymi z zamówienia. Norbert zatwierdza, strona na żywo. Jeśli jest czas: dwa zdjęcia przeciągnięte na zamówienie → drugi PR z galerią. | wyzwalacz w sprzedaży; fabryka wciąga do systemu dane z internetu, których tam nie było |
@@ -130,9 +130,10 @@ Prawdopodobne pytania i odpowiedź w dwóch zdaniach na każde:
   to jedno kliknięcie na stanie, który próba generalna już osiągnęła. Na żywo pracuje tylko
   scena 2 (krótka propozycja) i intake.
 - **Prawdziwa rodzina.** Norbert to ojciec prezentera i realny właściciel firmy, więc slajd podaje
-  tylko to, co wiadomo publicznie albo od niego (rok 2008, ~20 osób, 3 handlowców, UDT/PZH).
-  Przychodu nie pokazujemy: sprawozdania sp. z o.o. (zarejestrowana 2023) nie obejmują całej
-  historii firmy, prowadzonej wcześniej jako JDG.
+  tylko liczby od niego (25 pracowników, 3 handlowców) albo publiczne (4,2 mln zł przychodu —
+  dane agregatorów KRS; treść sprawozdań spółki nie jest jawna bez opłaty, a spółka powstała
+  w 2023, więc przed pitchem warto potwierdzić liczbę u samego Norberta). Miasta ani skali firmy
+  slajd nie komentuje.
 - **Prawdziwe marki.** Metal Zbiorniki, ich klienci i Park of Poland są prawdziwi. Strona demo nie
   publikuje żadnych danych kontaktowych firmy (adres, telefony, NIP), a logo klientów i Park of
   Poland stoją tam z `noindex`, do usunięcia po hackathonie. Katalog, zamówienia i to, co każdy
@@ -143,9 +144,9 @@ Prawdopodobne pytania i odpowiedź w dwóch zdaniach na każde:
 
 ## Persona
 
-**Norbert, właściciel Metal Zbiorniki** (Jarocin, mała firma produkcyjna: realizacje od 2008,
-około 20 osób, 3 handlowców, klienci przemysłowi tej skali co Viessmann, Saint-Gobain czy Grupa
-Kęty). Prowadzi sprzedaż, katalog i pracowników w Open Mercato. Strona firmy to
+**Norbert, właściciel Metal Zbiorniki** (4,2 mln zł przychodu, 25 pracowników, 3 handlowców,
+klienci przemysłowi tej skali co Viessmann, Saint-Gobain czy Grupa Kęty). Prowadzi sprzedaż,
+katalog i pracowników w Open Mercato. Strona firmy to
 repo podłączone jako projekt. W firmie nie ma programisty. Strona jest nowoczesna i da się ją
 edytować samemu — wąskim gardłem nie jest wykonawca, tylko to, że każdą zmianę trzeba opisać
 drugi raz: raz w katalogu, raz na stronie. Zatwierdza plany i preview, nigdy kod.
@@ -255,3 +256,4 @@ realizacja to wpis w rejestrze i strona TSX, więc PR fabryki dodaje pliki, nie 
 | 2026-09-19 | Agent Developer (spec wykonania, EX-P0): zmianę na stronie robi agent OpenCode w jednorazowym kontenerze z node (jedyna ścieżka; deterministyczny generator strony usunięty), a szuflada zadania pokazuje diff, checki i podgląd przed „Zatwierdź i opublikuj”. |
 | 2026-09-20 | Rebranding z fikcyjnych Stal-Zbiorniki (Kobierzyce) na prawdziwe Metal Zbiorniki sp. z o.o. z Jarocina — klienta Full Stack House. Persona to Norbert, właściciel. Strona i seed niosą prawdziwą markę, logo i klientów, ale żadnych danych kontaktowych firmy; co kto zamówił zostaje danymi demo. Pliki SPEC-004 i SPEC-005 przemianowane na `*-metal-zbiorniki*`; nazwa repo i projektu Vercel zostaje `hackaton-stal-zbiorniki-landing`. |
 | 2026-09-20 | Liczby firmy na hooku urealnione: zamiast wymyślonych 28 mln zł / 400+ zamówień / 35 osób slajd podaje realizacje od 2008, ~20 osób, 3 handlowców i atesty UDT/PZH. Przychód zdjęty — sprawozdania sp. z o.o. nie są jawne w treści, a spółka powstała w 2023, więc nie obejmują całej historii firmy. Prezenter otwiera zdaniem „przedstawię wam mojego tatę”. |
+| 2026-09-20 | Płytka hooka ostatecznie: przychód 4,2 mln zł / rok, 25 pracowników, 3 handlowców, 0 programistów. Zdjęte: miasto, „mała firma produkcyjna”, atesty i rok 2008. |
