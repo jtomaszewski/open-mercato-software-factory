@@ -49,6 +49,23 @@ and the approve/reject decision on it), **Code → Code repositories**
 `website_publishing ensure-process`. Plain `yarn reinstall` is not the same: it also seeds the
 core example catalog (sneakers, haircuts).
 
+A reset wipes our record of the GitHub App installation — the connection, the registered
+repository and its link to `DEMO` — so the script ends by telling you whether one is linked.
+**Scenes 3 and 3b need it**: without a repository the intake still puts its task on the board and
+the coding run then dies at checkout.
+
+No personal access token is involved. The App (`om-software-factory`) stays installed on GitHub
+across resets, so reconnecting is one consent click: **Code → Code repositories → Repository
+settings → Connect GitHub**, register the landing repo, then link it to `DEMO` on the project
+page. The run then uses a short-lived installation token scoped to that one repository.
+
+Two things to check if the consent redirect lands nowhere: the App must list
+`<dev origin>/backend/repositories/connect` as a callback URL, and each Conductor worktree runs on
+its own port (`CONDUCTOR_PORT`), so that origin differs per workspace.
+
+`CODE_CHANGES_REPO` + `CODE_CHANGES_GITHUB_TOKEN` still work as a pre-registry fallback, but they
+mean a long-lived personal token where the App gives a scoped, expiring one — prefer the App.
+
 `seed-metal-zbiorniki` also trims the sidebar to the pitch's working places, as a default for
 every role in the tenant: Projekty › Zadania, Katalog › Produkty i usługi, Sprzedaż › Szanse
 sprzedaży, Zamówienia, Klienci, and the whole Agenci and Automatyzacje groups. Hidden pages still

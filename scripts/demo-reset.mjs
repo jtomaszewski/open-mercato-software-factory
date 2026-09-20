@@ -40,9 +40,37 @@ const scope = ['--tenant', rows[0].tenant_id, '--org', rows[0].id]
 mercato('demo_fixtures', 'seed-metal-zbiorniki', ...scope)
 mercato('task_delegation', 'seed-demo', ...scope)
 mercato('website_publishing', 'ensure-process', ...scope)
-// The seed sets the organization logo through core's update command, whose query-index event
-// carries the wrong scope and is rejected; rebuild that one index so it matches the record.
-mercato('query_index', 'reindex', '--entity', 'directory:organization', '--force')
+// The seeds write through the entity manager, so nothing they create is in the query/search
+// index: `catalog.search_products` routes a non-empty query through the search service, and
+// scene 2's assistant answered "nie znalazłem produktu ZDP-5000" on a freshly reset demo.
+// The organization logo needs it too — core's update command emits a query-index event with the
+// wrong scope, which is rejected. One full rebuild covers both (~6 s for the whole demo).
+mercato('query_index', 'reindex', '--all', '--force')
 
 console.log(`[demo:reset] done — tenant ${rows[0].tenant_id}, org ${rows[0].id}; login superadmin@acme.com / secret`)
 console.log('[demo:reset] GitHub is untouched: close leftover Developer PRs/branches on the landing repo yourself.')
+
+// A reset wipes our record of the GitHub App installation (connection, repository, project link).
+// The installation itself survives on GitHub's side — reconnecting is one consent click — but
+// until it is back, scenes 3 and 3b put their task on the board and the coding run dies at
+// checkout, which is a confusing way to discover a missing setup step five minutes before a pitch.
+const verify = new pg.Client({ connectionString: databaseUrl })
+await verify.connect()
+const { rows: links } = await verify.query(
+  `select r.full_name from repositories_project_links l
+     join repositories_repositories r on r.id = l.repository_id
+     join staff_time_projects p on p.id = l.project_id
+    where p.code = 'DEMO' and r.deleted_at is null`,
+)
+await verify.end()
+if (links.length) {
+  console.log(`[demo:reset] DEMO repository: ${links.map((row) => row.full_name).join(', ')}`)
+} else {
+  const origin = process.env.APP_URL || `http://localhost:${process.env.PORT || process.env.CONDUCTOR_PORT || 3000}`
+  console.warn('[demo:reset] ⚠ no repository is linked to the DEMO project — scenes 3 and 3b will')
+  console.warn('[demo:reset]   create their board task and then fail at checkout.')
+  console.warn(`[demo:reset]   Reconnect: ${origin}/backend/code/repositories → Repository settings`)
+  console.warn('[demo:reset]   → Connect GitHub, register the landing repo, link it to DEMO.')
+  console.warn(`[demo:reset]   The GitHub App must list ${origin}/backend/repositories/connect as a`)
+  console.warn('[demo:reset]   callback URL, or the consent redirect lands nowhere.')
+}
