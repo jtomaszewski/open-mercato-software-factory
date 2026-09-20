@@ -15,6 +15,7 @@ import { StatusBadge } from '@open-mercato/ui/primitives/status-badge'
 import { Textarea } from '@open-mercato/ui/primitives/textarea'
 import { formatDisplayDateTime } from '@open-mercato/ui/primitives/date-format'
 import type { TaskRunDetail } from '../../task_delegation/lib/runsQuery'
+import { boardHref } from '../../task_tools/lib/staff-api'
 import { CodeSectionTabs } from '@/components/CodeSectionTabs'
 import type { ChangeRequestDto } from '../lib/changeRequests'
 import { changeRequestChip } from '../lib/changeRequestPresentation'
@@ -183,7 +184,9 @@ export function ChangeRequestDetail({ id }: { id: string }) {
           {changeRequest.url ? <Button asChild variant="outline">
             <a href={changeRequest.url} target="_blank" rel="noopener noreferrer">{t('code_changes.changeRequests.actions.openProvider')}</a>
           </Button> : null}
-          <Button asChild variant="ghost"><Link href="/backend/staff/time-tracking">{t('code_changes.runs.detail.openBoard')}</Link></Button>
+          <Button asChild variant="ghost">
+            <Link href={boardHref(changeRequest.projectId, changeRequest.taskId)}>{t('code_changes.runs.detail.openBoard')}</Link>
+          </Button>
         </div>}
       />
       <PageBody>
