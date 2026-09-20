@@ -156,7 +156,7 @@
   "example.portal.dashboard.roles": "역할",
   "example.portal.dashboard.title": "대시보드",
   "example.portal.dashboard.welcome": "{name}님, 환영합니다",
-  "example.portal.footer.copyright": "© {year} Open Mercato. 모든 권리 보유.",
+  "example.portal.footer.copyright": "© {year} Metal Zbiorniki. 모든 권리 보유.",
   "example.portal.info.instructions": "조직의 포털에 접속하려면 조직 고유의 URL로 이동하세요. 포털 링크를 모르는 경우 관리자에게 문의하세요.",
   "example.portal.landing.cta.login": "로그인",
   "example.portal.landing.cta.signup": "계정 만들기",
