@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { ExternalLink } from 'lucide-react'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { useBackendChrome } from '@open-mercato/ui/backend/BackendChromeProvider'
 import { Button } from '@open-mercato/ui/primitives/button'
@@ -108,7 +109,12 @@ export default function TaskApprove({ context }: { context?: { taskId?: string }
   return <section className="space-y-2" aria-label={t('code_changes.approve.title')} data-testid="code-changes-task-approve">
     <h3 className="text-sm font-medium">{t('code_changes.approve.title')}</h3>
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      {review.previewUrl ? <a className="text-primary underline" href={review.previewUrl} target="_blank" rel="noopener noreferrer" data-testid="code-changes-review-preview">{t('code_changes.review.preview')}</a> : null}
+      {review.previewUrl ? <Button asChild size="sm" variant="secondary">
+        <a href={review.previewUrl} target="_blank" rel="noopener noreferrer" data-testid="code-changes-review-preview">
+          <ExternalLink aria-hidden />
+          {t('code_changes.review.openPreview')}
+        </a>
+      </Button> : null}
       <StatusBadge variant={checksVariant}>{checksLabel}</StatusBadge>
       {review.pr.merged ? <StatusBadge variant="success">{t('code_changes.review.merged')}</StatusBadge> : null}
     </div>
