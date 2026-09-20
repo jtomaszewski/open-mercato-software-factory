@@ -95,13 +95,13 @@ export default async function StartPage() {
       <header className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
         <Image
           src="/open-mercato.svg"
-          alt={t('app.page.logoAlt', 'Open Mercato')}
+          alt={t('app.page.logoAlt', 'Metal Zbiorniki')}
           width={40}
           height={40}
           priority
         />
         <div className="flex-1">
-          <h1 className="text-3xl font-semibold tracking-tight">{t('app.page.title', 'Open Mercato')}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('app.page.title', 'Metal Zbiorniki ERP')}</h1>
           <p className="text-sm text-muted-foreground">{t('app.page.subtitle', 'AI‑supportive, modular ERP foundation for product & service companies')}</p>
         </div>
       </header>

@@ -83,3 +83,8 @@ if (enterpriseModulesEnabled && enterpriseAgentsEnabled) {
   enabledModules.push({ id: 'code_changes', from: '@app' })
   enabledModules.push({ id: 'website_publishing', from: '@app' })
 }
+
+// Last on purpose: module dictionaries are merged in this order and override the app's
+// own, so `branding` is the only layer that can rename the product on an installed
+// surface (the login page's brand line). See src/modules/branding/i18n/README.md.
+enabledModules.push({ id: 'branding', from: '@app' })

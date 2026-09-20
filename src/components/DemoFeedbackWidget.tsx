@@ -287,7 +287,7 @@ export function DemoFeedbackWidget({ demoModeEnabled }: { demoModeEnabled: boole
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md" onKeyDown={handleKeyDown}>
           <DialogHeader className="items-center gap-3">
-            <Image alt="Open Mercato" src="/open-mercato.svg" width={48} height={48} />
+            <Image alt="Open Mercato" src="/brand/open-mercato.svg" width={48} height={48} />
             <DialogTitle className="text-center text-xl">
               {t('demoFeedback.dialog.title', 'Talk to Open Mercato team')}
             </DialogTitle>
