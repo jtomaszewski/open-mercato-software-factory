@@ -82,6 +82,8 @@ describe('runBarActions', () => {
   it('offers one way forward per state and never a retry on a setup failure', () => {
     expect(runBarActions('none')).toEqual(['delegate'])
     expect(runBarActions('running')).toEqual(['takeOver'])
+    expect(runBarActions('running', true)).toEqual(['changeDetail'])
+    expect(runBarActions('stalled', true)).toEqual(['changeDetail', 'takeOver'])
     expect(runBarActions('awaiting_decision')).toEqual(['caseload'])
     expect(runBarActions('failedConfig')).toEqual(['takeOver'])
     expect(runBarActions('failedAgent')).toEqual(['retry', 'takeOver'])
@@ -132,6 +134,13 @@ describe('availableRunBarActions', () => {
     expect(availableRunBarActions({ state: 'running', hasActiveDelegation: true, canDelegate: false })).toEqual([])
     expect(availableRunBarActions({ state: 'awaiting_decision', hasActiveDelegation: true, canDelegate: false }))
       .toEqual(['caseload'])
+  })
+
+  it('lets anyone who can see the task open its change, permission or not', () => {
+    expect(availableRunBarActions({ state: 'running', hasActiveDelegation: true, canDelegate: false, hasChangeLink: true }))
+      .toEqual(['changeDetail'])
+    expect(availableRunBarActions({ state: 'running', hasActiveDelegation: true, canDelegate: true, hasChangeLink: true }))
+      .toEqual(['changeDetail'])
   })
 
   it('does not offer taking over a run that already released the task', () => {

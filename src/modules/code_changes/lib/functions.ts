@@ -69,13 +69,26 @@ export function createPrepareCheckoutFunction(deps: CodeChangeDeps = defaultDeps
       const github = await deps.resolveGitHub(bound.container, bound.scope, bound.projectId)
       // The change request exists from here on, so a run that dies mid-way is still visible as a
       // change someone asked for and did not get, rather than as nothing at all.
-      await bound.run('code_changes.change_request.start', `${PREPARE_CHECKOUT_FUNCTION}:change_request`, {
+      // The command bus answers with an envelope; the change request is its `result`.
+      const started = await bound.run('code_changes.change_request.start', `${PREPARE_CHECKOUT_FUNCTION}:change_request`, {
         projectId: bound.projectId,
         title: bound.task.title,
         repoFullName: github.repo,
         baseBranch: github.baseBranch,
         repositoryId: github.repositoryId,
-      })
+      }) as { result?: { id?: string } } | null
+      const changeRequestId = started?.result?.id
+      // The task drawer offers one thing to do while the agent works: open the change and watch it
+      // happen. The link goes on the delegation, so the drawer renders it without knowing this
+      // module exists — `task_delegation` shows the links its run carries, whoever wrote them.
+      // Best effort: a link nobody could write is a missing button, not a reason to fail the run.
+      if (changeRequestId) {
+        await bound.run('task_delegation.task.link', `${PREPARE_CHECKOUT_FUNCTION}:change_link`, {
+          kind: 'change', ref: bound.task.title, url: `/backend/code/changes/${changeRequestId}`,
+        }).catch((linkError: unknown) => logger.warn('could not link the change request to the task', {
+          taskId: bound.task.id, error: linkError instanceof Error ? linkError.message : String(linkError),
+        }))
+      }
       const checkout = await deps.prepareCheckout(bound.task.id, github)
       logger.info('repository checked out for the agent', { taskId: bound.task.id, repo: github.repo, baseSha: checkout.baseSha })
       return {

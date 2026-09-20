@@ -55,6 +55,7 @@ const ACTION_LABEL: Record<RunBarAction, string> = {
   retry: 'task_delegation.runBar.actions.retry',
   takeOver: 'task_delegation.runBar.actions.takeOver',
   caseload: 'task_delegation.runBar.actions.caseload',
+  changeDetail: 'task_delegation.runBar.actions.changeDetail',
 }
 
 /** A link we render is either an in-app backend path or an http(s) URL — nothing else. */
@@ -82,7 +83,9 @@ function useMinuteTick(active: boolean): number {
  *
  * What it deliberately does not do: approve or reject the agent's plan inline (that stays a link to
  * the orchestrator's Caseload), and approve or preview the website change — the `code_changes` module
- * owns those and renders its own panel directly below this one.
+ * owns those and renders its own panel directly below this one. It also shows no run internals:
+ * the pull request, the process and the agent run live on the change's own page, which is where
+ * the bar sends an owner who wants to look.
  */
 export default function TaskRunStatus({ context }: { context?: { taskId?: string } }) {
   const t = useT()
@@ -106,8 +109,9 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
   if (error) return <ErrorMessage label={t('task_delegation.errors.load')} />
 
   const hasActiveDelegation = Boolean(delegation && !delegation.releasedAt)
-  const actions = availableRunBarActions({ state, hasActiveDelegation, canDelegate })
   const caseloadUrl = safeLink(delegation?.links.find((link) => link.kind === 'caseload')?.url)
+  const changeUrl = safeLink(delegation?.links.find((link) => link.kind === 'change')?.url)
+  const actions = availableRunBarActions({ state, hasActiveDelegation, canDelegate, hasChangeLink: Boolean(changeUrl) })
 
   function announceTaskMoved() {
     // Assigning and removing an agent moves the card between columns server-side; staff's board
@@ -176,8 +180,6 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
   else if ((state === 'failedAgent' || state === 'rejected') && !reason) body = t(`${COPY[state]}.noReason`)
   else body = t(`${COPY[state]}.text`, undefined, reason ? { reason } : undefined)
 
-  const technicalLinks = (delegation?.links ?? []).filter((link) => link.kind !== 'caseload' && safeLink(link.url))
-
   return <section className="space-y-2" data-testid="task-run-status" data-run-state={state}>
     <Alert
       status={STATUS[state]}
@@ -190,6 +192,13 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
             if (action === 'caseload') {
               return caseloadUrl
                 ? <a key={action} className="text-sm text-primary underline" href={caseloadUrl} data-testid="task-run-status-caseload">{t(ACTION_LABEL[action])}</a>
+                : null
+            }
+            if (action === 'changeDetail') {
+              return changeUrl
+                ? <Button key={action} asChild size="sm" variant={index === 0 ? 'default' : 'outline'} data-testid="task-run-status-changeDetail">
+                  <a href={changeUrl}>{t(ACTION_LABEL[action])}</a>
+                </Button>
                 : null
             }
             return <Button
@@ -209,21 +218,5 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
       <AlertDescription>{body}</AlertDescription>
     </Alert>
 
-    {delegation ? <details className="rounded-md border border-border px-3 py-2" data-testid="task-run-status-technical">
-      <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-        {t('task_delegation.runBar.technical.title', 'Technical details')}
-      </summary>
-      <dl className="mt-2 flex flex-col gap-1 text-xs">
-        <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">{t('task_delegation.runBar.technical.agent', 'Agent')}</dt>
-          <dd>{delegation.delegateName}</dd>
-        </div>
-        {technicalLinks.map((link) => <div key={`${link.kind}:${link.ref}`} className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">{t(`task_delegation.links.${link.kind}`)}</dt>
-          <dd><a className="text-primary underline" href={safeLink(link.url)} target={safeLink(link.url)!.startsWith('/') ? undefined : '_blank'} rel="noopener noreferrer">{link.ref}</a></dd>
-        </div>)}
-      </dl>
-      {technicalLinks.length === 0 ? <p className="mt-1 text-xs text-muted-foreground">{t('task_delegation.runBar.technical.empty')}</p> : null}
-    </details> : null}
   </section>
 }
