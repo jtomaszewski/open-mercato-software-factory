@@ -133,5 +133,6 @@
   "code_changes.activity.stage.research": "Researcher reads the customer website",
   "code_changes.activity.stage.develop": "The agent changes the website",
   "code_changes.activity.stage.pr_open": "Opening the pull request",
-  "code_changes.activity.stage.end": "Waiting for your decision"
+  "code_changes.activity.stage.end": "Waiting for your decision",
+  "code_changes.changeRequests.errors.runEnded": "The run ended before the change was ready."
 }

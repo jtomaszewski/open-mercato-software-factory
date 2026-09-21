@@ -56,6 +56,10 @@
   "exclude": [
     "node_modules",
     "src/modules/**/agents/**/scripts/**",
-    "src/modules/**/agents/**/tools/**"
+    "src/modules/**/agents/**/tools/**",
+    // The coding agent's checkout of somebody else's repository. A failed run keeps its checkout
+    // on purpose, so without this one stale run makes `yarn typecheck` fail on the landing site's
+    // code — errors from a repo this tsconfig knows nothing about.
+    ".mercato/opencode-work/**"
   ]
 }

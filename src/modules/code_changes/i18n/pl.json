@@ -133,5 +133,6 @@
   "code_changes.activity.stage.research": "Researcher czyta stronę klienta",
   "code_changes.activity.stage.develop": "Agent zmienia stronę",
   "code_changes.activity.stage.pr_open": "Otwiera pull requesta",
-  "code_changes.activity.stage.end": "Czeka na Twoją decyzję"
+  "code_changes.activity.stage.end": "Czeka na Twoją decyzję",
+  "code_changes.changeRequests.errors.runEnded": "Przebieg zakończył się, zanim zmiana była gotowa."
 }
