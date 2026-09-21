@@ -1,0 +1,10 @@
+{
+  "catalog_corrections.fields.capacity": "Capacity (l)",
+  "catalog_corrections.fields.title": "Title",
+  "catalog_corrections.fields.description": "Description",
+  "catalog_corrections.errors.forbidden": "Product view and manage permissions in a selected organization are required.",
+  "catalog_corrections.errors.notFound": "Product is not available in the selected organization.",
+  "catalog_corrections.errors.missingCapacity": "The product has no valid capacity in litres to correct.",
+  "catalog_corrections.errors.approvalRequired": "Human approval is required before correcting capacity.",
+  "catalog_corrections.errors.updateFailed": "Catalog capacity update failed."
+}

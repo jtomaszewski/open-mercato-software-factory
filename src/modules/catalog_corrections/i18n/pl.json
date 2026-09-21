@@ -1,0 +1,10 @@
+{
+  "catalog_corrections.fields.capacity": "Pojemność (l)",
+  "catalog_corrections.fields.title": "Nazwa",
+  "catalog_corrections.fields.description": "Opis",
+  "catalog_corrections.errors.forbidden": "Wymagane są uprawnienia do wyświetlania i edycji produktów w wybranej organizacji.",
+  "catalog_corrections.errors.notFound": "Produkt nie jest dostępny w wybranej organizacji.",
+  "catalog_corrections.errors.missingCapacity": "Produkt nie ma prawidłowej pojemności w litrach, którą można poprawić.",
+  "catalog_corrections.errors.approvalRequired": "Korekta pojemności wymaga zatwierdzenia przez użytkownika.",
+  "catalog_corrections.errors.updateFailed": "Nie udało się zapisać pojemności produktu."
+}

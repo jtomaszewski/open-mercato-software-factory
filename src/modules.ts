@@ -60,6 +60,8 @@ if (enterpriseModulesEnabled) {
   )
 }
 
+enabledModules.push({ id: 'catalog_corrections', from: '@app' })
+
 if (enterpriseModulesEnabled && enterpriseSsoEnabled) {
   enabledModules.push({ id: 'sso', from: '@open-mercato/enterprise' })
 }
