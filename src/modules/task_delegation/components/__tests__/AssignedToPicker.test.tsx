@@ -192,3 +192,20 @@ it('reports a failed load instead of an empty picker', () => {
   expect(screen.getByText(/errors\s*load/i)).toBeInTheDocument()
   expect(screen.queryByTestId('assigned-to-trigger')).not.toBeInTheDocument()
 })
+
+it('distinguishes a filtered agent roster from an unconfigured roster', async () => {
+  openPicker()
+  await screen.findByRole('option', { name: /Software Engineer/ })
+  fireEvent.change(screen.getByLabelText('Search people and agents'), { target: { value: 'missing-agent' } })
+  expect(screen.getByText('No agents match this search.')).toBeInTheDocument()
+  expect(screen.queryByText('task_delegation.delegate.noAgents')).not.toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Search people and agents'), { target: { value: '' } })
+  expect(screen.getByRole('option', { name: /Software Engineer/ })).toBeInTheDocument()
+})
+
+it('keeps the no-agents message when the roster is empty', async () => {
+  mockReadApi.mockResolvedValue({ items: [] })
+  openPicker()
+  expect(await screen.findByText('task_delegation.delegate.noAgents')).toBeInTheDocument()
+  expect(screen.queryByText('No agents match this search.')).not.toBeInTheDocument()
+})
