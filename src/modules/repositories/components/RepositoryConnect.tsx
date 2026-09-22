@@ -1,5 +1,6 @@
 "use client"
 import * as React from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import type { LegacyColumnDef as ColumnDef } from '@tanstack/react-table/legacy'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
@@ -103,8 +104,10 @@ export function RepositoryConnect() {
   ], [t])
 
   if (loading) return <LoadingMessage label={t('repositories.connect.loading')} />
-  if (error) return <ErrorMessage label={error} />
-  if (!result) return <ErrorMessage label={t('repositories.connect.invalidReturn')} />
+  if (error || !result) return <Page><PageBody className="space-y-4">
+    <ErrorMessage label={error ?? t('repositories.connect.invalidReturn')} />
+    <Link className="text-sm text-primary underline" href="/backend/repositories">{t('repositories.connect.back')}</Link>
+  </PageBody></Page>
   if (result.status === 'waiting') return <Alert><AlertTitle>{t('repositories.connect.waitingTitle')}</AlertTitle><AlertDescription>{t('repositories.connect.waitingDescription')}</AlertDescription></Alert>
 
   return (

@@ -44,6 +44,7 @@
       }
     },
     "connect": {
+      "back": "Wróć do repozytoriów",
       "title": "Połącz repozytoria GitHub",
       "existingTitle": "Połącz istniejącą instalację GitHub",
       "existingInstallationHelp": "Identyfikator instalacji znajdziesz w ustawieniach instalacji aplikacji GitHub.",
