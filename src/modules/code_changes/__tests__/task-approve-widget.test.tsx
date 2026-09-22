@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 import * as React from 'react'
 import { beforeEach, expect, it, jest } from '@jest/globals'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { TaskReview } from '../lib/review'
 import { injectionTable } from '../widgets/injection-table'
 import TaskApprove from '../widgets/injection/task-approve/widget.client'
@@ -46,4 +46,45 @@ it('shows the preview and the publish action, and folds the pull request and the
   // The pull request and the per-file diff live inside the collapsed block, nowhere else.
   expect(technical).toContainElement(screen.getByRole('link', { name: 'PR #8' }))
   expect(technical).toContainElement(screen.getByTestId('code-changes-review-file'))
+})
+
+
+it('blocks approval without a preview and enables it after a successful refresh', async () => {
+  readApi.mockResolvedValueOnce({ review: { ...review, previewUrl: null } })
+  render(<TaskApprove context={{ taskId: TASK_ID }} />)
+  expect(await screen.findByText('code_changes.review.previewUnavailable')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'code_changes.approve.action' })).toBeDisabled()
+  expect(screen.queryByText('code_changes.approve.hint')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'code_changes.review.refresh' }))
+  await waitFor(() => expect(screen.getByRole('button', { name: 'code_changes.approve.action' })).toBeEnabled())
+  expect(screen.getByTestId('code-changes-review-preview')).toHaveAttribute('href', review.previewUrl)
+})
+
+it('keeps a refresh failure visible and disables stale approval until recovery', async () => {
+  render(<TaskApprove context={{ taskId: TASK_ID }} />)
+  await screen.findByTestId('code-changes-task-approve')
+  readApi.mockRejectedValueOnce(new Error('unavailable'))
+  fireEvent.click(screen.getByRole('button', { name: 'code_changes.review.refresh' }))
+  expect(await screen.findByRole('alert')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'code_changes.approve.action' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'code_changes.review.refresh' }))
+  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  expect(screen.getByRole('button', { name: 'code_changes.approve.action' })).toBeEnabled()
+})
+
+it('allows retrying an initial read failure', async () => {
+  readApi.mockRejectedValueOnce(new Error('unavailable'))
+  render(<TaskApprove context={{ taskId: TASK_ID }} />)
+  await screen.findByRole('alert')
+  fireEvent.click(screen.getByRole('button', { name: 'code_changes.review.refresh' }))
+  expect(await screen.findByTestId('code-changes-review-preview')).toBeInTheDocument()
+})
+
+it('disables approval while a refresh is pending', async () => {
+  render(<TaskApprove context={{ taskId: TASK_ID }} />)
+  await screen.findByTestId('code-changes-task-approve')
+  readApi.mockImplementationOnce(() => new Promise(() => {}))
+  fireEvent.click(screen.getByRole('button', { name: 'code_changes.review.refresh' }))
+  expect(screen.getByRole('button', { name: 'code_changes.approve.action' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'code_changes.review.refreshing' })).toBeDisabled()
 })
