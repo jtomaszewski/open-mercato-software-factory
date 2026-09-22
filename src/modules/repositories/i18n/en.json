@@ -46,7 +46,8 @@
     "connect": {
       "title": "Connect GitHub repositories",
       "existingTitle": "Connect an existing GitHub installation",
-      "existingInstallationHelp": "Find the installation ID in your GitHub App installations.",
+      "installationSettings": "Open GitHub installation settings",
+      "existingInstallationHelp": "In the GitHub App installation settings, choose Configure and copy the numeric ID at the end of the address (for example /settings/installations/123456).",
       "loading": "Verifying GitHub consent...",
       "loadError": "The connected GitHub repositories could not be loaded.",
       "invalidReturn": "The GitHub connection response is incomplete. Start the connection again.",
