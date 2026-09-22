@@ -107,6 +107,7 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
   if (!taskId) return null
   if (loading && !item) return <Skeleton shape="text" className="h-12 w-full" aria-label={t('task_delegation.loading')} />
   if (error) return <ErrorMessage label={t('task_delegation.errors.load')} />
+  if (state === 'none') return null
 
   const hasActiveDelegation = Boolean(delegation && !delegation.releasedAt)
   const caseloadUrl = safeLink(delegation?.links.find((link) => link.kind === 'caseload')?.url)
@@ -176,8 +177,7 @@ export default function TaskRunStatus({ context }: { context?: { taskId?: string
     ? { minutes: runElapsedMinutes(delegation, now) }
     : undefined)
   let body: string
-  if (state === 'none' && !canDelegate) body = t('task_delegation.runBar.none.noPermission')
-  else if ((state === 'failedAgent' || state === 'rejected') && !reason) body = t(`${COPY[state]}.noReason`)
+  if ((state === 'failedAgent' || state === 'rejected') && !reason) body = t(`${COPY[state]}.noReason`)
   else body = t(`${COPY[state]}.text`, undefined, reason ? { reason } : undefined)
 
   return <section className="space-y-2" data-testid="task-run-status" data-run-state={state}>
