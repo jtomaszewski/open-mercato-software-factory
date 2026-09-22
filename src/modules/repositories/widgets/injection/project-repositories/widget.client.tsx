@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import NextLink from 'next/link'
 import { useT } from '@open-mercato/shared/lib/i18n/context'
 import { apiCallOrThrow, readApiResultOrThrow, withScopedApiRequestHeaders } from '@open-mercato/ui/backend/utils/apiCall'
 import { buildOptimisticLockHeader } from '@open-mercato/ui/backend/utils/optimisticLock'
@@ -52,22 +53,28 @@ export default function ProjectRepositories({ context }: { context?: { projectId
   const linkedIds = new Set((links ?? []).map((link) => link.repositoryId))
   const available = options.filter((option) => !linkedIds.has(option.id))
   return <section className="space-y-4" aria-label={t('repositories.projectLinks.tab', 'Repositories')}>
-    <div className="flex flex-wrap items-center gap-2">
+    {available.length > 0 ? <div className="flex flex-wrap items-center gap-2">
       <Select value={selected} onValueChange={setSelected}>
-        <SelectTrigger className="w-80"><SelectValue placeholder={t('repositories.projectLinks.choose', 'Choose a repository')} /></SelectTrigger>
+        <SelectTrigger className="w-80" aria-label={t('repositories.projectLinks.choose', 'Choose a repository')}><SelectValue placeholder={t('repositories.projectLinks.choose', 'Choose a repository')} /></SelectTrigger>
         <SelectContent>{available.map((option) => <SelectItem key={option.id} value={option.id}>{option.fullName}</SelectItem>)}</SelectContent>
       </Select>
       <Button disabled={!selected} onClick={() => void mutate({ projectId, repositoryId: selected, isDefault: (links ?? []).length === 0 }, 'POST').then(() => setSelected(''))}>
         {t('repositories.projectLinks.add', 'Add repository')}
       </Button>
-    </div>
-    {(links ?? []).length === 0 ? <p className="text-sm text-muted-foreground">{t('repositories.projectLinks.empty', 'No repositories are linked to this project.')}</p> : null}
+    </div> : <p className="text-sm text-muted-foreground">{options.length === 0
+      ? t('repositories.projectLinks.noneRegistered', 'Register a repository before linking it to this project.')
+      : t('repositories.projectLinks.allLinked', 'The listed repositories are already linked to this project.')}</p>}
+    <NextLink className="inline-block text-sm text-primary underline" href="/backend/repositories">{t('repositories.projectLinks.manage', 'Manage repositories')}</NextLink>
+    {(links ?? []).length === 0 && options.length > 0 ? <p className="text-sm text-muted-foreground">{t('repositories.projectLinks.empty', 'No repositories are linked to this project.')}</p> : null}
+    {(links ?? []).length > 0 ? <>
+    <p className="text-sm text-muted-foreground">{t('repositories.projectLinks.defaultHelp', "Agents use the default repository for this project's code changes.")}</p>
     <ul className="divide-y rounded-md border border-border">{(links ?? []).map((link) => <li key={link.id} className="flex items-center justify-between gap-3 p-3">
       <div><p className="text-sm font-medium">{link.fullName}</p><p className="text-xs text-muted-foreground">{[link.isDefault ? t('repositories.projectLinks.default', 'Default') : null, link.status === 'disabled' ? t('repositories.status.disabled', 'Disabled') : null].filter(Boolean).join(' · ')}</p></div>
       <div className="flex gap-2">
         {!link.isDefault ? <Button variant="outline" size="sm" onClick={() => void mutate({ projectId, repositoryId: link.repositoryId, isDefault: true, updatedAt: link.updatedAt }, 'POST', link.updatedAt)}>{t('repositories.projectLinks.makeDefault', 'Make default')}</Button> : null}
-        <Button variant="outline" size="sm" onClick={() => void mutate({ projectId, repositoryId: link.repositoryId, updatedAt: link.updatedAt }, 'DELETE', link.updatedAt)}>{t('repositories.projectLinks.remove', 'Remove')}</Button>
+        <Button variant="outline" size="sm" onClick={() => void mutate({ projectId, repositoryId: link.repositoryId, updatedAt: link.updatedAt }, 'DELETE', link.updatedAt)}>{t('repositories.projectLinks.remove', 'Disconnect from project')}</Button>
       </div>
     </li>)}</ul>
+    </> : null}
   </section>
 }

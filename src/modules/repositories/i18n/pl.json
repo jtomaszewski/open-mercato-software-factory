@@ -12,7 +12,7 @@
       "save": "Zapisz",
       "disable": "Wyłącz",
       "enable": "Włącz",
-      "remove": "Usuń"
+      "remove": "Usuń z rejestru"
     },
     "status": {
       "active": "Aktywne",
@@ -22,7 +22,7 @@
       "title": "Repozytoria kodu",
       "search": "Szukaj repozytoriów...",
       "loadError": "Nie udało się wczytać repozytoriów.",
-      "confirmRemove": "Usunąć to wyłączone repozytorium?",
+      "confirmRemove": "Usunąć to wyłączone repozytorium z rejestru i odłączyć je od wszystkich projektów? Repozytorium na GitHubie pozostanie bez zmian.",
       "columns": {
         "repository": "Repozytorium",
         "branch": "Gałąź bazowa",
@@ -35,12 +35,12 @@
       "success": {
         "disable": "Repozytorium wyłączone.",
         "enable": "Repozytorium włączone.",
-        "remove": "Repozytorium usunięte."
+        "remove": "Repozytorium usunięte z rejestru."
       },
       "error": {
         "disable": "Nie udało się wyłączyć repozytorium.",
         "enable": "Nie udało się włączyć repozytorium.",
-        "remove": "Nie udało się usunąć repozytorium."
+        "remove": "Nie udało się usunąć repozytorium z rejestru."
       }
     },
     "connect": {
@@ -128,7 +128,11 @@
       "empty": "Z tym projektem nie jest połączone żadne repozytorium.",
       "default": "Domyślne",
       "makeDefault": "Ustaw jako domyślne",
-      "remove": "Usuń"
+      "remove": "Odłącz od projektu",
+      "noneRegistered": "Zarejestruj repozytorium, aby połączyć je z tym projektem.",
+      "allLinked": "Widoczne repozytoria są już połączone z tym projektem.",
+      "manage": "Zarządzaj repozytoriami",
+      "defaultHelp": "Agenci korzystają z domyślnego repozytorium przy zmianach kodu w tym projekcie."
     }
   },
   "repositories.overview.title": "Repozytoria",
